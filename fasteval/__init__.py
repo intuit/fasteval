@@ -23,9 +23,14 @@ __version__ = "0.1.0a0"
 # === Core API ===
 
 from fasteval.cache.memory import MemoryCache, clear_cache, get_cache
-from fasteval.core.decorators import (  # LLM Metrics; Quality Metrics; RAG Metrics; Deterministic Metrics; Tool Trajectory; Conversation Metrics; Generic; Data Decorators; Human Review; Stack; Vision; Audio; Multi-Modal
+from fasteval.core.decorators import (  # LLM Metrics; Quality Metrics; RAG Metrics; Deterministic Metrics; Tool Trajectory; Conversation Metrics; Generic; Data Decorators; Human Review; Stack; Vision; Audio; Multi-Modal; Vision metrics; Audio metrics; Multi-modal metrics
+    aesthetic_score,
     answer_correctness,
+    audio_sentiment,
     bias,
+    character_error_rate,
+    chart_interpretation,
+    clip_score,
     coherence,
     completeness,
     conciseness,
@@ -37,56 +42,48 @@ from fasteval.core.decorators import (  # LLM Metrics; Quality Metrics; RAG Metr
     conversation,
     correctness,
     criteria,
+    cross_modal_coherence,
     csv,
+    document_understanding,
     exact_match,
     faithfulness,
+    figure_reference,
     g_eval,
     geval,
     hallucination,
     helpfulness,
     human_review,
+    image_faithfulness,
+    image_quality,
+    image_understanding,
     instruction_following,
     json,
+    match_error_rate,
     metric,
+    multimodal_faithfulness,
+    ocr_accuracy,
+    prompt_adherence,
     regex,
     relevance,
     rouge,
+    safety_check,
+    speaker_diarization,
     stack,
+    table_extraction,
     tool_args_match,
     tool_call_accuracy,
     tool_sequence,
     topic_drift,
     toxicity,
     traces,
-    # Vision metrics
-    image_understanding,
-    ocr_accuracy,
-    chart_interpretation,
-    visual_grounding,
-    image_faithfulness,
-    image_quality,
-    prompt_adherence,
-    safety_check,
-    # Audio metrics
-    word_error_rate,
-    character_error_rate,
-    match_error_rate,
     transcription_accuracy,
-    speaker_diarization,
-    audio_sentiment,
-    # Multi-modal metrics
-    multimodal_faithfulness,
-    table_extraction,
-    figure_reference,
-    cross_modal_coherence,
-    document_understanding,
-    clip_score,
-    aesthetic_score,
+    visual_grounding,
+    word_error_rate,
 )
 from fasteval.core.evaluator import Evaluator, create_evaluator
 from fasteval.core.scoring import score
-from fasteval.metrics.base import Metric
 from fasteval.metrics import LLMMetric
+from fasteval.metrics.base import Metric
 from fasteval.metrics.conversation import (
     ConsistencyMetric,
     ContextRetentionMetric,

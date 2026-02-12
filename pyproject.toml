@@ -102,6 +102,7 @@ target-version = ['py310','py311','py312','py313','py314']
 
 [tool.isort]
 profile = "black"
+known_first_party = ["fasteval", "fasteval_observe", "fasteval_langfuse", "fasteval_langgraph"]
 
 [tool.pytest.ini_options]
 pythonpath = "."

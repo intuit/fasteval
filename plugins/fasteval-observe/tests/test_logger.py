@@ -18,6 +18,7 @@ from fasteval_observe.metrics import Observation, ObservationMetrics
 def reset_all():
     """Reset config and logger before each test."""
     import sys
+
     from fasteval_observe import logger as logger_module
 
     reset_config()
