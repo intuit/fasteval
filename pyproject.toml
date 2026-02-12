@@ -1,6 +1,6 @@
 [project]
 name = "fasteval"
-version = "1.0.0"
+version = "1.0.0a1"
 description = "A decorator-first LLM evaluation library for testing AI agents"
 authors = [{name = "Intuit"}]
 license = {text = "Apache-2.0"}

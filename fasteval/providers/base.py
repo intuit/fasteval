@@ -1,6 +1,6 @@
 """Base LLM client protocol."""
 
-from typing import Dict, List, Protocol, runtime_checkable
+from typing import Any, Dict, List, Protocol, runtime_checkable
 
 
 @runtime_checkable
@@ -13,7 +13,7 @@ class LLMClient(Protocol):
 
     Example:
         class MyCustomClient:
-            async def invoke(self, messages: List[Dict[str, str]]) -> str:
+            async def invoke(self, messages: List[Dict[str, Any]]) -> str:
                 # Call your LLM endpoint
                 response = await my_api.chat(messages)
                 return response.content
@@ -26,12 +26,14 @@ class LLMClient(Protocol):
         async def test_something(): ...
     """
 
-    async def invoke(self, messages: List[Dict[str, str]]) -> str:
+    async def invoke(self, messages: List[Dict[str, Any]]) -> str:
         """
         Call LLM with messages, return response content.
 
         Args:
             messages: List of message dicts with "role" and "content" keys.
+                     Content may be a string or a list of content parts
+                     for multimodal messages (vision, audio).
                      Example: [{"role": "user", "content": "Hello"}]
 
         Returns:

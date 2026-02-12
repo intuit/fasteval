@@ -1,19 +1,76 @@
 name: Release
 
 on:
-  release:
-    types: [published]
+  pull_request:
+    types: [closed]
+    branches: [main]
 
 permissions:
-  contents: read
-  id-token: write  # Required for trusted publishing (OIDC)
+  contents: write
+  id-token: write
 
 jobs:
-  build-core:
-    name: Build fasteval
+  # -----------------------------------------------------------------------
+  # Job 1: Detect which packages need releasing from PR labels
+  # -----------------------------------------------------------------------
+  detect:
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
+    outputs:
+      core_bump: ${{ steps.parse.outputs.core_bump }}
+      plugin_matrix: ${{ steps.parse.outputs.plugin_matrix }}
+      has_core: ${{ steps.parse.outputs.has_core }}
+      has_plugins: ${{ steps.parse.outputs.has_plugins }}
+    steps:
+      - name: Parse release labels
+        id: parse
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const labels = context.payload.pull_request.labels.map(l => l.name);
+            let coreBump = '';
+            const plugins = [];
+
+            for (const label of labels) {
+              const match = label.match(/^release:(\w+):(\w+)$/);
+              if (!match) continue;
+
+              const [, pkg, bump] = match;
+              // Skip dev labels -- handled by release-dev.yml
+              if (bump === 'dev') continue;
+
+              if (pkg === 'core') {
+                coreBump = bump;
+              } else if (['langfuse', 'observe', 'langgraph'].includes(pkg)) {
+                plugins.push({ package: pkg, bump });
+              }
+            }
+
+            core.setOutput('core_bump', coreBump);
+            core.setOutput('has_core', coreBump ? 'true' : 'false');
+            core.setOutput('plugin_matrix', JSON.stringify({ include: plugins }));
+            core.setOutput('has_plugins', plugins.length > 0 ? 'true' : 'false');
+
+            // Summary
+            if (coreBump) core.info(`Core release: ${coreBump}`);
+            for (const p of plugins) core.info(`Plugin release: ${p.package} ${p.bump}`);
+            if (!coreBump && plugins.length === 0) core.info('No release labels found.');
+
+  # -----------------------------------------------------------------------
+  # Job 2: Release core (runs before plugins)
+  # -----------------------------------------------------------------------
+  release-core:
+    needs: detect
+    if: needs.detect.outputs.has_core == 'true'
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      contents: write
+      id-token: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Install uv
         uses: astral-sh/setup-uv@v4
@@ -21,26 +78,54 @@ jobs:
       - name: Set up Python
         run: uv python install 3.13
 
-      - name: Update version from tag
+      - name: Calculate next version
+        id: version
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          sed -i "s/^version = .*/version = \"${VERSION}\"/" pyproject.toml
+          python scripts/bump_version.py \
+            --package core \
+            --bump "${{ needs.detect.outputs.core_bump }}" \
+            >> "$GITHUB_OUTPUT"
+
+      - name: Update version in pyproject.toml
+        run: |
+          sed -i "s/^version = .*/version = \"${{ steps.version.outputs.version }}\"/" \
+            pyproject.toml
 
       - name: Build package
         run: uv build
 
-      - name: Upload dist artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist-core
-          path: dist/
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
 
-  build-plugin-langfuse:
-    name: Build fasteval-langfuse
-    needs: publish-core
+      - name: Create and push tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "${{ steps.version.outputs.tag }}"
+          git push origin "${{ steps.version.outputs.tag }}"
+
+  # -----------------------------------------------------------------------
+  # Job 3: Release plugins (after core, matrix over detected plugins)
+  # -----------------------------------------------------------------------
+  release-plugins:
+    needs: [detect, release-core]
+    if: |
+      always() &&
+      needs.detect.result == 'success' &&
+      (needs.release-core.result == 'success' || needs.release-core.result == 'skipped') &&
+      needs.detect.outputs.has_plugins == 'true'
     runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      contents: write
+      id-token: write
+    strategy:
+      matrix: ${{ fromJson(needs.detect.outputs.plugin_matrix) }}
+      max-parallel: 1
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Install uv
         uses: astral-sh/setup-uv@v4
@@ -48,126 +133,31 @@ jobs:
       - name: Set up Python
         run: uv python install 3.13
 
-      - name: Build plugin
-        working-directory: plugins/fasteval-langfuse
-        run: uv build
+      - name: Calculate next version
+        id: version
+        run: |
+          python scripts/bump_version.py \
+            --package "${{ matrix.package }}" \
+            --bump "${{ matrix.bump }}" \
+            >> "$GITHUB_OUTPUT"
 
-      - name: Upload dist artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist-langfuse
-          path: plugins/fasteval-langfuse/dist/
-
-  build-plugin-langgraph:
-    name: Build fasteval-langgraph
-    needs: publish-core
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v4
-
-      - name: Set up Python
-        run: uv python install 3.13
+      - name: Update version in pyproject.toml
+        run: |
+          sed -i "s/^version = .*/version = \"${{ steps.version.outputs.version }}\"/" \
+            "${{ steps.version.outputs.pyproject_path }}"
 
       - name: Build plugin
-        working-directory: plugins/fasteval-langgraph
+        working-directory: ${{ steps.version.outputs.build_dir }}
         run: uv build
 
-      - name: Upload dist artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist-langgraph
-          path: plugins/fasteval-langgraph/dist/
-
-  build-plugin-observe:
-    name: Build fasteval-observe
-    needs: publish-core
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v4
-
-      - name: Set up Python
-        run: uv python install 3.13
-
-      - name: Build plugin
-        working-directory: plugins/fasteval-observe
-        run: uv build
-
-      - name: Upload dist artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist-observe
-          path: plugins/fasteval-observe/dist/
-
-  publish-core:
-    name: Publish fasteval to PyPI
-    needs: build-core
-    runs-on: ubuntu-latest
-    environment: pypi
-    permissions:
-      id-token: write
-    steps:
-      - name: Download dist artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: dist-core
-          path: dist/
-
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
-
-  publish-plugin-langfuse:
-    name: Publish fasteval-langfuse to PyPI
-    needs: build-plugin-langfuse
-    runs-on: ubuntu-latest
-    environment: pypi
-    permissions:
-      id-token: write
-    steps:
-      - name: Download dist artifacts
-        uses: actions/download-artifact@v4
         with:
-          name: dist-langfuse
-          path: dist/
+          packages-dir: ${{ steps.version.outputs.build_dir }}/dist/
 
-      - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-
-  publish-plugin-langgraph:
-    name: Publish fasteval-langgraph to PyPI
-    needs: build-plugin-langgraph
-    runs-on: ubuntu-latest
-    environment: pypi
-    permissions:
-      id-token: write
-    steps:
-      - name: Download dist artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: dist-langgraph
-          path: dist/
-
-      - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-
-  publish-plugin-observe:
-    name: Publish fasteval-observe to PyPI
-    needs: build-plugin-observe
-    runs-on: ubuntu-latest
-    environment: pypi
-    permissions:
-      id-token: write
-    steps:
-      - name: Download dist artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: dist-observe
-          path: dist/
-
-      - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+      - name: Create and push tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "${{ steps.version.outputs.tag }}"
+          git push origin "${{ steps.version.outputs.tag }}"

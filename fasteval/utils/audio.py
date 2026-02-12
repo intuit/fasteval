@@ -6,10 +6,15 @@ for speech-to-text and audio understanding evaluation.
 Requires: pip install fasteval[audio]
 """
 
+from __future__ import annotations
+
 import base64
 import logging
 from pathlib import Path
-from typing import Optional, Union
+from typing import TYPE_CHECKING, Optional, Union
+
+if TYPE_CHECKING:
+    from fasteval.models.multimodal import AudioInput
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +25,7 @@ try:
     SOUNDFILE_AVAILABLE = True
 except ImportError:
     SOUNDFILE_AVAILABLE = False
-    sf = None  # type: ignore
+    sf = None
 
 try:
     from pydub import AudioSegment
@@ -28,7 +33,7 @@ try:
     PYDUB_AVAILABLE = True
 except ImportError:
     PYDUB_AVAILABLE = False
-    AudioSegment = None  # type: ignore
+    AudioSegment = None
 
 try:
     import jiwer
@@ -245,7 +250,7 @@ def calculate_wer(
         return jiwer.wer(
             reference,
             hypothesis,
-            truth_transform=transforms,
+            reference_transform=transforms,
             hypothesis_transform=transforms,
         )
 
@@ -291,7 +296,7 @@ def calculate_cer(
         return jiwer.cer(
             reference,
             hypothesis,
-            truth_transform=transforms,
+            reference_transform=transforms,
             hypothesis_transform=transforms,
         )
 
@@ -331,7 +336,7 @@ def calculate_mer(
         return jiwer.mer(
             reference,
             hypothesis,
-            truth_transform=transforms,
+            reference_transform=transforms,
             hypothesis_transform=transforms,
         )
 

@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## v1.0.0a1 (2026-02-12)
+
+### Changes
+
+- Version reset to `1.0.0a1` for all packages (core + plugins)
+- PR-label-driven release process (replaces manual tag-based releases)
+- Dev preview releases via `release:*:dev` labels on open PRs
+- Dynamic `__version__` via `importlib.metadata`
+- Aligned `uv_build` across all packages
+
+---
+
+## Previous Versions (pre-reset)
+
 ## v3.0.0 (2026-01-30)
 
 ### Breaking Changes

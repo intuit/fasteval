@@ -6,10 +6,15 @@ for vision-language model evaluation.
 Requires: pip install fasteval[vision]
 """
 
+from __future__ import annotations
+
 import base64
 import logging
 from pathlib import Path
-from typing import Optional, Union
+from typing import TYPE_CHECKING, Optional, Union
+
+if TYPE_CHECKING:
+    from fasteval.models.multimodal import ImageInput
 
 logger = logging.getLogger(__name__)
 
@@ -307,8 +312,13 @@ def prepare_images_for_api(
             )
             break
 
+        # Unwrap ImageInput to its source
+        from fasteval.models.multimodal import ImageInput
+
+        raw = img.source if isinstance(img, ImageInput) else img
+
         # Resize if needed and convert to base64
-        resized = resize_image_if_needed(img, max_dimension)
+        resized = resize_image_if_needed(raw, max_dimension)
         encoded = base64.b64encode(resized).decode("utf-8")
         result.append(f"data:image/png;base64,{encoded}")
 

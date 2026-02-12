@@ -51,7 +51,7 @@ class OpenAIClient:
             self._client = AsyncOpenAI(api_key=self.api_key, **self._kwargs)
         return self._client
 
-    async def invoke(self, messages: List[Dict[str, str]]) -> str:
+    async def invoke(self, messages: List[Dict[str, Any]]) -> str:
         """
         Call OpenAI chat completions API.
 

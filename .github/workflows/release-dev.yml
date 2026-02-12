@@ -1,0 +1,92 @@
+name: Release Dev Preview
+
+on:
+  pull_request:
+    types: [labeled]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  release-dev:
+    # Only run when a release:*:dev label is added to an open (not merged) PR
+    if: |
+      startsWith(github.event.label.name, 'release:') &&
+      endsWith(github.event.label.name, ':dev') &&
+      github.event.pull_request.merged == false
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Parse release label
+        id: parse
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const label = context.payload.label.name;
+            const match = label.match(/^release:(\w+):dev$/);
+            if (!match) {
+              core.setFailed(`Unexpected label format: ${label}`);
+              return;
+            }
+            const pkg = match[1];
+            const validPackages = ['core', 'langfuse', 'observe', 'langgraph'];
+            if (!validPackages.includes(pkg)) {
+              core.setFailed(`Unknown package: ${pkg}`);
+              return;
+            }
+            core.setOutput('package', pkg);
+            core.info(`Dev release for: ${pkg}`);
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Set up Python
+        run: uv python install 3.13
+
+      - name: Calculate dev version
+        id: version
+        run: |
+          python scripts/bump_version.py \
+            --package "${{ steps.parse.outputs.package }}" \
+            --bump dev \
+            --pr-number "${{ github.event.pull_request.number }}" \
+            >> "$GITHUB_OUTPUT"
+
+      - name: Update version in pyproject.toml
+        run: |
+          sed -i "s/^version = .*/version = \"${{ steps.version.outputs.version }}\"/" \
+            "${{ steps.version.outputs.pyproject_path }}"
+
+      - name: Build package
+        working-directory: ${{ steps.version.outputs.build_dir }}
+        run: uv build
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: ${{ steps.version.outputs.build_dir }}/dist/
+
+      - name: Post summary
+        run: |
+          echo "### Dev Preview Published" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Package**: \`${{ steps.parse.outputs.package }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Version**: \`${{ steps.version.outputs.version }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Install with:" >> "$GITHUB_STEP_SUMMARY"
+          echo "\`\`\`" >> "$GITHUB_STEP_SUMMARY"
+          PYPI_NAME="fasteval"
+          if [ "${{ steps.parse.outputs.package }}" != "core" ]; then
+            PYPI_NAME="fasteval-${{ steps.parse.outputs.package }}"
+          fi
+          echo "pip install ${PYPI_NAME}==${{ steps.version.outputs.version }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "\`\`\`" >> "$GITHUB_STEP_SUMMARY"
