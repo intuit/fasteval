@@ -1,0 +1,544 @@
+---
+title: Datasets
+description: A/B testing and regression testing with Langfuse datasets
+order: 4
+sidebar:
+  - title: Understanding Dataset Evaluation
+    anchor: understanding-dataset-evaluation
+  - title: The langfuse_dataset Decorator
+    anchor: the-langfuse_dataset-decorator
+  - title: Working with Dataset Items
+    anchor: working-with-dataset-items
+  - title: A/B Testing Workflows
+    anchor: ab-testing-workflows
+  - title: Regression Testing
+    anchor: regression-testing
+  - title: Building Effective Datasets
+    anchor: building-effective-datasets
+  - title: Best Practices
+    anchor: best-practices
+---
+
+# Datasets
+
+## Understanding Dataset Evaluation
+
+While trace evaluation assesses live production data, dataset evaluation tests your LLM against curated input-output pairs. This distinction is fundamental to a comprehensive evaluation strategy.
+
+### The Role of Datasets
+
+Datasets serve purposes that production traces cannot:
+
+**Controlled Testing Environment**
+
+Datasets contain known inputs with expected outputs. This enables objective measurement: given this exact query, does the agent produce an acceptable response? Production traces lack this ground truth—you're evaluating responses without knowing what the "right" answer should be.
+
+**Reproducibility**
+
+The same dataset produces the same test cases across runs. When you refactor a prompt or upgrade a model, you can measure the exact impact by running against the same dataset. Production traces constantly change, making before/after comparisons imprecise.
+
+**Edge Case Coverage**
+
+Production data reflects typical usage. Datasets let you intentionally include edge cases, adversarial inputs, and rare scenarios that matter but occur infrequently in production.
+
+**Pre-Deployment Gates**
+
+Datasets enable automated quality gates. Before deploying a new agent version, require that it passes evaluation against a golden dataset. This catches regressions before they affect users.
+
+### When to Use Datasets vs. Traces
+
+| Scenario | Use Datasets | Use Traces |
+|----------|--------------|------------|
+| Pre-deployment validation | ✅ | |
+| A/B testing prompts/models | ✅ | |
+| Regression testing | ✅ | |
+| Production quality monitoring | | ✅ |
+| Debugging live issues | | ✅ |
+| Understanding user behavior | | ✅ |
+
+Most mature teams use both: datasets for gates and controlled testing, traces for ongoing production monitoring.
+
+## The langfuse_dataset Decorator
+
+The `@langfuse_dataset` decorator fetches items from a Langfuse dataset and runs your test function once per item.
+
+### Basic Syntax
+
+```python
+from fasteval_langfuse import langfuse_dataset
+import fasteval as fe
+
+@fe.correctness(threshold=0.85)
+@langfuse_dataset(name="qa-golden-set", version="v2")
+def test_qa_quality(input, expected_output):
+    response = my_agent(input)
+    fe.score(response, expected_output, input=input)
+```
+
+### Decorator Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `name` | `str` | Dataset name in Langfuse (required) |
+| `version` | `str` | Dataset version to use (optional) |
+
+### How It Works
+
+1. The decorator connects to Langfuse and fetches the specified dataset
+2. For each item in the dataset, your test function is called
+3. Dataset fields are passed as keyword arguments—declare only what you need
+4. fasteval metrics evaluate your agent's response against the expected output
+5. pytest reports pass/fail based on aggregate scores
+
+## Working with Dataset Items
+
+### Standard Dataset Fields
+
+Langfuse datasets have two standard fields:
+
+- **`input`**: The test query or input to your agent
+- **`expected_output`**: The reference answer to compare against
+
+```python
+@langfuse_dataset(name="qa-golden-set")
+def test_basic(input, expected_output):
+    response = my_agent(input)
+    fe.score(response, expected_output, input=input)
+```
+
+### Accessing Item Metadata
+
+Dataset items can include custom metadata. Declare metadata fields as function parameters to access them:
+
+```python
+@langfuse_dataset(name="qa-golden-set")
+def test_with_metadata(input, expected_output, difficulty, category, language):
+    """
+    Dataset items have metadata like:
+    {
+        "difficulty": "hard",
+        "category": "technical",
+        "language": "en"
+    }
+    """
+    response = my_agent(input)
+    
+    # Use metadata for conditional logic or logging
+    if difficulty == "hard":
+        print(f"Testing hard {category} question")
+    
+    fe.score(response, expected_output, input=input)
+```
+
+### Accessing Item ID
+
+Include `item_id` to get the dataset item's unique identifier:
+
+```python
+@langfuse_dataset(name="qa-golden-set")
+def test_with_tracking(item_id, input, expected_output):
+    response = my_agent(input)
+    result = fe.score(response, expected_output, input=input)
+    
+    # Track specific failures
+    if result.aggregate_score < 0.7:
+        print(f"Failed item: {item_id}, score: {result.aggregate_score}")
+```
+
+### Handling Optional Fields
+
+Declare only the parameters you need. The decorator passes available fields and ignores missing ones:
+
+```python
+# Minimal: just input (no expected output)
+@langfuse_dataset(name="input-only-dataset")
+def test_input_only(input):
+    response = my_agent(input)
+    fe.score(response, input=input)  # Evaluate without expected output
+
+# Full: all available fields
+@langfuse_dataset(name="full-dataset")
+def test_full(item_id, input, expected_output, context, difficulty, category):
+    response = my_agent(input, context=context)
+    fe.score(response, expected_output, context=context, input=input)
+```
+
+## A/B Testing Workflows
+
+A/B testing with datasets provides controlled comparison between different configurations.
+
+### Comparing Prompt Versions
+
+Test two prompt strategies against the same dataset:
+
+```python
+# test_prompt_comparison.py
+from fasteval_langfuse import langfuse_dataset
+import fasteval as fe
+
+# Prompt A: Chain-of-thought
+@fe.correctness(threshold=0.85)
+@fe.relevance(threshold=0.8)
+@langfuse_dataset(name="qa-golden-set", version="v3")
+def test_chain_of_thought_prompt(input, expected_output):
+    """Evaluate chain-of-thought prompting strategy."""
+    prompt = f"""
+    Think through this step-by-step before answering:
+    
+    Question: {input}
+    
+    First, identify what information is needed.
+    Then, reason through the answer.
+    Finally, provide a clear response.
+    """
+    response = llm.invoke(prompt)
+    fe.score(response, expected_output, input=input)
+
+
+# Prompt B: Direct response
+@fe.correctness(threshold=0.85)
+@fe.relevance(threshold=0.8)
+@langfuse_dataset(name="qa-golden-set", version="v3")
+def test_direct_prompt(input, expected_output):
+    """Evaluate direct prompting strategy."""
+    prompt = f"Answer this question concisely: {input}"
+    response = llm.invoke(prompt)
+    fe.score(response, expected_output, input=input)
+```
+
+Run both tests:
+
+```bash
+pytest test_prompt_comparison.py -v
+```
+
+**Sample Output:**
+
+```
+test_prompt_comparison.py::test_chain_of_thought_prompt PASSED
+  ✓ correctness: 0.91 (threshold: 0.85)
+  ✓ relevance: 0.87 (threshold: 0.80)
+  Aggregate: 0.89
+
+test_prompt_comparison.py::test_direct_prompt PASSED
+  ✓ correctness: 0.86 (threshold: 0.85)
+  ✓ relevance: 0.83 (threshold: 0.80)
+  Aggregate: 0.845
+
+Winner: test_chain_of_thought_prompt (+5.3% improvement)
+```
+
+### Comparing Models
+
+Evaluate different LLM providers or model versions:
+
+```python
+@fe.correctness(threshold=0.85)
+@langfuse_dataset(name="qa-golden-set")
+def test_gpt4(input, expected_output):
+    """Evaluate GPT-4 performance."""
+    response = openai_client.chat(model="gpt-4", messages=[{"role": "user", "content": input}])
+    fe.score(response, expected_output, input=input)
+
+
+@fe.correctness(threshold=0.85)
+@langfuse_dataset(name="qa-golden-set")
+def test_claude(input, expected_output):
+    """Evaluate Claude performance."""
+    response = anthropic_client.messages.create(model="claude-3-sonnet", messages=[{"role": "user", "content": input}])
+    fe.score(response.content[0].text, expected_output, input=input)
+```
+
+### Structured A/B Test Reports
+
+Generate comparison reports for stakeholder review:
+
+```python
+import json
+
+results = {}
+
+@fe.correctness(threshold=0.8)
+@langfuse_dataset(name="qa-golden-set")
+def test_variant_a(item_id, input, expected_output):
+    response = agent_variant_a(input)
+    result = fe.score(response, expected_output, input=input)
+    results.setdefault("variant_a", []).append({
+        "item_id": item_id,
+        "score": result.aggregate_score,
+        "metrics": {mr.metric_name: mr.score for mr in result.metric_results}
+    })
+
+
+@fe.correctness(threshold=0.8)
+@langfuse_dataset(name="qa-golden-set")
+def test_variant_b(item_id, input, expected_output):
+    response = agent_variant_b(input)
+    result = fe.score(response, expected_output, input=input)
+    results.setdefault("variant_b", []).append({
+        "item_id": item_id,
+        "score": result.aggregate_score,
+        "metrics": {mr.metric_name: mr.score for mr in result.metric_results}
+    })
+
+
+def teardown_module():
+    """Generate comparison report after all tests."""
+    with open("ab_results.json", "w") as f:
+        json.dump(results, f, indent=2)
+    
+    # Calculate summary statistics
+    a_scores = [r["score"] for r in results.get("variant_a", [])]
+    b_scores = [r["score"] for r in results.get("variant_b", [])]
+    
+    print(f"\n=== A/B Test Summary ===")
+    print(f"Variant A: avg={sum(a_scores)/len(a_scores):.3f}")
+    print(f"Variant B: avg={sum(b_scores)/len(b_scores):.3f}")
+```
+
+## Regression Testing
+
+Regression testing ensures new changes don't degrade quality on known-good inputs.
+
+### Pre-Deployment Validation
+
+Create a mandatory test that must pass before deployment:
+
+```python
+# test_regression.py
+from fasteval_langfuse import langfuse_dataset
+import fasteval as fe
+
+@fe.correctness(threshold=0.90)  # High threshold for golden set
+@fe.hallucination(threshold=0.95)
+@langfuse_dataset(name="regression-suite", version="2026-q1")
+def test_pre_deployment(input, expected_output, category):
+    """
+    Critical regression tests. Must pass before any deployment.
+    
+    Categories include: factual, safety, edge-cases, multi-turn
+    """
+    response = production_agent(input)
+    result = fe.score(response, expected_output, input=input)
+    
+    # Log failures for investigation
+    if result.aggregate_score < 0.9:
+        print(f"REGRESSION: {category} question failed")
+        print(f"  Input: {input[:100]}...")
+        print(f"  Expected: {expected_output[:100]}...")
+        print(f"  Got: {response[:100]}...")
+```
+
+Integrate into CI/CD:
+
+```yaml
+# .github/workflows/deploy.yml
+jobs:
+  regression-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install fasteval fasteval-langfuse
+      - run: pytest test_regression.py -v --tb=short
+        env:
+          LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
+          LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
+  
+  deploy:
+    needs: regression-test  # Block deployment if regression tests fail
+    runs-on: ubuntu-latest
+    steps:
+      - run: ./deploy.sh
+```
+
+### Version-Specific Testing
+
+Track dataset evolution with versions:
+
+```python
+# Test against Q4 2025 baseline
+@langfuse_dataset(name="qa-golden-set", version="2025-q4")
+def test_baseline_compatibility(input, expected_output):
+    response = my_agent(input)
+    fe.score(response, expected_output, input=input)
+
+
+# Test against Q1 2026 additions
+@langfuse_dataset(name="qa-golden-set", version="2026-q1")
+def test_with_new_cases(input, expected_output):
+    response = my_agent(input)
+    fe.score(response, expected_output, input=input)
+```
+
+## Building Effective Datasets
+
+### Dataset Design Principles
+
+**Representativeness**
+
+Include examples that reflect actual usage patterns. Analyze production traces to identify common query types, then ensure your dataset covers them proportionally.
+
+**Edge Case Coverage**
+
+Intentionally include difficult cases:
+- Ambiguous queries
+- Multi-step reasoning
+- Domain-specific terminology
+- Adversarial inputs (prompt injection attempts)
+- Empty or malformed inputs
+
+**Ground Truth Quality**
+
+Expected outputs must be unambiguously correct. Ambiguous reference answers lead to noisy evaluation signals.
+
+**Manageable Size**
+
+Start small (50–100 items) and expand based on needs. Large datasets cost more to evaluate and take longer to curate properly.
+
+### Creating Datasets in Langfuse
+
+**Via Langfuse UI:**
+
+1. Navigate to **Datasets** in your Langfuse project
+2. Click **Create Dataset**
+3. Add items with input, expected_output, and optional metadata
+
+**Via Langfuse SDK:**
+
+```python
+from langfuse import Langfuse
+
+langfuse = Langfuse()
+
+# Create dataset
+dataset = langfuse.create_dataset(name="qa-golden-set")
+
+# Add items
+dataset.create_item(
+    input="What programming language is Python named after?",
+    expected_output="Python is named after the British comedy group Monty Python, not the snake.",
+    metadata={
+        "difficulty": "medium",
+        "category": "trivia",
+        "source": "manual-curation"
+    }
+)
+
+dataset.create_item(
+    input="Explain recursion in one sentence.",
+    expected_output="Recursion is a programming technique where a function calls itself to solve smaller instances of the same problem.",
+    metadata={
+        "difficulty": "easy",
+        "category": "technical",
+        "source": "manual-curation"
+    }
+)
+```
+
+### Converting Production Traces to Datasets
+
+Promote high-quality production interactions to your golden dataset:
+
+```python
+from langfuse import Langfuse
+from fasteval_langfuse import langfuse_traces
+from fasteval_langfuse.sampling import ScoreBasedSamplingStrategy
+
+langfuse = Langfuse()
+
+@langfuse_traces(
+    project="production",
+    time_range="last_30d",
+    sampling=ScoreBasedSamplingStrategy(
+        score_name="user_rating",
+        low_score_threshold=4.5,  # Only excellent ratings
+        low_score_rate=0.0,       # Skip low ratings
+        high_score_rate=1.0       # Include all high ratings
+    )
+)
+def export_golden_traces(trace_id, input, output, context, metadata):
+    """Convert highly-rated traces to dataset items."""
+    # Add to golden dataset
+    langfuse.create_dataset_item(
+        dataset_name="qa-golden-from-production",
+        input=input,
+        expected_output=output,
+        metadata={
+            "source": "production",
+            "original_trace_id": trace_id,
+            "user_rating": metadata.get("user_rating"),
+            **metadata
+        }
+    )
+```
+
+## Best Practices
+
+### Version Your Datasets
+
+Always use explicit versions for reproducibility:
+
+```python
+# Good: explicit version
+@langfuse_dataset(name="qa-golden-set", version="2026-q1")
+
+# Avoid: implicit latest version (changes over time)
+@langfuse_dataset(name="qa-golden-set")
+```
+
+### Separate Concerns
+
+Create focused datasets rather than one large catch-all:
+
+| Dataset | Purpose |
+|---------|---------|
+| `regression-critical` | Must-pass cases for deployment gate |
+| `qa-factual` | Factual accuracy testing |
+| `qa-creative` | Creative/generative quality |
+| `safety-adversarial` | Prompt injection and safety |
+| `edge-cases` | Unusual inputs and formats |
+
+### Document Expected Outputs
+
+Include reasoning in metadata to help future curators:
+
+```python
+dataset.create_item(
+    input="Is a tomato a fruit or vegetable?",
+    expected_output="Botanically, a tomato is a fruit (specifically a berry). Culinarily, it's often treated as a vegetable due to its savory flavor profile.",
+    metadata={
+        "rationale": "Tests nuanced factual accuracy where context matters",
+        "source": "botanical-reference",
+        "reviewed_by": "domain-expert-jane",
+        "review_date": "2026-01-15"
+    }
+)
+```
+
+### Regular Dataset Maintenance
+
+Datasets require ongoing curation:
+
+- **Quarterly review**: Remove outdated items, add new edge cases
+- **Version on changes**: Create new versions rather than modifying in place
+- **Track provenance**: Record where each item came from and who reviewed it
+- **Monitor coverage**: Ensure dataset reflects current production usage patterns
+
+### Use Appropriate Thresholds
+
+Dataset tests typically use higher thresholds than production monitoring:
+
+| Context | Typical Threshold |
+|---------|-------------------|
+| Production monitoring | 0.75–0.80 |
+| A/B testing | 0.80–0.85 |
+| Regression testing | 0.85–0.95 |
+| Safety-critical | 0.95+ |
+
+The golden dataset represents your quality standard—set thresholds accordingly.
+
+## Next Steps
+
+- **[Sampling Strategies](/docs/plugins/langfuse/sampling-strategies)** — Cost-effective trace evaluation
+- **[Score Reporting](/docs/plugins/langfuse/score-reporting)** — How scores sync to Langfuse
+- **[Examples](/docs/plugins/langfuse/examples)** — Complete A/B testing workflows

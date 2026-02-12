@@ -1,0 +1,10 @@
+{
+  "title": "Plugins",
+  "icon": "puzzle",
+  "order": 10,
+  "items": [
+    "langfuse",
+    "observe",
+    "langgraph"
+  ]
+}

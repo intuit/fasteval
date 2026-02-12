@@ -1,0 +1,101 @@
+---
+title: Quickstart
+description: Get started testing LangGraph agents with fasteval in 5 minutes
+order: 2
+sidebar:
+  - title: Install
+    anchor: install
+  - title: Wrap Your Graph
+    anchor: wrap-your-graph
+  - title: Write Your First Test
+    anchor: write-your-first-test
+  - title: Run with pytest
+    anchor: run-with-pytest
+---
+
+# Quickstart
+
+Get started testing LangGraph agents with fasteval in under 5 minutes.
+
+## Install
+
+```bash
+pip install fasteval-langgraph
+```
+
+## Wrap Your Graph
+
+The `harness()` function wraps any compiled `StateGraph`:
+
+```python
+from fasteval_langgraph import harness
+
+# Your existing graph (compiled with checkpointer for sessions)
+from my_agent import build_graph
+from langgraph.checkpoint.memory import MemorySaver
+
+compiled = build_graph().compile(checkpointer=MemorySaver())
+graph = harness(compiled)
+```
+
+`harness()` auto-detects whether your graph uses `MessagesState` or plain `TypedDict` and sets up input/output handling automatically.
+
+## Write Your First Test
+
+```python
+import fasteval as fe
+from fasteval_langgraph import harness
+import pytest
+
+graph = harness(compiled)
+
+@fe.correctness(threshold=0.7)
+@fe.relevance(threshold=0.7)
+@pytest.mark.asyncio
+async def test_agent_response():
+    result = await graph.chat("How do I set up OAuth?")
+    fe.score(
+        result.response,
+        "Explain OAuth 2.0 setup with authorization code or PKCE flow",
+        input="How do I set up OAuth?",
+    )
+```
+
+## What You Get Back
+
+Every `.chat()` call returns a `ChatResult`:
+
+```python
+result = await graph.chat("Hello")
+
+result.response     # str -- last AI message
+result.state        # dict -- state snapshot (messages excluded by default)
+result.trace        # list[NodeStep] -- per-node execution trace
+result.nodes_ran    # list[str] -- node names in order
+```
+
+## State Assertions
+
+Combine fasteval LLM metrics with plain pytest assertions:
+
+```python
+@fe.criteria("Does the agent correctly classify the user intent?")
+@pytest.mark.asyncio
+async def test_classification():
+    result = await graph.chat("My app keeps crashing on startup")
+    assert result.state["intent"]["category"] == "TROUBLESHOOTING"
+    assert "rag" in result.nodes_ran or "planner" in result.nodes_ran
+    fe.score(
+        str(result.state["intent"]),
+        "TROUBLESHOOTING classification",
+        input="My app keeps crashing on startup",
+    )
+```
+
+## Run with pytest
+
+```bash
+pytest tests/ -v
+```
+
+fasteval-langgraph is fully pytest-compatible. No custom test runners needed.

@@ -1,0 +1,377 @@
+---
+title: Custom Strategies
+description: Build your own sampling strategies by extending BaseSamplingStrategy
+order: 5
+sidebar:
+  - title: Overview
+    anchor: overview
+  - title: BaseSamplingStrategy Interface
+    anchor: basesamplingstategy-interface
+  - title: Simple Example
+    anchor: simple-example
+  - title: Advanced Example
+    anchor: advanced-example
+  - title: Best Practices
+    anchor: best-practices
+---
+
+# Custom Strategies
+
+Build your own sampling strategies by extending `BaseSamplingStrategy`.
+
+## Overview
+
+When built-in strategies don't fit your needs, create custom ones:
+
+```python
+from fasteval_observe import observe
+from fasteval_observe.sampling import BaseSamplingStrategy
+
+class MyCustomStrategy(BaseSamplingStrategy):
+    def should_sample(self, function_name, args, kwargs, context):
+        # Your custom logic here
+        return True
+
+@observe(sampling=MyCustomStrategy())
+async def my_agent(query: str) -> str:
+    return await llm.invoke(query)
+```
+
+## BaseSamplingStrategy Interface
+
+```python
+from abc import ABC, abstractmethod
+from typing import Any, Dict, Optional
+
+class BaseSamplingStrategy(ABC):
+    """Base class for sampling strategies."""
+    
+    @abstractmethod
+    def should_sample(
+        self,
+        function_name: str,
+        args: tuple,
+        kwargs: dict,
+        context: Dict[str, Any],
+    ) -> bool:
+        """
+        Decide whether to sample this invocation.
+        
+        Called BEFORE the function executes. Return True to observe,
+        False to skip.
+        
+        Args:
+            function_name: Name of the decorated function
+            args: Positional arguments passed to function
+            kwargs: Keyword arguments passed to function
+            context: Additional context containing:
+                - trace_id: Distributed trace ID
+                - span_id: Current span ID
+                - metadata: User-provided metadata
+        
+        Returns:
+            True to sample, False to skip
+        """
+        pass
+    
+    def on_completion(
+        self,
+        function_name: str,
+        execution_time_ms: float,
+        error: Optional[Exception],
+        result: Any,
+    ) -> None:
+        """
+        Called after execution (for adaptive strategies).
+        
+        Override to track statistics for adaptive decisions.
+        Called regardless of sampling decision.
+        
+        Args:
+            function_name: Name of completed function
+            execution_time_ms: Execution time
+            error: Exception if raised, None otherwise
+            result: Return value (None if error)
+        """
+        pass
+    
+    def reset(self) -> None:
+        """Reset internal state (counters, windows, etc.)."""
+        pass
+    
+    @property
+    def name(self) -> str:
+        """Strategy name for logging."""
+        return self.__class__.__name__
+```
+
+## Simple Example
+
+### Environment-Based Sampling
+
+```python
+import os
+from fasteval_observe.sampling import BaseSamplingStrategy
+
+class EnvironmentSamplingStrategy(BaseSamplingStrategy):
+    """Only sample in production environment."""
+    
+    def __init__(self, env_var: str = "ENV", target_env: str = "production"):
+        self.env_var = env_var
+        self.target_env = target_env
+    
+    def should_sample(self, function_name, args, kwargs, context):
+        current_env = os.getenv(self.env_var, "development")
+        return current_env == self.target_env
+
+# Usage
+@observe(sampling=EnvironmentSamplingStrategy())
+async def my_agent(query: str) -> str:
+    return await llm.invoke(query)
+```
+
+### User-Based Sampling
+
+```python
+class UserSamplingStrategy(BaseSamplingStrategy):
+    """Sample based on user ID hash for consistent per-user sampling."""
+    
+    def __init__(self, rate: float = 0.1, user_id_kwarg: str = "user_id"):
+        self.rate = rate
+        self.user_id_kwarg = user_id_kwarg
+    
+    def should_sample(self, function_name, args, kwargs, context):
+        user_id = kwargs.get(self.user_id_kwarg)
+        if not user_id:
+            return False
+        
+        # Hash user_id for consistent sampling
+        hash_value = hash(str(user_id)) % 100
+        return hash_value < (self.rate * 100)
+
+# Usage
+@observe(sampling=UserSamplingStrategy(rate=0.1))
+async def my_agent(query: str, user_id: str) -> str:
+    return await llm.invoke(query)
+```
+
+## Advanced Example
+
+### Feature Flag Sampling
+
+```python
+import threading
+from typing import Set
+from fasteval_observe.sampling import BaseSamplingStrategy
+
+class FeatureFlagSamplingStrategy(BaseSamplingStrategy):
+    """
+    Sample based on feature flag for specific functions.
+    
+    Useful for gradual rollout of observability.
+    """
+    
+    def __init__(self, flag_service, default_enabled: bool = False):
+        self.flag_service = flag_service
+        self.default_enabled = default_enabled
+        self._cache: Dict[str, bool] = {}
+        self._cache_ttl = 60  # seconds
+        self._last_refresh = 0
+        self._lock = threading.Lock()
+    
+    def should_sample(self, function_name, args, kwargs, context):
+        flag_name = f"observe_{function_name}"
+        
+        with self._lock:
+            # Check cache
+            if flag_name in self._cache:
+                return self._cache[flag_name]
+            
+            # Query flag service
+            try:
+                enabled = self.flag_service.is_enabled(flag_name)
+                self._cache[flag_name] = enabled
+                return enabled
+            except Exception:
+                return self.default_enabled
+    
+    def reset(self):
+        with self._lock:
+            self._cache.clear()
+```
+
+### Latency Percentile Sampling
+
+```python
+from collections import deque
+import threading
+from fasteval_observe.sampling import BaseSamplingStrategy
+
+class PercentileSamplingStrategy(BaseSamplingStrategy):
+    """
+    Sample calls in the top percentile of latency.
+    
+    Useful for capturing slow outliers without sampling everything.
+    """
+    
+    def __init__(
+        self,
+        percentile: float = 95,
+        window_size: int = 1000,
+        min_samples: int = 100,
+    ):
+        self.percentile = percentile
+        self.window_size = window_size
+        self.min_samples = min_samples
+        
+        self._latencies: deque = deque(maxlen=window_size)
+        self._threshold: float = float('inf')
+        self._pending_sample: bool = False
+        self._lock = threading.Lock()
+    
+    def should_sample(self, function_name, args, kwargs, context):
+        # Always sample until we have enough data
+        with self._lock:
+            if len(self._latencies) < self.min_samples:
+                self._pending_sample = True
+                return True
+            
+            # Mark that we should check latency on completion
+            self._pending_sample = True
+            return False  # Will decide after execution
+    
+    def on_completion(self, function_name, execution_time_ms, error, result):
+        with self._lock:
+            self._latencies.append(execution_time_ms)
+            
+            # Update threshold
+            if len(self._latencies) >= self.min_samples:
+                sorted_latencies = sorted(self._latencies)
+                idx = int(len(sorted_latencies) * self.percentile / 100)
+                self._threshold = sorted_latencies[idx]
+            
+            # Check if this was a slow call (sample it)
+            if execution_time_ms >= self._threshold:
+                # Note: The call already executed, but we can still log it
+                # by returning True in should_sample before execution
+                pass
+```
+
+### Request Header Sampling
+
+```python
+class HeaderBasedSamplingStrategy(BaseSamplingStrategy):
+    """
+    Sample based on request headers (e.g., debug flag).
+    
+    Useful for on-demand debugging in production.
+    """
+    
+    def __init__(
+        self,
+        header_kwarg: str = "headers",
+        debug_header: str = "X-Debug-Observe",
+        base_rate: float = 0.01,
+    ):
+        self.header_kwarg = header_kwarg
+        self.debug_header = debug_header
+        self.base_rate = base_rate
+        self._counter = 0
+        self._lock = threading.Lock()
+    
+    def should_sample(self, function_name, args, kwargs, context):
+        # Check for debug header
+        headers = kwargs.get(self.header_kwarg, {})
+        if headers.get(self.debug_header) == "true":
+            return True
+        
+        # Fall back to base rate
+        with self._lock:
+            self._counter += 1
+            interval = int(1 / self.base_rate) if self.base_rate > 0 else 0
+            return interval > 0 and self._counter % interval == 0
+
+# Usage with FastAPI
+from fastapi import Request
+
+@observe(sampling=HeaderBasedSamplingStrategy())
+async def my_agent(query: str, request: Request) -> str:
+    # Headers will be extracted from request
+    return await llm.invoke(query)
+```
+
+## Best Practices
+
+### 1. Keep `should_sample()` Fast
+
+The sampling decision is on the critical path. Keep it under 0.1ms.
+
+```python
+# Good: Simple check
+def should_sample(self, function_name, args, kwargs, context):
+    return self._counter % 100 == 0
+
+# Bad: Network call in sampling decision
+def should_sample(self, function_name, args, kwargs, context):
+    return self.remote_service.check_flag()  # Don't do this!
+```
+
+### 2. Use Thread-Safe State
+
+Strategies may be called from multiple threads.
+
+```python
+import threading
+
+class ThreadSafeStrategy(BaseSamplingStrategy):
+    def __init__(self):
+        self._counter = 0
+        self._lock = threading.Lock()
+    
+    def should_sample(self, function_name, args, kwargs, context):
+        with self._lock:
+            self._counter += 1
+            return self._counter % 100 == 0
+```
+
+### 3. Implement `on_completion()` for Adaptive Logic
+
+Use completion callbacks to adjust behavior based on results.
+
+```python
+class AdaptiveCustomStrategy(BaseSamplingStrategy):
+    def __init__(self):
+        self._error_count = 0
+        self._lock = threading.Lock()
+    
+    def should_sample(self, function_name, args, kwargs, context):
+        with self._lock:
+            # Sample more if seeing errors
+            return self._error_count > 5 or random.random() < 0.01
+    
+    def on_completion(self, function_name, execution_time_ms, error, result):
+        with self._lock:
+            if error:
+                self._error_count += 1
+            elif self._error_count > 0:
+                self._error_count -= 1  # Decay
+```
+
+### 4. Test Your Strategy
+
+```python
+import pytest
+from my_strategies import MyCustomStrategy
+
+def test_custom_strategy_samples_correctly():
+    strategy = MyCustomStrategy(rate=0.5)
+    
+    results = [
+        strategy.should_sample("test", (), {}, {})
+        for _ in range(1000)
+    ]
+    
+    # Should be approximately 50%
+    rate = sum(results) / len(results)
+    assert 0.4 <= rate <= 0.6
+```

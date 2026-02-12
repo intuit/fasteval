@@ -1,0 +1,97 @@
+<svg viewBox="0 0 800 360" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="lciLangchainGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#10b981"/>
+      <stop offset="100%" style="stop-color:#059669"/>
+    </linearGradient>
+    <linearGradient id="lciWrapperGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8b5cf6"/>
+      <stop offset="100%" style="stop-color:#6d28d9"/>
+    </linearGradient>
+    <linearGradient id="lciFastevalGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1"/>
+      <stop offset="100%" style="stop-color:#4f46e5"/>
+    </linearGradient>
+    <linearGradient id="lciMsgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6"/>
+      <stop offset="100%" style="stop-color:#1d4ed8"/>
+    </linearGradient>
+    <filter id="lciShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="5" flood-opacity="0.12"/>
+    </filter>
+    <marker id="lciArrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/>
+    </marker>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="800" height="360" fill="#f8fafc"/>
+  
+  <!-- Title -->
+  <text x="400" y="32" text-anchor="middle" font-size="22" font-weight="700" fill="#1e293b">LangChain Integration</text>
+  <text x="400" y="52" text-anchor="middle" font-size="12" fill="#64748b">Using existing LangChain models with fasteval</text>
+  
+  <!-- LangChain Model -->
+  <g filter="url(#lciShadow)" transform="translate(30, 80)">
+    <rect x="0" y="0" width="180" height="110" rx="10" fill="white" stroke="#10b981" stroke-width="2"/>
+    <rect x="0" y="0" width="180" height="35" rx="10" fill="url(#lciLangchainGrad)"/>
+    <rect x="0" y="23" width="180" height="12" fill="url(#lciLangchainGrad)"/>
+    <text x="90" y="25" text-anchor="middle" font-size="12" font-weight="600" fill="white">🦜 LangChain Model</text>
+    
+    <text x="15" y="55" font-size="9" fill="#475569" font-family="monospace">ChatOpenAI()</text>
+    <text x="15" y="72" font-size="9" fill="#475569" font-family="monospace">ChatAnthropic()</text>
+    <text x="15" y="89" font-size="9" fill="#475569" font-family="monospace">ChatOllama()</text>
+    <text x="15" y="103" font-size="8" fill="#64748b" font-style="italic">Uses LangChain messages</text>
+  </g>
+  
+  <!-- Arrow 1 -->
+  <line x1="210" y1="135" x2="260" y2="135" stroke="#64748b" stroke-width="2" marker-end="url(#lciArrow)"/>
+  
+  <!-- Wrapper Class -->
+  <g filter="url(#lciShadow)" transform="translate(270, 80)">
+    <rect x="0" y="0" width="230" height="180" rx="10" fill="white" stroke="#8b5cf6" stroke-width="2"/>
+    <rect x="0" y="0" width="230" height="35" rx="10" fill="url(#lciWrapperGrad)"/>
+    <rect x="0" y="23" width="230" height="12" fill="url(#lciWrapperGrad)"/>
+    <text x="115" y="25" text-anchor="middle" font-size="12" font-weight="600" fill="white">🔄 LangChainClient Wrapper</text>
+    
+    <text x="15" y="55" font-size="10" font-weight="600" fill="#6d28d9">Message Conversion:</text>
+    
+    <!-- Message format boxes -->
+    <rect x="15" y="65" width="200" height="50" rx="6" fill="#f1f5f9"/>
+    <text x="25" y="82" font-size="8" fill="#64748b">fasteval dict to LangChain message</text>
+    <text x="25" y="95" font-size="8" fill="#475569" font-family="monospace">{"role": "user"} to HumanMessage()</text>
+    <text x="25" y="108" font-size="8" fill="#475569" font-family="monospace">{"role": "system"} to SystemMessage()</text>
+    
+    <text x="15" y="135" font-size="10" font-weight="600" fill="#6d28d9">invoke() method:</text>
+    <text x="25" y="152" font-size="8" fill="#475569" font-family="monospace">async def invoke(self, messages):</text>
+    <text x="35" y="165" font-size="8" fill="#475569" font-family="monospace">return await self.llm.ainvoke(...)</text>
+  </g>
+  
+  <!-- Arrow 2 -->
+  <line x1="500" y1="135" x2="550" y2="135" stroke="#64748b" stroke-width="2" marker-end="url(#lciArrow)"/>
+  
+  <!-- fasteval -->
+  <g filter="url(#lciShadow)" transform="translate(560, 80)">
+    <rect x="0" y="0" width="200" height="110" rx="10" fill="white" stroke="#6366f1" stroke-width="2"/>
+    <rect x="0" y="0" width="200" height="35" rx="10" fill="url(#lciFastevalGrad)"/>
+    <rect x="0" y="23" width="200" height="12" fill="url(#lciFastevalGrad)"/>
+    <text x="100" y="25" text-anchor="middle" font-size="12" font-weight="600" fill="white">⚡ fasteval</text>
+    
+    <text x="15" y="55" font-size="9" fill="#475569" font-family="monospace">fe.set_default_provider(</text>
+    <text x="25" y="70" font-size="9" fill="#475569" font-family="monospace">LangChainClient(llm)</text>
+    <text x="15" y="85" font-size="9" fill="#475569" font-family="monospace">)</text>
+    <text x="15" y="103" font-size="8" fill="#64748b" font-style="italic">Ready for evaluation!</text>
+  </g>
+  
+  <!-- Code example at bottom -->
+  <g transform="translate(30, 280)">
+    <rect x="0" y="0" width="740" height="65" rx="8" fill="#1e293b"/>
+    <text x="15" y="18" font-size="9" fill="#94a3b8" font-family="monospace">from langchain_openai import ChatOpenAI</text>
+    <text x="15" y="32" font-size="9" fill="#94a3b8" font-family="monospace">llm = ChatOpenAI(model="gpt-4o", temperature=0)</text>
+    <text x="15" y="46" font-size="9" fill="#60a5fa" font-family="monospace">client = LangChainClient(llm)  # Wrap your existing model</text>
+    <text x="15" y="60" font-size="9" fill="#60a5fa" font-family="monospace">fe.set_default_provider(client)  # Use with fasteval</text>
+  </g>
+  
+  <!-- Footer -->
+  <text x="400" y="355" text-anchor="middle" font-size="11" fill="#94a3b8">fasteval • Reuse Your Existing LangChain Models</text>
+</svg>

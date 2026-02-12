@@ -1,0 +1,26 @@
+---
+title: Context Retention
+description: Evaluate if the model retains conversation context
+order: 1
+---
+
+# Context Retention Metric
+
+Evaluates whether the model properly retains and uses information from earlier in the conversation.
+
+![Context Retention Flow](docs/assets/context-retention-flow.svg)
+
+## Usage
+
+```python
+import fasteval as fe
+
+@fe.context_retention(threshold=0.7)
+@fe.conversation([
+    {"query": "My name is Alice", "expected": "Nice to meet you, Alice"},
+    {"query": "What's my name?", "expected": "Your name is Alice"},
+])
+def test_remembers_name(query, expected, history):
+    response = my_agent(query, history=history)
+    fe.score(response, expected, input=query, history=history)
+```

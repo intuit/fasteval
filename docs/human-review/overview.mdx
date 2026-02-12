@@ -1,0 +1,186 @@
+---
+title: Human Review
+description: Interactive human-in-the-loop evaluation
+order: 1
+sidebar:
+  - title: Basic Usage
+    anchor: basic-usage
+  - title: Scoring Options
+    anchor: scoring-options
+  - title: Multi-Turn Conversations
+    anchor: multi-turn-conversations
+  - title: Configuration Options
+    anchor: configuration-options
+  - title: CI/CD Mode
+    anchor: ci-cd-mode
+  - title: Accessing Results
+    anchor: accessing-human-review-results
+  - title: Best Practices
+    anchor: best-practices
+---
+
+# Human Review
+
+The `@fe.human_review` decorator enables interactive evaluation where a human reviewer can score responses during test runs. This is essential for subjective quality assessments that automated metrics can't fully capture.
+
+![Human Review Flow](docs/assets/human-review-flow.svg)
+
+## Basic Usage
+
+```python
+import fasteval as fe
+
+@fe.human_review(prompt="Is this response helpful and accurate?")
+@fe.correctness(threshold=0.8)
+def test_qa():
+    response = agent(query)
+    fe.score(response, expected, input=query)
+```
+
+When this test runs, you'll see an interactive prompt:
+
+```
+═══════════════════════════════════════════════════════════════════════════════
+HUMAN REVIEW REQUESTED
+═══════════════════════════════════════════════════════════════════════════════
+
+Evaluation Context:
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ [Turn 1] ← Current                                                          │
+│   User:      "What is the capital of France?"                               │
+│   Expected:  "Paris"                                                        │
+│   Actual:    "The capital of France is Paris."                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Auto-metrics:
+  ✓ correctness        0.92 / 0.80
+
+Question: Is this response helpful and accurate?
+Score [1-5] or [p]ass/[f]ail/[s]kip: 
+```
+
+## Scoring Options
+
+Reviewers can enter:
+
+| Input | Score | Description |
+|-------|-------|-------------|
+| `1` | 0.00 | Poor |
+| `2` | 0.25 | Below average |
+| `3` | 0.50 | Average |
+| `4` | 0.75 | Good |
+| `5` | 1.00 | Excellent |
+| `p` or `pass` | 1.00 | Pass |
+| `f` or `fail` | 0.00 | Fail |
+| `s` or `skip` | - | Skip review |
+
+## Multi-Turn Conversations
+
+For conversations, the full history is displayed:
+
+```python
+@fe.human_review(prompt="Is context maintained correctly?")
+@fe.context_retention(threshold=0.8)
+@fe.conversation([
+    {"query": "My name is Alice"},
+    {"query": "What's my name?", "expected": "Alice"},
+])
+def test_memory(query, expected, history):
+    response = agent(query, history=history)
+    fe.score(response, expected, input=query, history=history)
+```
+
+Terminal output:
+
+```
+═══════════════════════════════════════════════════════════════════════════════
+HUMAN REVIEW REQUESTED
+═══════════════════════════════════════════════════════════════════════════════
+
+Conversation History:
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ [Turn 1]                                                                    │
+│   User:      "My name is Alice"                                             │
+│   Assistant: "Nice to meet you, Alice! How can I help you today?"           │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ [Turn 2] ← Current                                                          │
+│   User:      "What's my name?"                                              │
+│   Expected:  "Alice"                                                        │
+│   Actual:    "Your name is Alice."                                          │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Auto-metrics:
+  ✓ context_retention  0.92 / 0.80
+
+Question: Is context maintained correctly?
+Score [1-5] or [p]ass/[f]ail/[s]kip: 
+```
+
+## Configuration Options
+
+```python
+@fe.human_review(
+    prompt="Is this response accurate?",  # Question to ask
+    required=False,                        # If True, skip fails the test
+    threshold=0.5,                         # Minimum score to pass
+)
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `prompt` | str | "Please review this response" | Question shown to reviewer |
+| `required` | bool | False | If True, skipping fails the test |
+| `threshold` | float | 0.5 | Minimum human score to pass |
+
+## CI/CD Mode
+
+In automated pipelines, human review is automatically skipped. You can explicitly disable it:
+
+### Using pytest flag
+
+```bash
+pytest tests/ --no-interactive
+```
+
+### Using environment variable
+
+```bash
+FASTEVAL_NO_INTERACTIVE=1 pytest tests/
+```
+
+### Programmatic check
+
+```python
+from fasteval.utils import is_interactive
+
+if is_interactive():
+    print("Running in interactive mode")
+else:
+    print("Running in CI/CD mode - human review skipped")
+```
+
+## Accessing Human Review Results
+
+```python
+@fe.human_review(prompt="Is this good?")
+@fe.correctness(threshold=0.8)
+def test_with_human_review():
+    response = agent(query)
+    result = fe.score(response, expected)
+    
+    # Access human review data
+    if result.human_review:
+        print(f"Human score: {result.human_review.score}")
+        print(f"Raw input: {result.human_review.raw_input}")
+        print(f"Skipped: {result.human_review.skipped}")
+```
+
+## Best Practices
+
+1. **Use specific prompts** - "Is this response factually accurate?" is better than "Is this good?"
+
+2. **Combine with auto-metrics** - Use human review to validate edge cases, not replace automation
+
+3. **Set appropriate thresholds** - Higher thresholds for critical evaluations
+
+4. **Make required=False for CI** - Unless you want builds to fail when skipped

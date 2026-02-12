@@ -1,0 +1,324 @@
+---
+title: Installation
+description: Set up fasteval and configure your LLM provider in under 5 minutes
+order: 2
+sidebar:
+  - title: Quick Install
+    anchor: quick-install
+  - title: LLM Provider Setup
+    anchor: llm-provider-setup
+  - title: Verify Installation
+    anchor: verify-installation
+  - title: Multi-Modal Extras
+    anchor: multi-modal-extras
+  - title: Optional Plugins
+    anchor: optional-plugins
+  - title: Troubleshooting
+    anchor: troubleshooting
+---
+
+# Installation
+
+![Provider Ecosystem](docs/assets/provider-ecosystem.svg)
+
+Getting started with fasteval takes just a few minutes. This guide walks you through installation and provider configuration.
+
+## Quick Install
+
+Install fasteval using your preferred package manager:
+
+```bash
+# Using pip
+pip install fasteval
+
+# Using uv (faster dependency resolution)
+uv add fasteval
+```
+
+fasteval automatically installs its required dependencies, including pytest integration.
+
+### System Requirements
+
+| Requirement | Minimum | Recommended |
+|-------------|---------|-------------|
+| **Python** | 3.9+ | 3.11+ (10-60% faster) |
+| **pytest** | 7.0+ | Latest stable |
+| **Network** | Required for LLM metrics | Stable for production |
+
+## LLM Provider Setup
+
+fasteval uses LLM judges for semantic evaluation. Choose and configure your provider:
+
+### OpenAI (Recommended)
+
+Best balance of quality, speed, and cost. Start here.
+
+```bash
+pip install openai
+export OPENAI_API_KEY=sk-your-key-here
+```
+
+| Model | Use Case | Speed | Cost |
+|-------|----------|-------|------|
+| `gpt-4o-mini` | Development, CI/CD | Fast | $ |
+| `gpt-4o` | Production quality gates | Medium | $$$ |
+
+> **Tip:** Use `gpt-4o-mini` during development—it's fast and cheap. Switch to `gpt-4o` for critical production evaluations.
+
+### Anthropic
+
+Excellent for long-context evaluation (200K tokens) and nuanced assessment.
+
+```bash
+pip install anthropic
+export ANTHROPIC_API_KEY=sk-ant-your-key-here
+```
+
+| Model | Context | Best For |
+|-------|---------|----------|
+| `claude-3-haiku` | 200K | Fast, cost-effective |
+| `claude-3-sonnet` | 200K | Balanced quality/speed |
+| `claude-3-opus` | 200K | Highest accuracy |
+
+### Azure OpenAI
+
+For enterprise environments with compliance requirements:
+
+```bash
+pip install openai
+
+export AZURE_OPENAI_API_KEY=your-key
+export AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/
+export AZURE_OPENAI_DEPLOYMENT=your-deployment-name
+```
+
+### Ollama (Local)
+
+Run evaluations locally for free, with complete data privacy:
+
+```bash
+# Install from https://ollama.ai
+ollama pull llama3.2
+ollama pull mistral
+
+export OLLAMA_HOST=http://localhost:11434
+```
+
+**Trade-offs:**
+- ✅ Free, private, no network needed
+- ⚠️ Lower evaluation quality than commercial models
+- 💡 Best for development; validate critical tests with commercial providers
+
+### Provider Selection Guide
+
+| Scenario | Provider | Model |
+|----------|----------|-------|
+| Getting started | OpenAI | `gpt-4o-mini` |
+| CI/CD pipelines | OpenAI | `gpt-4o-mini` |
+| Production gates | OpenAI | `gpt-4o` |
+| Long documents | Anthropic | `claude-3-sonnet` |
+| Air-gapped env | Ollama | `llama3.2` |
+| Enterprise | Azure OpenAI | Deployed model |
+
+## Verify Installation
+
+### Check Version
+
+```bash
+python -c "import fasteval as fe; print(f'fasteval {fe.__version__}')"
+```
+
+### Run Smoke Test
+
+Create `test_smoke.py`:
+
+```python
+import fasteval as fe
+
+@fe.contains()
+def test_fasteval_works():
+    """Verify fasteval is installed correctly."""
+    fe.score("Hello, fasteval!", "fasteval")
+```
+
+Run it:
+
+```bash
+pytest test_smoke.py -v
+```
+
+If you see `PASSED`, you're ready to go!
+
+### Test LLM Connectivity
+
+Verify your provider is configured:
+
+```python
+import fasteval as fe
+
+@fe.correctness(threshold=0.7)
+def test_llm_connection():
+    """Verify LLM provider works."""
+    fe.score(
+        actual_output="The capital of France is Paris.",
+        expected_output="Paris"
+    )
+```
+
+A passing test confirms end-to-end functionality.
+
+## Multi-Modal Extras
+
+fasteval supports multi-modal evaluation for vision-language models, speech recognition, and image generation. Install only what you need:
+
+### Vision-Language (GPT-4V, Claude Vision, Gemini)
+
+```bash
+pip install fasteval[vision]
+```
+
+Enables: `@fe.image_understanding`, `@fe.ocr_accuracy`, `@fe.chart_interpretation`, `@fe.visual_grounding`, `@fe.image_faithfulness`, `@fe.image_quality`, `@fe.prompt_adherence`, `@fe.safety_check`
+
+```python
+@fe.image_understanding(threshold=0.8)
+def test_vision_qa():
+    response = gpt4v.chat(image="chart.png", prompt="What trend?")
+    fe.score(response, expected="Revenue increased", image="chart.png")
+```
+
+### Audio/Speech (Whisper, ASR)
+
+```bash
+pip install fasteval[audio]
+```
+
+Enables: `@fe.word_error_rate`, `@fe.character_error_rate`, `@fe.transcription_accuracy`, `@fe.speaker_diarization`, `@fe.audio_sentiment`
+
+```python
+@fe.word_error_rate(threshold=0.95)  # WER < 5%
+def test_asr():
+    transcript = whisper.transcribe("audio.mp3")
+    fe.score(transcript, expected=ground_truth)
+```
+
+### Image Generation (DALL-E, Stable Diffusion)
+
+```bash
+pip install fasteval[image-gen]
+```
+
+Enables CLIP-based evaluation for generated images.
+
+```python
+@fe.prompt_adherence(threshold=0.8)
+def test_dalle():
+    image = dalle.generate("A red sports car")
+    fe.score(generated_image=image, input="A red sports car")
+```
+
+### All Multi-Modal Features
+
+```bash
+pip install fasteval[multimodal]
+```
+
+Installs vision and audio extras together.
+
+### Multi-Modal Installation Summary
+
+| Extra | Install Command | Use Case |
+|-------|-----------------|----------|
+| `vision` | `pip install fasteval[vision]` | GPT-4V, Claude Vision, document AI |
+| `audio` | `pip install fasteval[audio]` | Whisper, speech-to-text, ASR |
+| `image-gen` | `pip install fasteval[image-gen]` | DALL-E, Stable Diffusion, Midjourney |
+| `multimodal` | `pip install fasteval[multimodal]` | All multi-modal features |
+| `ocr` | `pip install fasteval[ocr]` | Advanced OCR with Tesseract |
+
+> **Tip:** Multi-modal features are optional - the core fasteval package works without them. Install extras only when needed to keep dependencies minimal.
+
+## Optional Plugins
+
+### fasteval-observe
+
+Production runtime monitoring with sampling:
+
+```bash
+pip install fasteval-observe
+```
+
+```python
+from fasteval_observe import observe
+from fasteval_observe.sampling import FixedRateSamplingStrategy
+
+@observe(sampling=FixedRateSamplingStrategy(rate=0.05))
+@fe.toxicity(threshold=0.95)
+async def production_agent(query: str) -> str:
+    return await llm.invoke(query)
+```
+
+### fasteval-langfuse
+
+Integration with Langfuse observability:
+
+```bash
+pip install fasteval-langfuse
+```
+
+```python
+from fasteval_langfuse import langfuse_traces
+
+@fe.correctness(threshold=0.8)
+@langfuse_traces(project="my-project", time_range="last_24h")
+def test_production_traces(trace):
+    fe.score(trace.output, trace.expected)
+```
+
+## Troubleshooting
+
+### ModuleNotFoundError: No module named 'fasteval'
+
+```bash
+# Check you're in the right environment
+which python
+pip list | grep fasteval
+
+# Reinstall if needed
+pip install fasteval
+```
+
+### API Key Errors
+
+```bash
+# Verify key is set
+echo $OPENAI_API_KEY
+
+# Set it (add to ~/.bashrc for persistence)
+export OPENAI_API_KEY=sk-your-key-here
+```
+
+### pytest Not Finding Tests
+
+Tests must follow naming conventions:
+
+```python
+# ✓ Correct: test_ prefix
+def test_my_evaluation():
+    fe.score("actual", "expected")
+
+# ✗ Wrong: no test_ prefix
+def my_evaluation():
+    fe.score("actual", "expected")
+```
+
+### Network Timeouts
+
+```python
+import fasteval as fe
+
+# Configure longer timeouts
+fe.configure(timeout=60)
+```
+
+## Next Steps
+
+With fasteval installed, continue to the [Quick Start](/docs/getting-started/quickstart) guide to write your first evaluation test.

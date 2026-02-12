@@ -1,0 +1,122 @@
+---
+title: Tool Call Accuracy
+description: Evaluate if agents call the correct tools
+order: 1
+sidebar:
+  - title: Usage
+    anchor: usage
+  - title: How It Works
+    anchor: how-it-works
+  - title: The ExpectedTool Model
+    anchor: the-expectedtool-model
+  - title: Wildcard Matching
+    anchor: wildcard-matching
+---
+
+# Tool Call Accuracy
+
+The `tool_call_accuracy` metric evaluates whether an agent called the correct tools. This is a **deterministic metric** - no LLM calls required.
+
+![Tool Trajectory Evaluation Flow](docs/assets/tool-trajectory-flow.svg)
+
+## Usage
+
+```python
+import fasteval as fe
+from fasteval import ExpectedTool
+
+@fe.tool_call_accuracy(threshold=0.8)
+def test_booking_agent():
+    response, tool_calls = agent("Book a flight to NYC")
+    
+    expected = [
+        ExpectedTool(name="search_flights"),
+        ExpectedTool(name="book_flight"),
+    ]
+    
+    fe.score(response, tool_calls=tool_calls, expected_tools=expected)
+```
+
+## Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `threshold` | float | 0.8 | Minimum score to pass (0.0 - 1.0) |
+| `ignore_extra` | bool | False | Don't penalize extra tool calls |
+| `weight` | float | 1.0 | Weight for score aggregation |
+
+## How It Works
+
+**Score Calculation:**
+```
+score = matched_tools / max(expected_required, actual_count)
+```
+
+1. Compares actual tool names against expected tool patterns
+2. Counts how many required tools were called
+3. Optionally penalizes extra tool calls
+
+## The `ExpectedTool` Model
+
+```python
+from fasteval import ExpectedTool
+
+expected = [
+    # Required tool with argument expectations
+    ExpectedTool(name="search_flights", args={"destination": "NYC"}),
+    
+    # Optional tool (won't fail if not called)
+    ExpectedTool(name="validate_user", required=False),
+    
+    # Required tool, no args to check
+    ExpectedTool(name="book_flight"),
+]
+```
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `name` | str | required | Tool name (supports wildcards like `search_*`) |
+| `args` | dict | `{}` | Expected arguments |
+| `required` | bool | `True` | If False, tool is optional |
+
+## Wildcard Matching
+
+Tool names support wildcard patterns:
+
+```python
+expected = [
+    ExpectedTool(name="search_*"),     # Matches search_flights, search_hotels
+    ExpectedTool(name="*_booking"),    # Matches flight_booking, hotel_booking
+]
+```
+
+## Example Output
+
+```
+tool_call_accuracy: 1.00 (threshold: 0.80) ✓
+Reasoning: 2/2 required tools called
+Details:
+  - Matched: search_flights, book_flight
+  - Missing: none
+  - Extra: none
+```
+
+## Handling Extra Tool Calls
+
+By default, extra tool calls reduce the score:
+
+```python
+# Agent called: search_flights, validate_user, book_flight
+# Expected: search_flights, book_flight
+# Score: 2/3 = 0.67 (extra validate_user penalized)
+
+@fe.tool_call_accuracy(threshold=0.8, ignore_extra=True)  # Score: 2/2 = 1.0
+```
+
+## Best Practices
+
+- Use `required=False` for optional tools in workflows
+- Use wildcards for flexible tool name matching
+- Set `ignore_extra=True` when tool order/extras don't matter
+- Combine with `tool_sequence` for order checking
+- Combine with `tool_args_match` for argument validation

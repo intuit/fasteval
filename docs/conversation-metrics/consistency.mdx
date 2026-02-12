@@ -1,0 +1,21 @@
+---
+title: Consistency
+description: Evaluate response consistency across a conversation
+order: 2
+---
+
+# Consistency Metric
+
+Evaluates whether the model maintains consistent information and behavior throughout a conversation.
+
+## Usage
+
+```python
+import fasteval as fe
+
+@fe.consistency(threshold=0.8)
+@fe.conversation([...])
+def test_consistent_answers(query, expected, history):
+    response = my_agent(query, history=history)
+    fe.score(response, expected, input=query, history=history)
+```

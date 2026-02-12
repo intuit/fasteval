@@ -1,0 +1,208 @@
+---
+title: Vision Metrics
+description: Evaluate vision-language models like GPT-4V, Claude Vision, and Gemini
+order: 2
+---
+
+# Vision Metrics
+
+Evaluate vision-language models (VLMs) that take images + text and produce text responses.
+
+## Installation
+
+```bash
+pip install fasteval[vision]
+```
+
+## Available Metrics
+
+### `@fe.image_understanding`
+
+Evaluates if the model correctly understands and describes image content.
+
+```python
+import fasteval as fe
+
+@fe.image_understanding(threshold=0.8)
+def test_vision_qa():
+    response = gpt4v.chat(
+        image="chart.png",
+        prompt="What trend does this chart show?"
+    )
+    fe.score(
+        actual_output=response,
+        expected_output="Revenue increased 25% year over year",
+        image="chart.png",
+        input="What trend does this chart show?"
+    )
+```
+
+**Parameters:**
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `threshold` | float | 0.7 | Minimum score to pass |
+| `weight` | float | 1.0 | Weight for aggregate scoring |
+| `model` | str | None | Vision model override |
+
+### `@fe.ocr_accuracy`
+
+Evaluates text extraction accuracy from images/documents.
+
+```python
+@fe.ocr_accuracy(threshold=0.95)
+def test_document_extraction():
+    response = vision_model.extract("invoice.pdf")
+    fe.score(
+        actual_output=response,
+        expected_fields={"total": "$1,234.56", "date": "2024-01-15"}
+    )
+```
+
+Supports two modes:
+1. **Field-based extraction** - Compare specific fields using `expected_fields`
+2. **Full text comparison** - Compare entire extracted text using `expected_output`
+
+**Parameters:**
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `threshold` | float | 0.9 | Minimum accuracy to pass |
+| `weight` | float | 1.0 | Weight for aggregate scoring |
+
+### `@fe.chart_interpretation`
+
+Evaluates correct reading of charts, graphs, and data visualizations.
+
+```python
+@fe.chart_interpretation(threshold=0.8)
+def test_chart_reading():
+    response = model.analyze(
+        image="sales_chart.png",
+        query="What was Q3 revenue?"
+    )
+    fe.score(
+        actual_output=response,
+        expected_output="$4.2 million",
+        image="sales_chart.png",
+        input="What was Q3 revenue?"
+    )
+```
+
+Checks:
+- Numerical values read correctly
+- Trends and patterns identified accurately
+- Labels, legends, and axes interpreted correctly
+
+### `@fe.visual_grounding`
+
+Evaluates if response correctly references specific image regions.
+
+```python
+@fe.visual_grounding(threshold=0.8)
+def test_object_location():
+    response = model.locate(
+        image="room.jpg",
+        query="Where is the lamp?"
+    )
+    fe.score(
+        actual_output=response,
+        expected_output="The lamp is on the desk in the upper right corner",
+        image="room.jpg"
+    )
+```
+
+Checks:
+- Correct object identification
+- Accurate spatial references (left, right, top, bottom)
+- Relative positions between objects
+
+### `@fe.image_faithfulness`
+
+Evaluates if the response is grounded in what the image shows (no hallucinations).
+
+```python
+@fe.image_faithfulness(threshold=0.85)
+def test_faithful_description():
+    response = model.describe(image="photo.jpg")
+    fe.score(
+        actual_output=response,
+        image="photo.jpg"
+    )
+```
+
+Checks:
+- All claims are verifiable in the image
+- No hallucinated details
+- No misattributions
+
+## Image Input Formats
+
+All vision metrics accept images in multiple formats:
+
+```python
+# File path (string)
+fe.score(response, image="path/to/image.png")
+
+# URL
+fe.score(response, image="https://example.com/image.jpg")
+
+# ImageInput model
+from fasteval import ImageInput
+fe.score(response, image=ImageInput(source="image.png", alt_text="Sales chart"))
+
+# Multiple images
+fe.score(response, images=["img1.png", "img2.png", "img3.png"])
+```
+
+## Combining with Text Metrics
+
+Vision metrics stack with text metrics:
+
+```python
+@fe.image_understanding(threshold=0.8)
+@fe.correctness(threshold=0.8)
+@fe.relevance(threshold=0.7)
+def test_vision_qa():
+    response = model.answer(image="chart.png", query=question)
+    fe.score(
+        actual_output=response,
+        expected_output=expected,
+        image="chart.png",
+        input=question
+    )
+```
+
+## Custom Vision Metrics
+
+Create custom vision metrics by extending `BaseVisionMetric`:
+
+```python
+from fasteval.metrics.vision import BaseVisionMetric
+from fasteval.models.evaluation import EvalInput, MetricResult
+
+class MyVisionMetric(BaseVisionMetric):
+    def __init__(self, **kwargs):
+        kwargs.setdefault("name", "my_vision_metric")
+        super().__init__(**kwargs)
+
+    def get_evaluation_prompt(self, eval_input: EvalInput) -> str:
+        return f"""Evaluate the image response.
+        
+Query: {eval_input.input}
+Response: {eval_input.actual_output}
+
+Provide your evaluation as JSON:
+{{"score": <0.0 to 1.0>, "reasoning": "<explanation>"}}"""
+
+# Use with @fe.metric decorator
+@fe.metric(MyVisionMetric(threshold=0.8))
+def test_custom():
+    response = model.analyze(image="test.png")
+    fe.score(response, image="test.png")
+```
+
+## Best Practices
+
+1. **Use vision-capable models** - Set `model="gpt-4-vision-preview"` or similar
+2. **Resize large images** - Images are automatically resized to max 2048px
+3. **Provide context** - Include the original query in `input` for better evaluation
+4. **Use expected_fields for extraction** - More precise than full text comparison

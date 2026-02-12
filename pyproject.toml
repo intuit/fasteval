@@ -1,0 +1,118 @@
+[project]
+name = "fasteval"
+version = "1.0.0a1"
+description = "A decorator-first LLM evaluation library for testing AI agents"
+authors = [{name = "Intuit"}]
+license = {text = "Apache-2.0"}
+readme = "README.md"
+requires-python = ">=3.10,<4.0"
+keywords = ["llm", "evaluation", "testing", "ai", "agents", "pytest"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Software Development :: Testing",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+# https://docs.astral.sh/uv/concepts/projects/dependencies/
+dependencies = [
+    "openai>=1.0",
+    "pydantic>=2.0",
+    "rouge-score>=0.1",
+    "pytest>=8.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/intuit/fasteval"
+Repository = "https://github.com/intuit/fasteval"
+Documentation = "https://github.com/intuit/fasteval/tree/main/docs"
+Issues = "https://github.com/intuit/fasteval/issues"
+Changelog = "https://github.com/intuit/fasteval/blob/main/CHANGELOG.md"
+
+[project.optional-dependencies]
+anthropic = ["anthropic>=0.30"]
+langfuse = ["langfuse>=2.0"]
+
+# Vision-Language evaluation (GPT-4V, Claude Vision, etc.)
+vision = [
+    "Pillow>=10.0",      # Image loading/processing
+    "httpx>=0.25",       # URL image fetching
+]
+
+# Audio/Speech evaluation (Whisper, ASR)
+audio = [
+    "jiwer>=3.0",        # WER/CER calculation
+    "pydub>=0.25",       # Audio file handling
+    "soundfile>=0.12",   # Audio reading
+]
+
+# Image generation evaluation (DALL-E, Stable Diffusion)
+image-gen = [
+    "Pillow>=10.0",      # Image handling
+    "transformers>=4.30",  # CLIP model (optional)
+    "torch>=2.0",        # PyTorch for CLIP (optional)
+]
+
+# All multi-modal features
+multimodal = [
+    "fasteval[vision]",
+    "fasteval[audio]",
+]
+
+# Advanced OCR (optional add-on)
+ocr = [
+    "pytesseract>=0.3",  # Tesseract OCR binding
+]
+
+[project.entry-points.pytest11]
+fasteval = "fasteval.testing.plugin"
+
+[dependency-groups]
+dev = [
+    "black >=25.9.0",
+    "isort >=7.0.0,<8.0.0",
+    "mypy >=1.18.1,<2.0.0",
+]
+test = [
+    "pytest >=8.4.0",
+    "pytest-asyncio >=0.24.0",
+    "pytest-cov >=7.0.0,<8.0.0",
+    "pytest-xdist >=3.8.0,<4.0.0",
+    "tox >=4.26.0,<5.0.0",
+    "tox-uv >=1.28.0",
+]
+
+[tool.uv.build-backend]
+module-name = "fasteval"
+module-root = ""
+source-exclude = [
+    "plugins/**",
+    "docs/**"
+]  # Exclude plugin packages from fasteval build
+
+[tool.black]
+line-length = 88
+target-version = ['py310','py311','py312','py313','py314']
+
+[tool.isort]
+profile = "black"
+known_first_party = ["fasteval", "fasteval_observe", "fasteval_langfuse", "fasteval_langgraph"]
+
+[tool.pytest.ini_options]
+pythonpath = "."
+testpaths = [
+    "tests",
+]
+looponfailroots = ["fasteval", "tests"]
+addopts = "-p no:warnings -o log_cli=true --log-cli-level=INFO"
+asyncio_mode = "auto"
+
+[build-system]
+requires = ["uv_build>=0.10.0,<0.11.0"]
+build-backend = "uv_build"

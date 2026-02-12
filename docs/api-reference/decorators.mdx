@@ -1,0 +1,59 @@
+---
+title: Decorators
+description: API reference for all decorators
+order: 2
+---
+
+# Decorators API Reference
+
+## Metric Decorators
+
+### @fe.correctness(threshold)
+Evaluate semantic correctness.
+
+### @fe.relevance(threshold)
+Evaluate relevance to input.
+
+### @fe.hallucination(threshold)
+Detect hallucinations.
+
+### @fe.toxicity(threshold)
+Detect toxic content.
+
+### @fe.bias(threshold)
+Detect biased content.
+
+### @fe.criteria(criteria_text, threshold)
+Custom criteria evaluation using plain English.
+
+**Aliases:** `@fe.geval()`, `@fe.g_eval()` (for backward compatibility)
+
+## Deterministic Decorators
+
+### @fe.contains(case_sensitive)
+Check substring containment.
+
+### @fe.exact_match(normalize, case_sensitive)
+Check exact equality.
+
+### @fe.rouge(threshold, rouge_type)
+Compute ROUGE scores.
+
+### @fe.json_schema(schema)
+Validate JSON schema.
+
+## Data Decorators
+
+### @fe.csv(filepath)
+Load test cases from CSV.
+
+### @fe.conversation(turns)
+Define conversation tests.
+
+### @fe.traces()
+Evaluate production traces.
+
+## Custom Metric
+
+### @fe.metric(metric_instance)
+Apply a custom metric.

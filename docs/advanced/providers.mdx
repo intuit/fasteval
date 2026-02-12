@@ -1,0 +1,124 @@
+---
+title: LLM Providers
+description: Configure different LLM providers for evaluation
+order: 2
+sidebar:
+  - title: Quick Reference
+    anchor: quick-reference
+  - title: Per-Metric Overrides
+    anchor: per-metric-overrides
+  - title: Provider Priority
+    anchor: provider-priority
+---
+
+# LLM Providers
+
+fasteval uses LLM providers to power evaluation metrics like correctness, relevance, and hallucination detection.
+
+For a complete guide on setting up providers, see the [LLM Setup Guide](/docs/core-concepts/llm-setup).
+
+## Quick Reference
+
+### OpenAI (Recommended)
+
+```python
+import fasteval as fe
+from fasteval import OpenAIClient, set_default_provider
+
+client = OpenAIClient(model="gpt-4o-mini", temperature=0.0)
+set_default_provider(client)
+```
+
+### Anthropic
+
+```python
+from fasteval.providers.anthropic import AnthropicClient
+from fasteval import set_default_provider
+
+client = AnthropicClient(model="claude-3-5-sonnet-20241022")
+set_default_provider(client)
+```
+
+### Environment Variables (Zero Config)
+
+```bash
+# fasteval auto-detects from environment
+export OPENAI_API_KEY=sk-...
+# or
+export ANTHROPIC_API_KEY=sk-ant-...
+```
+
+### Custom Provider
+
+Implement the `LLMClient` protocol with an async `invoke()` method:
+
+```python
+import fasteval as fe
+from typing import Dict, List
+
+class MyCustomClient:
+    async def invoke(self, messages: List[Dict[str, str]]) -> str:
+        # Call your LLM API
+        response = await my_api.chat(messages)
+        return response.content
+
+fe.set_default_provider(MyCustomClient())
+```
+
+### LangChain Integration
+
+```python
+from langchain_openai import ChatOpenAI
+from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
+import fasteval as fe
+
+class LangChainClient:
+    def __init__(self, llm):
+        self.llm = llm
+    
+    async def invoke(self, messages: list) -> str:
+        lc_messages = []
+        for msg in messages:
+            role, content = msg["role"], msg["content"]
+            if role == "system":
+                lc_messages.append(SystemMessage(content=content))
+            elif role == "user":
+                lc_messages.append(HumanMessage(content=content))
+            elif role == "assistant":
+                lc_messages.append(AIMessage(content=content))
+        response = await self.llm.ainvoke(lc_messages)
+        return response.content
+
+llm = ChatOpenAI(model="gpt-4o", temperature=0)
+fe.set_default_provider(LangChainClient(llm))
+```
+
+## Per-Metric Overrides
+
+Override the provider for specific metrics:
+
+```python
+import fasteval as fe
+
+@fe.correctness(model="gpt-4o")       # Use GPT-4o
+@fe.relevance()                        # Uses default
+@fe.toxicity(llm=my_custom_client)    # Use custom client
+def test_qa():
+    response = my_agent(query)
+    fe.score(response, expected)
+```
+
+## Provider Priority
+
+Resolution order (highest to lowest):
+
+1. Per-metric `llm=` parameter
+2. Per-metric `model=` parameter  
+3. Global `set_default_provider()`
+4. Environment variable auto-detection
+
+## Learn More
+
+- [Complete LLM Setup Guide](/docs/core-concepts/llm-setup) - Detailed setup instructions
+- [Custom Metrics](/docs/advanced/custom-metrics) - Build metrics with custom LLM logic
+- [Configuration](/docs/advanced/configuration) - Caching and performance tuning

@@ -1,0 +1,501 @@
+---
+title: CI/CD Integration
+description: Complete guide to integrating fasteval tests into CI/CD pipelines
+order: 4
+sidebar:
+  - title: Overview
+    anchor: overview
+  - title: Design Principles
+    anchor: design-principles
+  - title: GitHub Actions
+    anchor: github-actions
+  - title: GitLab CI
+    anchor: gitlab-ci
+  - title: Test Organization
+    anchor: organizing-tests
+  - title: Cost Optimization
+    anchor: cost-optimization
+  - title: Failure Handling
+    anchor: handling-failures
+---
+
+# CI/CD Integration
+
+Integrating LLM evaluation into your CI/CD pipeline ensures that quality standards are maintained throughout development. This guide covers practical strategies for running fasteval tests in GitHub Actions, GitLab CI, and other platforms while managing costs and handling the unique challenges of LLM-based testing.
+
+## Overview
+
+Effective CI/CD integration for LLM evaluation requires balancing several factors:
+
+| Factor | Challenge | Solution |
+|--------|-----------|----------|
+| **Cost** | LLM API calls add up across many CI runs | Tiered testing, sampling, model selection |
+| **Speed** | LLM evaluations take 1-3 seconds each | Parallelization, deterministic test prioritization |
+| **Reliability** | LLM outputs have variance | Retry mechanisms, threshold margins |
+| **Coverage** | Need comprehensive testing without excessive cost | Strategic test selection per trigger type |
+
+![CI/CD Integration Architecture](docs/assets/cicd-integration-arch.svg)
+
+## Design Principles
+
+### Tiered Testing Strategy
+
+Structure your tests into tiers based on execution cost and importance:
+
+| Tier | Trigger | Tests Run | Typical Duration |
+|------|---------|-----------|------------------|
+| **Fast** | Every commit | Deterministic only | < 30 seconds |
+| **Standard** | PR, merge to main | Core LLM tests | 2-5 minutes |
+| **Comprehensive** | Nightly, release | Full suite | 10-30 minutes |
+
+### Test Classification
+
+Mark tests appropriately:
+
+```python
+import pytest
+import fasteval as fe
+
+# Fast test: No marker needed, runs on every commit
+@fe.contains()
+def test_format_validation():
+    response = my_function()
+    fe.score(response, "expected substring")
+
+# Standard test: Requires LLM, runs on PRs
+@pytest.mark.slow
+@fe.correctness(threshold=0.8)
+def test_qa_accuracy():
+    response = my_agent("What is 2+2?")
+    fe.score(response, "4")
+
+# Expensive test: Full evaluation, nightly only
+@pytest.mark.slow
+@pytest.mark.expensive
+@fe.correctness(threshold=0.85)
+@fe.relevance(threshold=0.8)
+@fe.toxicity(threshold=0.95)
+def test_comprehensive_quality():
+    response = my_agent(complex_query)
+    fe.score(response, expected_answer, input=complex_query)
+```
+
+## GitHub Actions
+
+### Basic Two-Stage Pipeline
+
+```yaml
+# .github/workflows/eval-tests.yml
+name: Evaluation Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  fast-tests:
+    name: Fast Tests (Deterministic)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: pip install -e ".[test]"
+      
+      - name: Run fast tests
+        run: pytest tests/ -m "not slow" -v --tb=short
+
+  llm-tests:
+    name: LLM Evaluation Tests
+    runs-on: ubuntu-latest
+    needs: fast-tests  # Only run if fast tests pass
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: pip install -e ".[test]"
+      
+      - name: Run LLM tests
+        env:
+          OPENAI_API_KEY: \${{ secrets.OPENAI_API_KEY }}
+          FASTEVAL_NO_INTERACTIVE: "1"
+        run: pytest tests/ -m "slow" -v --tb=short
+```
+
+### Matrix Testing
+
+Run tests across Python versions with cost optimization:
+
+```yaml
+# .github/workflows/eval-matrix.yml
+name: Evaluation Test Matrix
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.10', '3.11', '3.12']
+        test-type: ['fast', 'slow']
+        exclude:
+          # Only run LLM tests on Python 3.11 to reduce API costs
+          - python-version: '3.10'
+            test-type: 'slow'
+          - python-version: '3.12'
+            test-type: 'slow'
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-python@v5
+        with:
+          python-version: \${{ matrix.python-version }}
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: pip install -e ".[test]"
+      
+      - name: Run tests
+        env:
+          OPENAI_API_KEY: \${{ secrets.OPENAI_API_KEY }}
+        run: |
+          if [ "\${{ matrix.test-type }}" = "fast" ]; then
+            pytest tests/ -m "not slow" -v
+          else
+            pytest tests/ -m "slow" -v
+          fi
+```
+
+### Nightly Comprehensive Suite
+
+```yaml
+# .github/workflows/nightly-eval.yml
+name: Nightly Full Evaluation
+
+on:
+  schedule:
+    - cron: '0 2 * * *'  # 2 AM UTC daily
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  full-evaluation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: pip install -e ".[test]"
+      
+      - name: Run full test suite
+        env:
+          OPENAI_API_KEY: \${{ secrets.OPENAI_API_KEY }}
+          FASTEVAL_MODEL: gpt-4o  # Use best model for nightly
+        run: pytest tests/ -v --tb=long --junitxml=results.xml
+      
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: evaluation-results
+          path: results.xml
+      
+      - name: Notify on failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1
+        with:
+          channel-id: 'C0123456789'
+          slack-message: |
+            Nightly evaluation failed
+            Run: \${{ github.server_url }}/\${{ github.repository }}/actions/runs/\${{ github.run_id }}
+        env:
+          SLACK_BOT_TOKEN: \${{ secrets.SLACK_BOT_TOKEN }}
+```
+
+## GitLab CI
+
+```yaml
+# .gitlab-ci.yml
+stages:
+  - fast-test
+  - eval-test
+  - nightly
+
+variables:
+  PIP_CACHE_DIR: "\$CI_PROJECT_DIR/.pip-cache"
+
+.python-setup:
+  image: python:3.11
+  cache:
+    paths:
+      - .pip-cache/
+  before_script:
+    - pip install -e ".[test]"
+
+fast-tests:
+  extends: .python-setup
+  stage: fast-test
+  script:
+    - pytest tests/ -m "not slow" -v --junitxml=report.xml
+  artifacts:
+    reports:
+      junit: report.xml
+
+llm-tests:
+  extends: .python-setup
+  stage: eval-test
+  script:
+    - pytest tests/ -m "slow" -v --junitxml=report.xml
+  variables:
+    OPENAI_API_KEY: \$OPENAI_API_KEY
+    FASTEVAL_NO_INTERACTIVE: "1"
+  artifacts:
+    reports:
+      junit: report.xml
+  rules:
+    - if: \$CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: \$CI_COMMIT_BRANCH == "main"
+
+nightly-full:
+  extends: .python-setup
+  stage: nightly
+  script:
+    - pytest tests/ -v --junitxml=report.xml
+  variables:
+    OPENAI_API_KEY: \$OPENAI_API_KEY
+    FASTEVAL_MODEL: gpt-4o
+  rules:
+    - if: \$CI_PIPELINE_SOURCE == "schedule"
+```
+
+## Organizing Tests
+
+### Recommended Directory Structure
+
+```
+tests/
+├── conftest.py              # Shared fixtures, configuration
+├── test_deterministic.py    # Fast tests (no @pytest.mark.slow)
+├── test_llm_basic.py        # Core LLM tests (@pytest.mark.slow)
+├── test_llm_comprehensive.py # Full suite (@pytest.mark.slow, @pytest.mark.expensive)
+├── test_integration.py      # E2E tests (@pytest.mark.slow)
+└── fixtures/
+    └── test_data.csv        # Test datasets
+```
+
+### Configuration in conftest.py
+
+```python
+# conftest.py
+import os
+import pytest
+import fasteval as fe
+from fasteval import OpenAIClient
+
+def pytest_configure(config):
+    """Register custom markers."""
+    config.addinivalue_line("markers", "slow: LLM-based tests requiring API calls")
+    config.addinivalue_line("markers", "expensive: Costly tests for nightly runs only")
+
+@pytest.fixture(scope="session", autouse=True)
+def configure_fasteval():
+    """Configure fasteval based on environment."""
+    model = os.getenv("FASTEVAL_MODEL", "gpt-4o-mini")
+    
+    if os.getenv("CI"):
+        # CI: Use specified model, typically cheaper
+        fe.set_default_provider(OpenAIClient(model=model, temperature=0))
+    else:
+        # Local: Default to better model
+        fe.set_default_provider(OpenAIClient(model="gpt-4o", temperature=0))
+
+def pytest_collection_modifyitems(config, items):
+    """Modify test collection based on CI context."""
+    ci_context = os.getenv("CI_CONTEXT", "full")
+    
+    if ci_context == "pr":
+        skip_expensive = pytest.mark.skip(reason="Skipped in PR builds")
+        for item in items:
+            if "expensive" in item.keywords:
+                item.add_marker(skip_expensive)
+```
+
+## Cost Optimization
+
+### Model Selection by Context
+
+```yaml
+env:
+  # Default: Use efficient model
+  FASTEVAL_MODEL: gpt-4o-mini
+
+jobs:
+  pr-tests:
+    # PRs: Fast, cheap model
+    env:
+      FASTEVAL_MODEL: gpt-4o-mini
+    steps:
+      - run: pytest tests/ -m "slow and not expensive"
+
+  nightly:
+    # Nightly: Best model for accuracy
+    env:
+      FASTEVAL_MODEL: gpt-4o
+    steps:
+      - run: pytest tests/
+```
+
+### Test Sampling for Large Suites
+
+```python
+# conftest.py
+import os
+import random
+
+ALL_TEST_CASES = load_test_cases()  # 500 test cases
+
+@pytest.fixture(scope="module")
+def test_cases():
+    """Return test cases, sampled in CI."""
+    if os.getenv("CI"):
+        # Sample 20% in CI
+        sample_size = int(len(ALL_TEST_CASES) * 0.2)
+        return random.sample(ALL_TEST_CASES, sample_size)
+    return ALL_TEST_CASES
+```
+
+### Cost Estimation
+
+Estimate CI costs before implementing:
+
+| Scenario | Tests | API Calls | Est. Cost (GPT-4o-mini) |
+|----------|-------|-----------|------------------------|
+| PR build | 50 LLM tests | 50 | ~\$0.01 |
+| Merge to main | 100 LLM tests | 100 | ~\$0.02 |
+| Nightly (full) | 500 LLM tests | 500 | ~\$0.10 |
+| Monthly total | ~1000 PRs, 30 nightly | ~25,000 | ~\$5-10 |
+
+## Handling Failures
+
+### Retry Flaky Tests
+
+LLM outputs have natural variance. Use retries for stability:
+
+```yaml
+- name: Install retry plugin
+  run: pip install pytest-rerunfailures
+
+- name: Run tests with retry
+  run: pytest tests/ -m "slow" --reruns 2 --reruns-delay 5
+```
+
+### Threshold Margins
+
+Account for variance in your thresholds:
+
+```python
+import os
+
+# Lower thresholds slightly in CI to account for model variance
+CI_MARGIN = 0.05 if os.getenv("CI") else 0
+
+@fe.correctness(threshold=0.8 - CI_MARGIN)
+def test_with_margin():
+    ...
+```
+
+### Soft Failures for Non-Critical Tests
+
+```yaml
+jobs:
+  test:
+    steps:
+      - name: Run critical tests
+        run: pytest tests/critical/ -v
+      
+      - name: Run experimental tests
+        continue-on-error: true  # Allow failure without blocking
+        run: pytest tests/experimental/ -v
+```
+
+### Score Trend Monitoring
+
+Track scores over time to catch gradual degradation:
+
+```python
+# scripts/check_trends.py
+import json
+import sys
+
+def check_score_trends(current_results_file: str, threshold_drop: float = 0.1):
+    """Alert if scores dropped significantly from baseline."""
+    with open(current_results_file) as f:
+        current = json.load(f)
+    
+    with open("baseline_scores.json") as f:
+        baseline = json.load(f)
+    
+    alerts = []
+    for metric, current_score in current.items():
+        if metric in baseline:
+            baseline_score = baseline[metric]
+            if current_score < baseline_score - threshold_drop:
+                alerts.append(
+                    f"{metric}: {baseline_score:.2f} -> {current_score:.2f} "
+                    f"(dropped {baseline_score - current_score:.2f})"
+                )
+    
+    if alerts:
+        print("Score degradation detected:")
+        for alert in alerts:
+            print(f"  - {alert}")
+        sys.exit(1)
+    
+    print("All scores within acceptable range")
+
+if __name__ == "__main__":
+    check_score_trends(sys.argv[1])
+```
+
+```yaml
+- name: Check score trends
+  run: python scripts/check_trends.py test-results.json
+```
+
+### Alerting on Failures
+
+```yaml
+- name: Notify on failure
+  if: failure()
+  uses: slackapi/slack-github-action@v1
+  with:
+    channel-id: 'eval-alerts'
+    slack-message: |
+      Evaluation tests failed
+      Branch: \${{ github.ref_name }}
+      Commit: \${{ github.sha }}
+      Run: \${{ github.server_url }}/\${{ github.repository }}/actions/runs/\${{ github.run_id }}
+  env:
+    SLACK_BOT_TOKEN: \${{ secrets.SLACK_BOT_TOKEN }}
+```

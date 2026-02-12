@@ -1,0 +1,71 @@
+---
+title: Models
+description: API reference for data models
+order: 4
+---
+
+# Models API Reference
+
+## EvalInput
+
+Input data for evaluation.
+
+```python
+from fasteval import EvalInput
+
+eval_input = EvalInput(
+    actual_output="The response text",
+    expected_output="Expected text",
+    input="User query",
+    context="Additional context",
+    history=[
+        {"role": "user", "content": "Hi"},
+        {"role": "assistant", "content": "Hello!"}
+    ]
+)
+```
+
+### Fields
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| actual_output | str | Yes | The output to evaluate |
+| expected_output | str | No | Reference output |
+| input | str | No | Input query |
+| context | str | No | Additional context |
+| history | List[Dict] | No | Conversation history |
+
+## EvalResult
+
+Result of an evaluation.
+
+```python
+result.passed  # bool
+result.metric_results  # List[MetricResult]
+```
+
+## MetricResult
+
+Result of a single metric.
+
+```python
+metric_result.metric_name  # str
+metric_result.score  # float
+metric_result.passed  # bool
+metric_result.threshold  # float
+metric_result.reasoning  # str
+```
+
+## MetricConfig
+
+Configuration for a metric.
+
+```python
+from fasteval import MetricConfig
+
+config = MetricConfig(
+    metric_type="correctness",
+    name="correctness",
+    threshold=0.7
+)
+```

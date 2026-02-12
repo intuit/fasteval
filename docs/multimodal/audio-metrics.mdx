@@ -1,0 +1,184 @@
+---
+title: Audio Metrics
+description: Evaluate speech recognition and audio understanding systems
+order: 3
+---
+
+# Audio Metrics
+
+Evaluate speech-to-text, voice assistants, and audio understanding systems.
+
+## Installation
+
+```bash
+pip install fasteval[audio]
+```
+
+## Available Metrics
+
+### `@fe.word_error_rate`
+
+Calculate Word Error Rate (WER) - the industry standard metric for ASR.
+
+WER measures the minimum number of word-level edits needed to transform the hypothesis into the reference.
+
+```python
+import fasteval as fe
+
+@fe.word_error_rate(threshold=0.95)  # WER < 5%
+def test_whisper():
+    transcript = whisper.transcribe("audio.mp3")
+    fe.score(
+        actual_output=transcript,
+        expected_output=ground_truth_transcript
+    )
+```
+
+**Score Interpretation:**
+- Score = 1.0 - WER (inverted so higher is better)
+- WER of 0.05 (5%) → Score of 0.95
+- Threshold of 0.95 means WER must be < 5%
+
+**Parameters:**
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `threshold` | float | 0.9 | Minimum accuracy (1.0 - WER) to pass |
+| `normalize_text` | bool | True | Normalize text before comparison |
+
+### `@fe.character_error_rate`
+
+Calculate Character Error Rate (CER) for detailed accuracy analysis.
+
+Useful for:
+- Languages without clear word boundaries (Chinese, Japanese)
+- Name/entity recognition
+- When exact character accuracy matters
+
+```python
+@fe.character_error_rate(threshold=0.95)
+def test_asr_detailed():
+    transcript = model.transcribe(audio)
+    fe.score(
+        actual_output=transcript,
+        expected_output=reference
+    )
+```
+
+### `@fe.match_error_rate`
+
+Calculate Match Error Rate (MER) - a variant of WER bounded between 0 and 1.
+
+```python
+@fe.match_error_rate(threshold=0.9)
+def test_asr():
+    transcript = model.transcribe(audio)
+    fe.score(
+        actual_output=transcript,
+        expected_output=reference
+    )
+```
+
+### `@fe.transcription_accuracy`
+
+LLM-based semantic evaluation of transcription accuracy.
+
+Unlike WER/CER, this evaluates if the transcription captures the semantic meaning, even if exact words differ.
+
+```python
+@fe.transcription_accuracy(threshold=0.9)
+def test_semantic_accuracy():
+    transcript = whisper.transcribe("meeting.mp3")
+    fe.score(
+        actual_output=transcript,
+        expected_output=ground_truth_transcript
+    )
+```
+
+Useful when:
+- Minor word variations are acceptable ("gonna" vs "going to")
+- Numbers can be written differently ("5" vs "five")
+- Synonyms are equivalent
+
+### `@fe.speaker_diarization`
+
+Evaluate speaker identification accuracy in multi-speaker transcriptions.
+
+```python
+@fe.speaker_diarization(threshold=0.8)
+def test_speaker_id():
+    result = model.transcribe_with_speakers("meeting.mp3")
+    fe.score(
+        actual_output=result,
+        expected_output=annotated_transcript
+    )
+```
+
+Checks:
+- Speakers correctly identified
+- Turn boundaries accurate
+- Consistent labeling throughout
+
+### `@fe.audio_sentiment`
+
+Evaluate tone/emotion detection accuracy from audio.
+
+```python
+@fe.audio_sentiment(threshold=0.8)
+def test_tone_detection():
+    sentiment = model.detect_sentiment("customer_call.mp3")
+    fe.score(
+        actual_output=sentiment,
+        expected_output="frustrated, but cooperative"
+    )
+```
+
+## WER vs CER vs MER
+
+| Metric | Use Case | Bounded |
+|--------|----------|---------|
+| **WER** | General ASR evaluation | No (can exceed 1.0) |
+| **CER** | Character-level accuracy, CJK languages | No |
+| **MER** | When you need bounded 0-1 score | Yes (0-1) |
+
+## Example: Complete ASR Evaluation
+
+```python
+import fasteval as fe
+
+@fe.word_error_rate(threshold=0.95)
+@fe.transcription_accuracy(threshold=0.9)
+def test_comprehensive_asr():
+    """Evaluate both exact accuracy and semantic correctness."""
+    transcript = whisper.transcribe("meeting_recording.mp3")
+    
+    fe.score(
+        actual_output=transcript,
+        expected_output=ground_truth,
+        metadata={
+            "audio_file": "meeting_recording.mp3",
+            "duration": "45:30"
+        }
+    )
+```
+
+## Audio Input Formats
+
+```python
+# File path
+fe.score(transcript, expected_output=reference)
+
+# AudioInput model
+from fasteval import AudioInput
+audio = AudioInput(
+    source="recording.mp3",
+    duration_seconds=120.5,
+    transcript="Optional ground truth"
+)
+```
+
+## Best Practices
+
+1. **Normalize text** - Enable `normalize_text=True` (default) to ignore case and punctuation differences
+2. **Use appropriate metrics** - WER for general ASR, CER for character-level
+3. **Combine deterministic and LLM metrics** - WER for exact accuracy, transcription_accuracy for semantic
+4. **Set realistic thresholds** - Industry-standard WER is ~5% for clean audio, higher for challenging conditions

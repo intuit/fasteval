@@ -1,0 +1,192 @@
+---
+title: Contextual Recall
+description: Evaluate if retrieved context covers all needed information
+order: 3
+sidebar:
+  - title: Quick Example
+    anchor: quick-example
+  - title: Practical Examples
+    anchor: practical-examples
+  - title: Precision vs Recall Trade-off
+    anchor: precision-vs-recall-trade-off
+  - title: Diagnosing Low Recall
+    anchor: diagnosing-low-recall
+---
+
+# Contextual Recall Metric
+
+Your retriever found 5 highly relevant documents (great precision!), but did those documents contain everything needed to answer the question? Contextual recall measures information coverage.
+
+**In simple terms:** "Did we retrieve all the facts we need?"
+
+## Quick Example
+
+```python
+import fasteval as fe
+
+@fe.contextual_recall(threshold=0.8)
+def test_information_coverage():
+    query = "What are the benefits of exercise?"
+    expected = "Exercise improves cardiovascular health, mental well-being, and weight management."
+    
+    docs = retriever.search(query)
+    response = rag_agent(query, context=docs)
+    
+    fe.score(response, expected, retrieval_context=docs, input=query)
+```
+
+## Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `threshold` | float | 0.7 | Minimum score to pass (0.0 - 1.0) |
+| `model` | str | None | Override the default LLM model |
+
+## How Scoring Works
+
+**Formula:** `facts_found_in_context / total_facts_in_expected`
+
+| Score | Interpretation |
+|-------|---------------|
+| **1.0** | All needed facts are in retrieved docs |
+| **0.75** | 3 of 4 needed facts found |
+| **0.5** | Half the needed info missing |
+| **0.0** | None of the needed info retrieved |
+
+## Practical Examples
+
+### Knowledge Base Coverage Testing
+
+Does your knowledge base actually contain the answers?
+
+```python
+@fe.contextual_recall(threshold=0.85)
+@fe.csv("golden_qa_pairs.csv")
+def test_kb_has_answers(query, expected_answer):
+    """Verify knowledge base covers all expected information."""
+    docs = knowledge_base.search(query)
+    response = rag_agent(query, context=docs)
+    
+    fe.score(response, expected_answer, retrieval_context=docs, input=query)
+```
+
+### Identifying Knowledge Gaps
+
+```python
+@fe.contextual_recall(threshold=0.9)
+def test_product_info_complete():
+    """Ensure we have complete product documentation."""
+    query = "What are the specs for Widget Pro?"
+    expected = """
+    Widget Pro has:
+    - 8GB RAM
+    - 256GB storage  
+    - 6.5 inch display
+    - 5000mAh battery
+    - Water resistant IP68
+    """
+    
+    docs = product_db.search(query)
+    fe.score("", expected, retrieval_context=docs, input=query)
+```
+
+If this fails, you know exactly which specs are missing from your docs.
+
+### Optimizing Chunk Size
+
+Smaller chunks = more precise retrieval but potentially worse recall.
+
+```python
+CHUNK_SIZES = [256, 512, 1024, 2048]
+
+for size in CHUNK_SIZES:
+    @fe.contextual_recall(threshold=0.8)
+    def test_recall_at_chunk_size():
+        retriever = build_retriever(chunk_size=size)
+        docs = retriever.search(query)
+        fe.score(response, expected, retrieval_context=docs, input=query)
+        print(f"Chunk size {size}: recall = {result.score}")
+```
+
+## Example Output
+
+**Passing test:**
+
+```
+test_information_coverage PASSED
+
+Evaluation Results:
+  ✓ contextual_recall: 1.00 (threshold: 0.80)
+    Reasoning: All 3 expected facts found in retrieved context.
+    - ✓ "cardiovascular health" found in doc_2.txt
+    - ✓ "mental well-being" found in doc_1.txt
+    - ✓ "weight management" found in doc_3.txt
+```
+
+**Failing test:**
+
+```
+test_information_coverage FAILED
+
+Evaluation Results:
+  ✗ contextual_recall: 0.67 (threshold: 0.80)
+    Reasoning: 2 of 3 expected facts found in context.
+    - ✓ "cardiovascular health" found in doc_2.txt
+    - ✓ "mental well-being" found in doc_1.txt
+    - ✗ "weight management" NOT FOUND in any retrieved document
+```
+
+## Precision vs Recall Trade-off
+
+These metrics often conflict:
+
+| Scenario | Precision | Recall | Cause |
+|----------|-----------|--------|-------|
+| Retrieve few, highly relevant docs | High | Low | Missing information |
+| Retrieve many docs broadly | Low | High | Lots of noise |
+| Well-tuned retriever | Balanced | Balanced | Sweet spot |
+
+Always test both:
+
+```python
+@fe.contextual_precision(threshold=0.7)
+@fe.contextual_recall(threshold=0.8)
+def test_balanced_retrieval():
+    docs = retriever.search(query)
+    fe.score(response, expected, retrieval_context=docs, input=query)
+```
+
+## Choosing Your Threshold
+
+| Use Case | Suggested Threshold |
+|----------|---------------------|
+| Comprehensive answers needed | 0.9+ |
+| General Q&A | 0.7 - 0.8 |
+| Acceptable partial answers | 0.5 - 0.7 |
+
+## Diagnosing Low Recall
+
+When recall is low, investigate:
+
+1. **Is the information in your knowledge base at all?**
+   - Check if expected facts exist in any document
+   - May need to add more content
+
+2. **Is chunking splitting important information?**
+   - Expected fact might span two chunks
+   - Try larger chunk sizes or chunk overlap
+
+3. **Is k (number of docs) too low?**
+   - Relevant doc might be at position 6 when k=5
+   - Try increasing k
+
+4. **Is the embedding model finding semantic matches?**
+   - Query phrasing might not match document phrasing
+   - Consider hybrid search (semantic + keyword)
+
+## Best Practices
+
+1. **Always provide expected_output**: Recall needs a ground truth to compare against
+2. **Use realistic expected answers**: Should reflect what a good answer looks like
+3. **Combine with precision**: High recall + low precision = noisy retrieval
+4. **Test edge cases**: Complex queries that need information from multiple docs

@@ -1,0 +1,350 @@
+---
+title: Quick Start
+description: Get started with fasteval-observe in 5 minutes
+order: 3
+sidebar:
+  - title: Installation
+    anchor: installation
+  - title: Basic Usage
+    anchor: basic-usage
+  - title: Sampling Strategies
+    anchor: sampling-strategies
+  - title: Configuration
+    anchor: configuration
+  - title: Viewing Logs
+    anchor: viewing-logs
+---
+
+# Quick Start
+
+Get fasteval-observe running in 5 minutes.
+
+## Installation
+
+```bash
+# Install both packages
+pip install fasteval fasteval-observe
+```
+
+## Basic Usage
+
+### Simple Monitoring
+
+```python
+from fasteval_observe import observe
+from fasteval_observe.sampling import FixedRateSamplingStrategy
+
+# Monitor 5% of calls
+@observe(sampling=FixedRateSamplingStrategy(rate=0.05))
+async def my_agent(query: str) -> str:
+    response = await llm.invoke(query)
+    return response
+
+# Call as normal - observations happen in background
+result = await my_agent("What is machine learning?")
+```
+
+### With fasteval Evaluation
+
+```python
+import fasteval as fe
+from fasteval_observe import observe
+from fasteval_observe.sampling import FixedRateSamplingStrategy
+
+@observe(
+    sampling=FixedRateSamplingStrategy(rate=0.05),
+    run_evaluations=True  # Run @fe.* metrics on sampled calls
+)
+@fe.relevance(threshold=0.7)
+@fe.toxicity(threshold=0.1)
+async def evaluated_agent(query: str) -> str:
+    response = await llm.invoke(query)
+    return response
+```
+
+### How Input Extraction Works
+
+When `run_evaluations=True`, the decorator builds `EvalInput` for fasteval metrics:
+
+| EvalInput Field | Extracted From |
+|----------------|----------------|
+| `actual_output` | Function return value |
+| `input` | All function arguments (formatted string) |
+| `input_kwargs` | Raw kwargs dictionary |
+| `context` | Via `context_fn` callback (explicit extraction) |
+
+### Extracting Context for RAG Metrics
+
+For RAG metrics like `faithfulness` that need context, use `context_fn` to extract it:
+
+**Simple extraction from kwargs:**
+
+```python
+@observe(
+    sampling=FixedRateSamplingStrategy(rate=0.05),
+    run_evaluations=True,
+    context_fn=lambda args, kwargs: kwargs.get("docs")  # Extract from kwargs
+)
+@fe.faithfulness(threshold=0.85)
+async def rag_agent(query: str, docs: list[str]) -> str:
+    return await llm.invoke(query, context=docs)
+```
+
+**Complex extraction:**
+
+```python
+def extract_search_results(args, kwargs):
+    """Extract context from search results."""
+    if "results" in kwargs:
+        return [r["content"] for r in kwargs["results"]]
+    return None
+
+@observe(
+    context_fn=extract_search_results,
+    run_evaluations=True
+)
+@fe.faithfulness(threshold=0.8)
+async def search_agent(query: str, results: list[dict]) -> str:
+    ...
+```
+
+**Multiple sources:**
+
+```python
+@observe(
+    context_fn=lambda args, kwargs: (
+        kwargs.get("docs") or kwargs.get("context") or []
+    ),
+    run_evaluations=True
+)
+```
+
+**Return types:**
+- `List[str]` - List of context documents (preferred)
+- `str` - Single document (converted to list automatically)
+- `None` - No context available
+
+**Example with RAG:**
+
+```python
+@observe(
+    run_evaluations=True,
+    context_fn=lambda args, kwargs: kwargs.get("context")
+)
+@fe.faithfulness(threshold=0.8)  # Uses context + actual_output
+@fe.relevance(threshold=0.7)     # Uses input + actual_output
+async def rag_agent(query: str, context: list[str]) -> str:
+    """Context is extracted via context_fn for faithfulness metric."""
+    return await llm.invoke(query, context=context)
+
+# When called:
+result = await rag_agent(
+    query="What is Python?",
+    context=["Python is a programming language..."]
+)
+
+# EvalInput built:
+# - input: "query: What is Python?\ncontext: ['Python is a programming language...']"
+# - actual_output: <result from function>
+# - context: ["Python is a programming language..."]  (from context_fn!)
+```
+
+**Supported Metrics at Runtime:**
+
+| Metric | Works at Runtime | Notes |
+|--------|-----------------|-------|
+| `relevance` | ✅ | Uses input + actual_output |
+| `toxicity` | ✅ | Uses actual_output only |
+| `bias` | ✅ | Uses actual_output only |
+| `hallucination` | ✅ | Uses context + actual_output (requires `context_fn`) |
+| `faithfulness` | ✅ | Uses context + actual_output (requires `context_fn`) |
+| `correctness` | ⚠️ | Needs `expected_output` (unavailable at runtime) |
+
+> **Note:** Metrics that require `expected_output` (like `correctness`) cannot be fully evaluated at runtime since the expected response isn't known during live inference.
+
+### Application Lifecycle
+
+For production apps, initialize and shutdown the observer:
+
+```python
+from fasteval_observe import initialize_observer, shutdown_observer
+
+# At application startup
+initialize_observer()
+
+# ... your application runs ...
+
+# At application shutdown
+shutdown_observer()  # Flushes pending observations
+```
+
+**FastAPI Example:**
+
+```python
+from fastapi import FastAPI
+from contextlib import asynccontextmanager
+from fasteval_observe import initialize_observer, shutdown_observer
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    initialize_observer()
+    yield
+    shutdown_observer()
+
+app = FastAPI(lifespan=lifespan)
+```
+
+## Sampling Strategies
+
+Choose based on your needs:
+
+```python
+from fasteval_observe.sampling import (
+    NoSamplingStrategy,           # 100% - development/debugging
+    FixedRateSamplingStrategy,    # Fixed rate - production steady-state
+    ProbabilisticSamplingStrategy,# Random - statistical profiling
+    AdaptiveSamplingStrategy,     # Dynamic - incident response
+    TokenBudgetSamplingStrategy,  # Cost-aware - budget monitoring
+    ComposableSamplingStrategy,   # Combined - complex scenarios
+)
+
+# Development: sample everything
+@observe(sampling=NoSamplingStrategy())
+
+# Production: 1% fixed rate
+@observe(sampling=FixedRateSamplingStrategy(rate=0.01))
+
+# Adaptive: increase on errors/slow calls
+@observe(sampling=AdaptiveSamplingStrategy(
+    base_rate=0.01,
+    error_rate=1.0,        # 100% on errors
+    slow_threshold_ms=2000,
+    slow_rate=0.5          # 50% of slow calls
+))
+```
+
+## Configuration
+
+### Global Configuration
+
+```python
+from fasteval_observe import configure_observe, ObserveConfig
+
+configure_observe(ObserveConfig(
+    enabled=True,
+    
+    # Privacy
+    include_inputs=False,  # Don't log inputs
+    include_outputs=False, # Don't log outputs
+    
+    # Performance
+    max_queue_size=10000,
+    flush_interval_seconds=5.0,
+))
+```
+
+Add service/environment info via metadata:
+
+```python
+@observe(
+    sampling=FixedRateSamplingStrategy(rate=0.05),
+    metadata={
+        "service_name": "my-agent-service",
+        "environment": "production",
+        "version": "1.2.0"
+    }
+)
+async def my_agent(query: str) -> str:
+    return await llm.invoke(query)
+```
+
+### Custom Logging
+
+By default, observations are logged as JSON to stdout. To customize, provide your own logger:
+
+```python
+import logging
+from fasteval_observe import set_logger
+
+# Create your custom logger
+my_logger = logging.getLogger("my_app.observations")
+my_logger.setLevel(logging.INFO)
+
+# Add any handlers you want
+file_handler = logging.FileHandler("/var/log/observations.jsonl")
+file_handler.setFormatter(logging.Formatter("%(message)s"))
+my_logger.addHandler(file_handler)
+
+# Use it for observations
+set_logger(my_logger)
+```
+
+This integrates with your existing logging infrastructure - send to files, cloud logging services, or any other destination.
+
+### Per-Function Overrides
+
+```python
+@observe(
+    sampling=FixedRateSamplingStrategy(rate=0.1),
+    metadata={"team": "nlp", "model": "gpt-4o"},
+    log_inputs=True,   # Override config for this function
+    log_outputs=True,
+)
+async def debug_agent(query: str) -> str:
+    return await llm.invoke(query)
+```
+
+## Viewing Logs
+
+### Stdout (Default)
+
+By default, logs go to stdout as JSON lines:
+
+```json
+{"timestamp":"2026-02-03T10:15:30.123Z","source":"fasteval_observe","function_name":"my_agent","sampling_strategy":"FixedRateSamplingStrategy","metrics":{"latency_ms":1234.56,"success":true}}
+```
+
+### File Output
+
+```python
+import logging
+from logging.handlers import RotatingFileHandler
+from fasteval_observe import set_logger
+
+# Create logger with rotating file handler
+file_logger = logging.getLogger("observations")
+file_logger.setLevel(logging.INFO)
+
+handler = RotatingFileHandler(
+    "/var/log/fasteval/observations.jsonl",
+    maxBytes=100_000_000,  # 100MB
+    backupCount=5,
+)
+handler.setFormatter(logging.Formatter("%(message)s"))
+file_logger.addHandler(handler)
+
+set_logger(file_logger)
+```
+
+### Parse with jq
+
+```bash
+# View all observations
+cat observations.jsonl | jq '.'
+
+# Filter by function
+cat observations.jsonl | jq 'select(.function_name == "my_agent")'
+
+# Get average latency
+cat observations.jsonl | jq -s '[.[].metrics.latency_ms] | add / length'
+
+# Find errors
+cat observations.jsonl | jq 'select(.metrics.success == false)'
+```
+
+## Next Steps
+
+- [Sampling Strategies](/docs/plugins/observe/sampling-strategies) - Detailed strategy guide
+- [Custom Strategies](/docs/plugins/observe/custom-strategies) - Build your own
+- [Configuration](/docs/plugins/observe/configuration) - All config options
+- [Performance](/docs/plugins/observe/performance) - Latency benchmarks

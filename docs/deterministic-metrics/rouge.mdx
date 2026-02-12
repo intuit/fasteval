@@ -1,0 +1,27 @@
+---
+title: ROUGE
+description: Compute ROUGE scores for text similarity
+order: 3
+---
+
+# ROUGE Metric
+
+The ROUGE metric computes Recall-Oriented Understudy for Gisting Evaluation scores.
+
+## Usage
+
+```python
+import fasteval as fe
+
+@fe.rouge(threshold=0.5, rouge_type="rouge-l")
+def test_summary():
+    summary = my_summarizer(document)
+    fe.score(summary, reference_summary)
+```
+
+## Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `threshold` | float | 0.5 | Minimum score to pass |
+| `rouge_type` | str | "rouge-l" | Type: rouge-1, rouge-2, rouge-l |

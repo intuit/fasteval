@@ -1,0 +1,110 @@
+<svg viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="pushGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#64748b"/>
+      <stop offset="100%" style="stop-color:#475569"/>
+    </linearGradient>
+    <linearGradient id="fastGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#10b981"/>
+      <stop offset="100%" style="stop-color:#059669"/>
+    </linearGradient>
+    <linearGradient id="llmGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8b5cf6"/>
+      <stop offset="100%" style="stop-color:#6d28d9"/>
+    </linearGradient>
+    <linearGradient id="fullGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6"/>
+      <stop offset="100%" style="stop-color:#1d4ed8"/>
+    </linearGradient>
+    <linearGradient id="deployGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f59e0b"/>
+      <stop offset="100%" style="stop-color:#d97706"/>
+    </linearGradient>
+    <filter id="shadowCI" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-opacity="0.12"/>
+    </filter>
+    <marker id="arrowCI" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/>
+    </marker>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="800" height="400" fill="#f8fafc"/>
+  
+  <!-- Title -->
+  <text x="400" y="35" text-anchor="middle" font-size="22" font-weight="700" fill="#1e293b">CI/CD Evaluation Pipeline</text>
+  
+  <!-- Code Push -->
+  <g filter="url(#shadowCI)">
+    <rect x="345" y="55" width="110" height="45" rx="22" fill="url(#pushGrad)"/>
+    <text x="400" y="83" text-anchor="middle" font-size="12" font-weight="600" fill="white">Code Push</text>
+  </g>
+  
+  <!-- Arrow down -->
+  <line x1="400" y1="100" x2="400" y2="130" stroke="#64748b" stroke-width="2" marker-end="url(#arrowCI)"/>
+  
+  <!-- Fast Tests -->
+  <g filter="url(#shadowCI)">
+    <rect x="200" y="140" width="400" height="60" rx="12" fill="url(#fastGrad)"/>
+    <text x="400" y="167" text-anchor="middle" font-size="14" font-weight="600" fill="white">Fast Tests (Always Run)</text>
+    <text x="400" y="185" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.9)">Unit tests, deterministic evals • ~30 seconds</text>
+  </g>
+  <!-- Fast Tests label (inside box) -->
+  <text x="595" y="185" font-size="9" fill="rgba(255,255,255,0.7)" font-family="monospace">-m "not slow"</text>
+  
+  <!-- Arrow down -->
+  <line x1="400" y1="200" x2="400" y2="225" stroke="#64748b" stroke-width="2" marker-end="url(#arrowCI)"/>
+  <text x="420" y="218" font-size="9" fill="#64748b">Pass?</text>
+  
+  <!-- LLM Tests -->
+  <g filter="url(#shadowCI)">
+    <rect x="200" y="235" width="400" height="60" rx="12" fill="url(#llmGrad)"/>
+    <text x="400" y="262" text-anchor="middle" font-size="14" font-weight="600" fill="white">LLM Tests (On PR/Merge)</text>
+    <text x="400" y="280" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.9)">Correctness, relevance (sampled) • ~2-5 min</text>
+  </g>
+  <!-- LLM Tests label (inside box) -->
+  <text x="595" y="280" font-size="9" fill="rgba(255,255,255,0.7)" font-family="monospace">-m slow</text>
+  
+  <!-- Branch for Nightly/Full Suite (left side) -->
+  <line x1="200" y1="265" x2="120" y2="265" stroke="#64748b" stroke-width="1" stroke-dasharray="4,2"/>
+  <line x1="120" y1="265" x2="120" y2="305" stroke="#64748b" stroke-width="1" stroke-dasharray="4,2" marker-end="url(#arrowCI)"/>
+  
+  <!-- Full Suite (side box) -->
+  <g filter="url(#shadowCI)">
+    <rect x="50" y="315" width="140" height="55" rx="10" fill="url(#fullGrad)"/>
+    <text x="120" y="340" text-anchor="middle" font-size="11" font-weight="600" fill="white">Full Suite</text>
+    <text x="120" y="356" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.8)">Nightly / Release • ~15-30 min</text>
+  </g>
+  
+  <!-- Arrow down to Deploy -->
+  <line x1="400" y1="295" x2="400" y2="320" stroke="#64748b" stroke-width="2" marker-end="url(#arrowCI)"/>
+  <text x="420" y="313" font-size="9" fill="#64748b">Pass?</text>
+  
+  <!-- Deploy -->
+  <g filter="url(#shadowCI)">
+    <rect x="330" y="330" width="140" height="40" rx="20" fill="url(#deployGrad)"/>
+    <text x="400" y="355" text-anchor="middle" font-size="14" font-weight="700" fill="white">Deploy</text>
+  </g>
+  
+  <!-- Strategy Legend (right side) -->
+  <g>
+    <rect x="630" y="140" width="140" height="120" rx="8" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="1"/>
+    <text x="700" y="160" text-anchor="middle" font-size="10" font-weight="600" fill="#475569">Test Strategy</text>
+    <line x1="645" y1="170" x2="755" y2="170" stroke="#e2e8f0" stroke-width="1"/>
+    
+    <!-- Fast indicator -->
+    <circle cx="655" cy="190" r="6" fill="#10b981"/>
+    <text x="670" y="194" font-size="9" fill="#64748b">Fast: Every commit</text>
+    
+    <!-- LLM indicator -->
+    <circle cx="655" cy="215" r="6" fill="#8b5cf6"/>
+    <text x="670" y="219" font-size="9" fill="#64748b">LLM: PR/merge only</text>
+    
+    <!-- Full indicator -->
+    <circle cx="655" cy="240" r="6" fill="#3b82f6"/>
+    <text x="670" y="244" font-size="9" fill="#64748b">Full: Scheduled</text>
+  </g>
+  
+  <!-- Footer -->
+  <text x="400" y="392" text-anchor="middle" font-size="11" fill="#94a3b8">fasteval • Tiered CI/CD testing strategy</text>
+</svg>

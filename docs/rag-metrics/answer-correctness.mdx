@@ -1,0 +1,195 @@
+---
+title: Answer Correctness
+description: Evaluate factual correctness of RAG answers
+order: 4
+sidebar:
+  - title: Quick Example
+    anchor: quick-example
+  - title: How It Works
+    anchor: how-it-works
+  - title: Practical Examples
+    anchor: practical-examples
+  - title: Complete RAG Evaluation Stack
+    anchor: complete-rag-evaluation-stack
+---
+
+# Answer Correctness Metric
+
+The ultimate test for your RAG system: is the answer actually correct? This metric goes beyond semantic similarity to perform detailed factual comparison—identifying what's correct, what's missing, and what's wrong.
+
+## Quick Example
+
+```python
+import fasteval as fe
+
+@fe.answer_correctness(threshold=0.8)
+def test_rag_accuracy():
+    query = "When was the Eiffel Tower built?"
+    expected = "The Eiffel Tower was built in 1889."
+    
+    docs = retriever.search(query)
+    response = rag_agent(query, context=docs)
+    
+    fe.score(response, expected, context=docs, input=query)
+```
+
+## Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `threshold` | float | 0.7 | Minimum score to pass (0.0 - 1.0) |
+| `model` | str | None | Override the default LLM model |
+
+## How It Works
+
+Answer correctness performs detailed claim analysis:
+
+```
+Expected: "Python was created in 1991 by Guido van Rossum in the Netherlands."
+
+Actual: "Python was created in 1991 by Guido van Rossum. It's open source."
+```
+
+**Analysis:**
+- **True Positive:** "created in 1991" (matches expected)
+- **True Positive:** "by Guido van Rossum" (matches expected)
+- **False Negative:** "in the Netherlands" (missing from actual)
+- **Extra Info:** "open source" (not in expected, but factually true)
+
+**Score calculation weighs these factors**, penalizing contradictions heavily and missing info moderately.
+
+## Practical Examples
+
+### Golden Dataset Evaluation
+
+Test your RAG against a curated set of correct answers:
+
+```python
+@fe.answer_correctness(threshold=0.8)
+@fe.csv("golden_qa_dataset.csv")
+def test_against_golden_set(query, correct_answer):
+    docs = retriever.search(query)
+    response = rag_agent(query, context=docs)
+    
+    fe.score(response, correct_answer, context=docs, input=query)
+```
+
+### Comparing RAG Configurations
+
+```python
+def test_rag_config(config_name, config):
+    @fe.answer_correctness(threshold=0.75)
+    @fe.csv("test_queries.csv")
+    def inner_test(query, expected):
+        rag = build_rag(config)
+        response = rag.answer(query)
+        fe.score(response, expected)
+        print(f"{config_name}: {result.score}")
+    
+    return inner_test()
+
+# Compare different configurations
+test_rag_config("baseline", baseline_config)
+test_rag_config("reranking", reranking_config)
+test_rag_config("hybrid_search", hybrid_config)
+```
+
+### Detecting Contradictions
+
+Answer correctness specifically catches conflicting information:
+
+```python
+@fe.answer_correctness(threshold=0.9)
+def test_no_contradictions():
+    expected = "Our return policy is 30 days."
+    
+    docs = retriever.search("return policy")
+    response = rag_agent("What's the return policy?", context=docs)
+    
+    # Will fail if response says "60 days" or "no returns"
+    fe.score(response, expected, context=docs)
+```
+
+## Example Output
+
+**Passing test:**
+
+```
+test_rag_accuracy PASSED
+
+Evaluation Results:
+  ✓ answer_correctness: 0.92 (threshold: 0.80)
+    Reasoning:
+    - Correct: "Eiffel Tower", "built in 1889", "Paris"
+    - Missing: none
+    - Contradictions: none
+    - Extra (accurate): "324 meters tall", "Gustave Eiffel designed it"
+```
+
+**Failing test:**
+
+```
+test_rag_accuracy FAILED
+
+Evaluation Results:
+  ✗ answer_correctness: 0.55 (threshold: 0.80)
+    Reasoning:
+    - Correct: "Eiffel Tower", "Paris"
+    - CONTRADICTION: Response says "built in 1887" but expected "1889"
+    - Missing: none
+    Score heavily penalized for factual contradiction.
+```
+
+## Answer Correctness vs Correctness
+
+| Metric | Analysis Type | Best For |
+|--------|--------------|----------|
+| `answer_correctness` | Claim-by-claim factual comparison | RAG with ground truth |
+| `correctness` | Overall semantic similarity | General LLM outputs |
+
+**Use `answer_correctness` when:**
+- You have "golden" correct answers
+- Factual precision matters (legal, medical, financial)
+- You want to catch contradictions
+- Evaluating RAG system quality
+
+**Use `correctness` when:**
+- Semantic equivalence is sufficient
+- No ground truth exists
+- Evaluating creative or open-ended outputs
+
+## Complete RAG Evaluation Stack
+
+For production RAG systems, test multiple dimensions:
+
+```python
+@fe.faithfulness(threshold=0.85)          # Grounded in context?
+@fe.contextual_precision(threshold=0.7)   # Retrieved docs relevant?
+@fe.contextual_recall(threshold=0.75)     # All needed info retrieved?
+@fe.answer_correctness(threshold=0.8)     # Final answer correct?
+def test_production_rag():
+    query = "What are the symptoms of flu?"
+    expected = "Flu symptoms include fever, cough, body aches, and fatigue."
+    
+    docs = retriever.search(query)
+    response = rag_agent(query, context=docs)
+    
+    fe.score(response, expected, context=docs, input=query)
+```
+
+## Choosing Your Threshold
+
+| Use Case | Suggested Threshold |
+|----------|---------------------|
+| Medical/legal/financial | 0.9+ |
+| Product documentation | 0.8 - 0.9 |
+| General knowledge Q&A | 0.7 - 0.8 |
+| Conversational with tolerance | 0.6 - 0.7 |
+
+## Best Practices
+
+1. **Write precise expected answers**: Be specific about facts that matter
+2. **Include all key facts**: Missing facts in expected answer won't be checked
+3. **Test with varied phrasings**: Same fact can be expressed differently
+4. **Combine with faithfulness**: Correct answer must also be grounded
+5. **Log contradictions**: These indicate serious issues to investigate

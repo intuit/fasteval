@@ -1,0 +1,152 @@
+<svg viewBox="0 0 800 350" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="pifPytestGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#64748b"/>
+      <stop offset="100%" style="stop-color:#475569"/>
+    </linearGradient>
+    <linearGradient id="pifFastevalGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1"/>
+      <stop offset="100%" style="stop-color:#4f46e5"/>
+    </linearGradient>
+    <linearGradient id="pifRunGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8b5cf6"/>
+      <stop offset="100%" style="stop-color:#6d28d9"/>
+    </linearGradient>
+    <linearGradient id="pifScoreGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6"/>
+      <stop offset="100%" style="stop-color:#1d4ed8"/>
+    </linearGradient>
+    <linearGradient id="pifEvalGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#10b981"/>
+      <stop offset="100%" style="stop-color:#059669"/>
+    </linearGradient>
+    <linearGradient id="pifPassGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#22c55e"/>
+      <stop offset="100%" style="stop-color:#16a34a"/>
+    </linearGradient>
+    <linearGradient id="pifFailGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ef4444"/>
+      <stop offset="100%" style="stop-color:#dc2626"/>
+    </linearGradient>
+    <filter id="pifShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="5" flood-opacity="0.12"/>
+    </filter>
+    <marker id="pifArrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/>
+    </marker>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="800" height="350" fill="#f8fafc"/>
+  
+  <!-- Title -->
+  <text x="400" y="32" text-anchor="middle" font-size="22" font-weight="700" fill="#1e293b">Pytest Integration Flow</text>
+  <text x="400" y="52" text-anchor="middle" font-size="12" fill="#64748b">How fasteval integrates seamlessly with pytest</text>
+  
+  <!-- Step 1: pytest discovers -->
+  <g filter="url(#pifShadow)">
+    <rect x="30" y="80" width="130" height="80" rx="10" fill="url(#pifPytestGrad)"/>
+    <text x="95" y="110" text-anchor="middle" font-size="12" font-weight="600" fill="white">pytest</text>
+    <text x="95" y="128" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.85)">discovers</text>
+    <text x="95" y="145" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.7)">test_*.py files</text>
+  </g>
+  <text x="95" y="175" text-anchor="middle" font-size="9" fill="#64748b" font-weight="500">1. Collection</text>
+  
+  <!-- Arrow 1 -->
+  <line x1="160" y1="120" x2="195" y2="120" stroke="#64748b" stroke-width="2" marker-end="url(#pifArrow)"/>
+  
+  <!-- Step 2: fasteval intercepts -->
+  <g filter="url(#pifShadow)">
+    <rect x="205" y="80" width="130" height="80" rx="10" fill="url(#pifFastevalGrad)"/>
+    <text x="270" y="110" text-anchor="middle" font-size="12" font-weight="600" fill="white">fasteval</text>
+    <text x="270" y="128" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.85)">intercepts</text>
+    <text x="270" y="145" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.7)">@fe decorators</text>
+  </g>
+  <text x="270" y="175" text-anchor="middle" font-size="9" fill="#64748b" font-weight="500">2. Registration</text>
+  
+  <!-- Arrow 2 -->
+  <line x1="335" y1="120" x2="370" y2="120" stroke="#64748b" stroke-width="2" marker-end="url(#pifArrow)"/>
+  
+  <!-- Step 3: Test runs -->
+  <g filter="url(#pifShadow)">
+    <rect x="380" y="80" width="130" height="80" rx="10" fill="url(#pifRunGrad)"/>
+    <text x="445" y="110" text-anchor="middle" font-size="12" font-weight="600" fill="white">Test Runs</text>
+    <text x="445" y="128" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.85)">Your LLM call</text>
+    <text x="445" y="145" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.7)">my_agent(...)</text>
+  </g>
+  <text x="445" y="175" text-anchor="middle" font-size="9" fill="#64748b" font-weight="500">3. Execution</text>
+  
+  <!-- Arrow 3 -->
+  <line x1="510" y1="120" x2="545" y2="120" stroke="#64748b" stroke-width="2" marker-end="url(#pifArrow)"/>
+  
+  <!-- Step 4: fe.score() -->
+  <g filter="url(#pifShadow)">
+    <rect x="555" y="80" width="130" height="80" rx="10" fill="url(#pifScoreGrad)"/>
+    <text x="620" y="110" text-anchor="middle" font-size="12" font-weight="600" fill="white">fe.score()</text>
+    <text x="620" y="128" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.85)">records outputs</text>
+    <text x="620" y="145" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.7)">actual, expected</text>
+  </g>
+  <text x="620" y="175" text-anchor="middle" font-size="9" fill="#64748b" font-weight="500">4. Recording</text>
+  
+  <!-- Arrow 4 down -->
+  <line x1="620" y1="160" x2="620" y2="195" stroke="#64748b" stroke-width="2" marker-end="url(#pifArrow)"/>
+  
+  <!-- Step 5: Metrics Evaluate (wide box) -->
+  <g filter="url(#pifShadow)">
+    <rect x="205" y="205" width="480" height="65" rx="10" fill="url(#pifEvalGrad)"/>
+    <text x="445" y="230" text-anchor="middle" font-size="13" font-weight="600" fill="white">Metrics Evaluate via LLM Judge</text>
+    
+    <!-- Metric mini-boxes -->
+    <rect x="225" y="240" width="70" height="22" rx="4" fill="rgba(255,255,255,0.2)"/>
+    <text x="260" y="255" text-anchor="middle" font-size="9" fill="white">correctness</text>
+    
+    <rect x="305" y="240" width="60" height="22" rx="4" fill="rgba(255,255,255,0.2)"/>
+    <text x="335" y="255" text-anchor="middle" font-size="9" fill="white">relevance</text>
+    
+    <rect x="375" y="240" width="55" height="22" rx="4" fill="rgba(255,255,255,0.2)"/>
+    <text x="402" y="255" text-anchor="middle" font-size="9" fill="white">toxicity</text>
+    
+    <rect x="440" y="240" width="75" height="22" rx="4" fill="rgba(255,255,255,0.2)"/>
+    <text x="477" y="255" text-anchor="middle" font-size="9" fill="white">hallucination</text>
+    
+    <rect x="525" y="240" width="70" height="22" rx="4" fill="rgba(255,255,255,0.2)"/>
+    <text x="560" y="255" text-anchor="middle" font-size="9" fill="white">faithfulness</text>
+    
+    <rect x="605" y="240" width="55" height="22" rx="4" fill="rgba(255,255,255,0.2)"/>
+    <text x="632" y="255" text-anchor="middle" font-size="9" fill="white">custom</text>
+  </g>
+  <text x="445" y="285" text-anchor="middle" font-size="9" fill="#64748b" font-weight="500">5. Evaluation</text>
+  
+  <!-- Split arrows -->
+  <line x1="350" y1="270" x2="350" y2="295" stroke="#64748b" stroke-width="2"/>
+  <line x1="540" y1="270" x2="540" y2="295" stroke="#64748b" stroke-width="2"/>
+  <line x1="350" y1="295" x2="290" y2="295" stroke="#64748b" stroke-width="2"/>
+  <line x1="540" y1="295" x2="600" y2="295" stroke="#64748b" stroke-width="2"/>
+  <line x1="290" y1="295" x2="290" y2="305" stroke="#64748b" stroke-width="2" marker-end="url(#pifArrow)"/>
+  <line x1="600" y1="295" x2="600" y2="305" stroke="#64748b" stroke-width="2" marker-end="url(#pifArrow)"/>
+  
+  <!-- Labels -->
+  <text x="305" y="300" font-size="9" fill="#22c55e" font-weight="500">all pass threshold</text>
+  <text x="510" y="300" font-size="9" fill="#ef4444" font-weight="500">any below threshold</text>
+  
+  <!-- Pass Result -->
+  <g filter="url(#pifShadow)">
+    <rect x="220" y="315" width="140" height="30" rx="15" fill="url(#pifPassGrad)"/>
+    <text x="290" y="335" text-anchor="middle" font-size="13" font-weight="700" fill="white">PASS</text>
+  </g>
+  
+  <!-- Fail Result -->
+  <g filter="url(#pifShadow)">
+    <rect x="530" y="315" width="140" height="30" rx="15" fill="url(#pifFailGrad)"/>
+    <text x="600" y="335" text-anchor="middle" font-size="13" font-weight="700" fill="white">FAIL</text>
+  </g>
+  <text x="445" y="346" text-anchor="middle" font-size="9" fill="#64748b" font-weight="500">6. Result</text>
+  
+  <!-- Plugin auto-register note -->
+  <g transform="translate(30, 205)">
+    <rect x="0" y="0" width="150" height="55" rx="8" fill="#f1f5f9" stroke="#e2e8f0"/>
+    <text x="75" y="18" text-anchor="middle" font-size="9" font-weight="600" fill="#475569">Auto-Registered</text>
+    <text x="75" y="33" text-anchor="middle" font-size="8" fill="#64748b">pip install fasteval</text>
+    <text x="75" y="47" text-anchor="middle" font-size="8" fill="#64748b">No extra setup needed</text>
+  </g>
+</svg>

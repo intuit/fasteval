@@ -1,0 +1,204 @@
+<svg viewBox="0 0 900 380" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, -apple-system, sans-serif">
+  <defs>
+    <!-- Gradients -->
+    <linearGradient id="flowGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1"/>
+      <stop offset="100%" style="stop-color:#4f46e5"/>
+    </linearGradient>
+    <linearGradient id="flowGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8b5cf6"/>
+      <stop offset="100%" style="stop-color:#6d28d9"/>
+    </linearGradient>
+    <linearGradient id="flowGrad3" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6"/>
+      <stop offset="100%" style="stop-color:#1d4ed8"/>
+    </linearGradient>
+    <linearGradient id="flowGrad4" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#10b981"/>
+      <stop offset="100%" style="stop-color:#059669"/>
+    </linearGradient>
+    <linearGradient id="flowGrad5" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f59e0b"/>
+      <stop offset="100%" style="stop-color:#d97706"/>
+    </linearGradient>
+    <linearGradient id="flowDataGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#06b6d4;stop-opacity:0"/>
+      <stop offset="50%" style="stop-color:#06b6d4;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#06b6d4;stop-opacity:0"/>
+    </linearGradient>
+    
+    <!-- Filters -->
+    <filter id="flowShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-opacity="0.15"/>
+    </filter>
+    <filter id="flowGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    
+    <!-- Arrow marker -->
+    <marker id="flowArrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/>
+    </marker>
+    <marker id="flowArrowCyan" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#06b6d4"/>
+    </marker>
+    
+    <!-- Animations -->
+    <style>
+      @keyframes flowPulse {
+        0%, 100% { opacity: 0.4; }
+        50% { opacity: 1; }
+      }
+      @keyframes flowMove {
+        0% { stroke-dashoffset: 40; }
+        100% { stroke-dashoffset: 0; }
+      }
+      @keyframes flowData {
+        0% { transform: translateX(-30px); opacity: 0; }
+        20% { opacity: 1; }
+        80% { opacity: 1; }
+        100% { transform: translateX(30px); opacity: 0; }
+      }
+      @keyframes flowScale {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.02); }
+      }
+      .flow-pulse { animation: flowPulse 2s ease-in-out infinite; }
+      .flow-move { animation: flowMove 2s linear infinite; stroke-dasharray: 20 20; }
+      .flow-data1 { animation: flowData 3s ease-in-out infinite; }
+      .flow-data2 { animation: flowData 3s ease-in-out infinite 0.6s; }
+      .flow-data3 { animation: flowData 3s ease-in-out infinite 1.2s; }
+      .flow-data4 { animation: flowData 3s ease-in-out infinite 1.8s; }
+    </style>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="900" height="380" fill="#f8fafc"/>
+  
+  <!-- Title -->
+  <text x="450" y="32" text-anchor="middle" font-size="20" font-weight="700" fill="#1e293b">Evaluation Pipeline</text>
+  <text x="450" y="52" text-anchor="middle" font-size="11" fill="#64748b">How fasteval processes your tests</text>
+  
+  <!-- Step 1: DECORATE -->
+  <g filter="url(#flowShadow)">
+    <rect x="30" y="75" width="140" height="95" rx="12" fill="url(#flowGrad1)"/>
+    <circle cx="100" cy="105" r="18" fill="rgba(255,255,255,0.15)"/>
+    <text x="100" y="112" text-anchor="middle" font-size="16">🎯</text>
+    <text x="100" y="140" text-anchor="middle" font-size="12" font-weight="700" fill="white">1. DECORATE</text>
+    <text x="100" y="158" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.8)">@fe.metric(threshold)</text>
+  </g>
+  
+  <!-- Data flow 1 -->
+  <g class="flow-data1">
+    <line x1="170" y1="122" x2="210" y2="122" stroke="#06b6d4" stroke-width="3" class="flow-move" marker-end="url(#flowArrowCyan)"/>
+  </g>
+  
+  <!-- Step 2: TEST -->
+  <g filter="url(#flowShadow)">
+    <rect x="220" y="75" width="140" height="95" rx="12" fill="url(#flowGrad2)"/>
+    <circle cx="290" cy="105" r="18" fill="rgba(255,255,255,0.15)"/>
+    <text x="290" y="112" text-anchor="middle" font-size="16">⚡</text>
+    <text x="290" y="140" text-anchor="middle" font-size="12" font-weight="700" fill="white">2. TEST</text>
+    <text x="290" y="158" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.8)">Run your LLM/agent</text>
+  </g>
+  
+  <!-- Data flow 2 -->
+  <g class="flow-data2">
+    <line x1="360" y1="122" x2="400" y2="122" stroke="#06b6d4" stroke-width="3" class="flow-move" marker-end="url(#flowArrowCyan)"/>
+  </g>
+  
+  <!-- Step 3: SCORE -->
+  <g filter="url(#flowShadow)">
+    <rect x="410" y="75" width="140" height="95" rx="12" fill="url(#flowGrad3)"/>
+    <circle cx="480" cy="105" r="18" fill="rgba(255,255,255,0.15)"/>
+    <text x="480" y="112" text-anchor="middle" font-size="16">📊</text>
+    <text x="480" y="140" text-anchor="middle" font-size="12" font-weight="700" fill="white">3. SCORE</text>
+    <text x="480" y="158" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.8)">fe.score(actual, expected)</text>
+  </g>
+  
+  <!-- Data flow 3 -->
+  <g class="flow-data3">
+    <line x1="550" y1="122" x2="590" y2="122" stroke="#06b6d4" stroke-width="3" class="flow-move" marker-end="url(#flowArrowCyan)"/>
+  </g>
+  
+  <!-- Step 4: EVALUATE -->
+  <g filter="url(#flowShadow)">
+    <rect x="600" y="75" width="140" height="95" rx="12" fill="url(#flowGrad4)"/>
+    <circle cx="670" cy="105" r="18" fill="rgba(255,255,255,0.15)"/>
+    <text x="670" y="112" text-anchor="middle" font-size="16">🧠</text>
+    <text x="670" y="140" text-anchor="middle" font-size="12" font-weight="700" fill="white">4. EVALUATE</text>
+    <text x="670" y="158" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.8)">LLM Judge assesses</text>
+  </g>
+  
+  <!-- Data flow 4 -->
+  <g class="flow-data4">
+    <line x1="740" y1="122" x2="780" y2="122" stroke="#06b6d4" stroke-width="3" class="flow-move" marker-end="url(#flowArrowCyan)"/>
+  </g>
+  
+  <!-- Step 5: RESULT -->
+  <g filter="url(#flowShadow)" class="flow-pulse">
+    <rect x="790" y="75" width="90" height="95" rx="12" fill="url(#flowGrad5)"/>
+    <text x="835" y="118" text-anchor="middle" font-size="26" fill="white">✓</text>
+    <text x="835" y="145" text-anchor="middle" font-size="12" font-weight="700" fill="white">5. RESULT</text>
+    <text x="835" y="163" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.8)">PASS/FAIL</text>
+  </g>
+  
+  <!-- Detailed breakdown section -->
+  <rect x="30" y="195" width="850" height="165" rx="12" fill="#1e293b" filter="url(#flowShadow)"/>
+  
+  <!-- Code column -->
+  <g transform="translate(45, 210)">
+    <text x="0" y="0" font-size="10" font-weight="600" fill="#94a3b8">YOUR CODE</text>
+    <rect x="0" y="10" width="250" height="130" rx="8" fill="#0f172a"/>
+    <text x="15" y="32" font-family="monospace" font-size="10" fill="#94a3b8">import fasteval as fe</text>
+    <text x="15" y="52" font-family="monospace" font-size="10" fill="#a78bfa">@fe.correctness</text>
+    <text x="103" y="52" font-family="monospace" font-size="10" fill="#fbbf24">(threshold=0.8)</text>
+    <text x="15" y="72" font-family="monospace" font-size="10" fill="#a78bfa">@fe.toxicity</text>
+    <text x="87" y="72" font-family="monospace" font-size="10" fill="#fbbf24">(threshold=0.95)</text>
+    <text x="15" y="92" font-family="monospace" font-size="10" fill="#60a5fa">def</text>
+    <text x="40" y="92" font-family="monospace" font-size="10" fill="#f8fafc">test_agent():</text>
+    <text x="30" y="112" font-family="monospace" font-size="10" fill="#f8fafc">resp = agent(query)</text>
+    <text x="30" y="132" font-family="monospace" font-size="10" fill="#f8fafc">fe.score(resp, expected)</text>
+  </g>
+  
+  <!-- Arrow -->
+  <line x1="310" y1="285" x2="340" y2="285" stroke="#64748b" stroke-width="2" marker-end="url(#flowArrow)"/>
+  
+  <!-- LLM Judge column -->
+  <g transform="translate(355, 210)">
+    <text x="0" y="0" font-size="10" font-weight="600" fill="#94a3b8">LLM JUDGE EVALUATES</text>
+    <rect x="0" y="10" width="250" height="130" rx="8" fill="#0f172a"/>
+    <rect x="10" y="20" width="230" height="50" rx="6" fill="#1e3a5f"/>
+    <text x="125" y="40" text-anchor="middle" font-size="9" fill="#93c5fd">Evaluation Prompt</text>
+    <text x="125" y="58" text-anchor="middle" font-size="8" fill="#60a5fa">"Rate the response accuracy..."</text>
+    
+    <text x="125" y="90" text-anchor="middle" font-size="9" fill="#94a3b8">↓ LLM Assessment ↓</text>
+    
+    <rect x="10" y="100" width="110" height="30" rx="6" fill="#14532d"/>
+    <text x="65" y="120" text-anchor="middle" font-size="10" font-weight="600" fill="#86efac">Score: 0.92</text>
+    
+    <rect x="130" y="100" width="110" height="30" rx="6" fill="#1e3a5f"/>
+    <text x="185" y="120" text-anchor="middle" font-size="9" fill="#93c5fd">+ Reasoning</text>
+  </g>
+  
+  <!-- Arrow -->
+  <line x1="620" y1="285" x2="650" y2="285" stroke="#64748b" stroke-width="2" marker-end="url(#flowArrow)"/>
+  
+  <!-- Result column -->
+  <g transform="translate(665, 210)">
+    <text x="0" y="0" font-size="10" font-weight="600" fill="#94a3b8">PYTEST OUTPUT</text>
+    <rect x="0" y="10" width="195" height="130" rx="8" fill="#0f172a"/>
+    <text x="15" y="35" font-family="monospace" font-size="9" fill="#94a3b8">$ pytest -v</text>
+    <text x="15" y="55" font-family="monospace" font-size="9" fill="#f8fafc">test_agent.py</text>
+    <text x="15" y="75" font-family="monospace" font-size="9" fill="#22c55e">✓ test_agent PASSED</text>
+    <text x="15" y="95" font-family="monospace" font-size="9" fill="#94a3b8">correctness: </text>
+    <text x="95" y="95" font-family="monospace" font-size="9" fill="#22c55e">0.92</text>
+    <text x="15" y="110" font-family="monospace" font-size="9" fill="#94a3b8">toxicity: </text>
+    <text x="80" y="110" font-family="monospace" font-size="9" fill="#22c55e">0.98</text>
+    <text x="15" y="130" font-family="monospace" font-size="9" fill="#fbbf24">Aggregate: 0.95</text>
+  </g>
+</svg>

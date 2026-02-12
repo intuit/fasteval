@@ -1,0 +1,555 @@
+---
+title: Batch Evaluation
+description: Run evaluations on large datasets efficiently
+order: 7
+sidebar:
+  - title: Overview
+    anchor: overview
+  - title: Loading Datasets
+    anchor: loading-large-datasets
+  - title: Parallel Execution
+    anchor: parallel-evaluation
+  - title: Progress Tracking
+    anchor: progress-tracking
+  - title: Result Analysis
+    anchor: analyzing-results
+  - title: Cost Management
+    anchor: cost-management
+---
+
+# Batch Evaluation
+
+This cookbook shows how to run evaluations on large datasets efficiently with parallelization, progress tracking, and result analysis.
+
+## Overview
+
+![Batch Evaluation Strategy](docs/assets/batch-evaluation-strategy.svg)
+
+## Loading Large Datasets
+
+### From CSV
+
+```python
+# batch_loader.py
+import csv
+from typing import Iterator, List, Dict
+from pathlib import Path
+
+def load_dataset_csv(
+    path: str, 
+    batch_size: int = 100
+) -> Iterator[List[Dict]]:
+    """Load dataset in batches from CSV."""
+    with open(path) as f:
+        reader = csv.DictReader(f)
+        batch = []
+        
+        for row in reader:
+            batch.append({
+                "id": row["id"],
+                "input": row["input"],
+                "expected": row.get("expected", ""),
+                "metadata": {k: v for k, v in row.items() 
+                           if k not in ["id", "input", "expected"]},
+            })
+            
+            if len(batch) >= batch_size:
+                yield batch
+                batch = []
+        
+        if batch:  # Yield remaining
+            yield batch
+
+# Usage
+for batch in load_dataset_csv("test_cases.csv", batch_size=50):
+    process_batch(batch)
+```
+
+### From Database
+
+```python
+# batch_loader.py
+import asyncpg
+from typing import AsyncIterator, List, Dict
+
+async def load_dataset_postgres(
+    conn_string: str,
+    query: str,
+    batch_size: int = 100
+) -> AsyncIterator[List[Dict]]:
+    """Load dataset in batches from PostgreSQL."""
+    conn = await asyncpg.connect(conn_string)
+    
+    try:
+        async with conn.transaction():
+            cursor = await conn.cursor(query)
+            
+            while True:
+                rows = await cursor.fetch(batch_size)
+                if not rows:
+                    break
+                
+                yield [dict(row) for row in rows]
+    finally:
+        await conn.close()
+
+# Usage
+async for batch in load_dataset_postgres(
+    "postgresql://...",
+    "SELECT id, input, expected FROM test_cases WHERE status = 'pending'",
+):
+    await process_batch_async(batch)
+```
+
+### From JSON Lines
+
+```python
+import json
+from typing import Iterator, List, Dict
+
+def load_dataset_jsonl(
+    path: str, 
+    batch_size: int = 100
+) -> Iterator[List[Dict]]:
+    """Load dataset from JSON Lines file."""
+    batch = []
+    
+    with open(path) as f:
+        for line in f:
+            if line.strip():
+                batch.append(json.loads(line))
+                
+                if len(batch) >= batch_size:
+                    yield batch
+                    batch = []
+    
+    if batch:
+        yield batch
+```
+
+## Parallel Evaluation
+
+### Using asyncio
+
+```python
+# parallel_eval.py
+import asyncio
+from typing import List, Dict
+import fasteval as fe
+from fasteval import OpenAIClient
+from dataclasses import dataclass
+
+@dataclass
+class EvalTask:
+    id: str
+    input: str
+    expected: str
+    actual: str = None
+    result: dict = None
+
+async def evaluate_single(
+    task: EvalTask,
+    semaphore: asyncio.Semaphore,
+) -> EvalTask:
+    """Evaluate a single task with rate limiting."""
+    async with semaphore:
+        # Generate response (if needed)
+        if task.actual is None:
+            task.actual = await generate_response(task.input)
+        
+        # Evaluate
+        result = await fe.evaluate_async(
+            actual_output=task.actual,
+            expected_output=task.expected,
+            input=task.input,
+            metrics=["correctness", "relevance"],
+        )
+        
+        task.result = {
+            "passed": result.passed,
+            "score": result.aggregate_score,
+            "metrics": {
+                mr.metric_name: mr.score 
+                for mr in result.metric_results
+            },
+        }
+        
+        return task
+
+async def evaluate_batch_parallel(
+    tasks: List[EvalTask],
+    max_concurrent: int = 10,
+) -> List[EvalTask]:
+    """Evaluate tasks in parallel with concurrency limit."""
+    semaphore = asyncio.Semaphore(max_concurrent)
+    
+    results = await asyncio.gather(
+        *[evaluate_single(task, semaphore) for task in tasks],
+        return_exceptions=True,
+    )
+    
+    # Handle any exceptions
+    completed = []
+    for task, result in zip(tasks, results):
+        if isinstance(result, Exception):
+            task.result = {"error": str(result)}
+        completed.append(task)
+    
+    return completed
+
+# Usage
+async def main():
+    tasks = [
+        EvalTask(id="1", input="What is 2+2?", expected="4"),
+        EvalTask(id="2", input="Capital of France?", expected="Paris"),
+        # ... thousands more
+    ]
+    
+    results = await evaluate_batch_parallel(tasks, max_concurrent=20)
+```
+
+### Using ThreadPoolExecutor
+
+```python
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import List, Dict
+import fasteval as fe
+
+def evaluate_single_sync(task: Dict) -> Dict:
+    """Synchronous evaluation for thread pool."""
+    try:
+        result = fe.evaluate(
+            actual_output=task["actual"],
+            expected_output=task["expected"],
+            input=task["input"],
+            metrics=["correctness"],
+        )
+        
+        return {
+            "id": task["id"],
+            "passed": result.passed,
+            "score": result.aggregate_score,
+        }
+    except Exception as e:
+        return {
+            "id": task["id"],
+            "error": str(e),
+        }
+
+def evaluate_batch_threaded(
+    tasks: List[Dict],
+    max_workers: int = 10,
+) -> List[Dict]:
+    """Evaluate using thread pool."""
+    results = []
+    
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = {
+            executor.submit(evaluate_single_sync, task): task 
+            for task in tasks
+        }
+        
+        for future in as_completed(futures):
+            result = future.result()
+            results.append(result)
+    
+    return results
+```
+
+## Progress Tracking
+
+### Using tqdm
+
+```python
+from tqdm import tqdm
+from tqdm.asyncio import tqdm as atqdm
+import asyncio
+
+async def evaluate_with_progress(
+    dataset_path: str,
+    batch_size: int = 100,
+    max_concurrent: int = 10,
+) -> List[Dict]:
+    """Batch evaluation with progress bar."""
+    all_results = []
+    
+    # Count total items
+    total = sum(1 for _ in open(dataset_path)) - 1  # -1 for header
+    
+    with tqdm(total=total, desc="Evaluating", unit="cases") as pbar:
+        for batch in load_dataset_csv(dataset_path, batch_size):
+            tasks = [
+                EvalTask(
+                    id=item["id"],
+                    input=item["input"],
+                    expected=item["expected"],
+                )
+                for item in batch
+            ]
+            
+            results = await evaluate_batch_parallel(tasks, max_concurrent)
+            all_results.extend(results)
+            
+            pbar.update(len(batch))
+            
+            # Update progress bar description with stats
+            passed = sum(1 for r in all_results if r.result.get("passed"))
+            pbar.set_postfix({
+                "passed": f"{passed}/{len(all_results)}",
+                "rate": f"{passed/len(all_results)*100:.1f}%",
+            })
+    
+    return all_results
+```
+
+### Custom Progress Tracker
+
+```python
+# progress_tracker.py
+import time
+from dataclasses import dataclass, field
+from typing import Optional
+from datetime import datetime, timedelta
+
+@dataclass
+class BatchProgress:
+    total: int
+    completed: int = 0
+    passed: int = 0
+    failed: int = 0
+    errors: int = 0
+    start_time: datetime = field(default_factory=datetime.now)
+    
+    @property
+    def remaining(self) -> int:
+        return self.total - self.completed
+    
+    @property
+    def pass_rate(self) -> float:
+        if self.completed == 0:
+            return 0.0
+        return self.passed / self.completed
+    
+    @property
+    def elapsed(self) -> timedelta:
+        return datetime.now() - self.start_time
+    
+    @property
+    def eta(self) -> Optional[timedelta]:
+        if self.completed == 0:
+            return None
+        rate = self.completed / self.elapsed.total_seconds()
+        remaining_seconds = self.remaining / rate
+        return timedelta(seconds=remaining_seconds)
+    
+    def update(self, result: dict):
+        self.completed += 1
+        if result.get("error"):
+            self.errors += 1
+        elif result.get("passed"):
+            self.passed += 1
+        else:
+            self.failed += 1
+    
+    def report(self) -> str:
+        eta_str = str(self.eta).split('.')[0] if self.eta else "calculating..."
+        return (
+            f"Progress: {self.completed}/{self.total} "
+            f"({self.completed/self.total*100:.1f}%) | "
+            f"Pass: {self.pass_rate*100:.1f}% | "
+            f"Errors: {self.errors} | "
+            f"ETA: {eta_str}"
+        )
+
+# Usage
+progress = BatchProgress(total=10000)
+
+for batch in load_dataset_csv("data.csv"):
+    results = await evaluate_batch_parallel(batch)
+    
+    for result in results:
+        progress.update(result)
+    
+    print(progress.report())
+```
+
+## Analyzing Results
+
+### Result Aggregation
+
+```python
+# analysis.py
+import pandas as pd
+from typing import List, Dict
+from collections import defaultdict
+
+def aggregate_results(results: List[Dict]) -> Dict:
+    """Aggregate evaluation results."""
+    df = pd.DataFrame([r.result for r in results if r.result])
+    
+    summary = {
+        "total": len(results),
+        "evaluated": len(df),
+        "passed": df["passed"].sum() if "passed" in df else 0,
+        "failed": (~df["passed"]).sum() if "passed" in df else 0,
+        "pass_rate": df["passed"].mean() if "passed" in df else 0,
+        "avg_score": df["score"].mean() if "score" in df else 0,
+    }
+    
+    # Per-metric stats
+    if "metrics" in df.columns:
+        metric_scores = defaultdict(list)
+        for metrics in df["metrics"]:
+            if isinstance(metrics, dict):
+                for name, score in metrics.items():
+                    metric_scores[name].append(score)
+        
+        summary["by_metric"] = {
+            name: {
+                "mean": sum(scores) / len(scores),
+                "min": min(scores),
+                "max": max(scores),
+            }
+            for name, scores in metric_scores.items()
+        }
+    
+    return summary
+
+def find_failures(results: List[EvalTask]) -> List[Dict]:
+    """Extract failed cases for analysis."""
+    failures = []
+    
+    for task in results:
+        if task.result and not task.result.get("passed"):
+            failures.append({
+                "id": task.id,
+                "input": task.input,
+                "expected": task.expected,
+                "actual": task.actual,
+                "score": task.result.get("score"),
+                "metrics": task.result.get("metrics", {}),
+            })
+    
+    return failures
+```
+
+### Generating Reports
+
+```python
+# reporting.py
+import json
+from datetime import datetime
+
+def generate_report(
+    results: List[EvalTask],
+    output_path: str = "eval_report.json",
+):
+    """Generate evaluation report."""
+    summary = aggregate_results(results)
+    failures = find_failures(results)
+    
+    report = {
+        "timestamp": datetime.utcnow().isoformat(),
+        "summary": summary,
+        "failures": failures[:100],  # Top 100 failures
+        "failure_count": len(failures),
+    }
+    
+    with open(output_path, "w") as f:
+        json.dump(report, f, indent=2)
+    
+    # Print summary
+    print(f"\n{'='*50}")
+    print("EVALUATION REPORT")
+    print(f"{'='*50}")
+    print(f"Total cases: {summary['total']}")
+    print(f"Pass rate: {summary['pass_rate']*100:.1f}%")
+    print(f"Average score: {summary['avg_score']:.3f}")
+    
+    if "by_metric" in summary:
+        print("\nBy Metric:")
+        for name, stats in summary["by_metric"].items():
+            print(f"  {name}: {stats['mean']:.3f} (min: {stats['min']:.2f}, max: {stats['max']:.2f})")
+    
+    print(f"\nFull report saved to: {output_path}")
+```
+
+## Cost Management
+
+### Estimating Costs
+
+```python
+# cost_estimator.py
+
+# Approximate costs per 1K tokens (check current pricing)
+COST_PER_1K = {
+    "gpt-4o": {"input": 0.0025, "output": 0.01},
+    "gpt-4o-mini": {"input": 0.00015, "output": 0.0006},
+}
+
+def estimate_batch_cost(
+    num_cases: int,
+    avg_prompt_tokens: int = 500,
+    avg_response_tokens: int = 100,
+    model: str = "gpt-4o-mini",
+    metrics_per_case: int = 2,
+) -> Dict:
+    """Estimate cost for batch evaluation."""
+    costs = COST_PER_1K.get(model, COST_PER_1K["gpt-4o-mini"])
+    
+    # Each metric requires one LLM call
+    total_calls = num_cases * metrics_per_case
+    total_input_tokens = total_calls * avg_prompt_tokens
+    total_output_tokens = total_calls * avg_response_tokens
+    
+    input_cost = (total_input_tokens / 1000) * costs["input"]
+    output_cost = (total_output_tokens / 1000) * costs["output"]
+    total_cost = input_cost + output_cost
+    
+    return {
+        "model": model,
+        "num_cases": num_cases,
+        "metrics_per_case": metrics_per_case,
+        "total_api_calls": total_calls,
+        "estimated_input_tokens": total_input_tokens,
+        "estimated_output_tokens": total_output_tokens,
+        "estimated_cost_usd": round(total_cost, 2),
+    }
+
+# Usage
+estimate = estimate_batch_cost(
+    num_cases=10000,
+    metrics_per_case=3,
+    model="gpt-4o-mini",
+)
+print(f"Estimated cost: ${estimate['estimated_cost_usd']}")
+```
+
+### Budget-Aware Execution
+
+```python
+async def evaluate_with_budget(
+    tasks: List[EvalTask],
+    budget_usd: float,
+    model: str = "gpt-4o-mini",
+) -> List[EvalTask]:
+    """Run evaluation with budget limit."""
+    costs = COST_PER_1K.get(model)
+    spent = 0.0
+    completed = []
+    
+    for task in tasks:
+        # Estimate cost for this task
+        est_cost = (500 * costs["input"] + 100 * costs["output"]) / 1000
+        
+        if spent + est_cost > budget_usd:
+            print(f"Budget limit reached at {len(completed)} tasks")
+            break
+        
+        result = await evaluate_single(task, asyncio.Semaphore(1))
+        completed.append(result)
+        spent += est_cost
+    
+    print(f"Completed {len(completed)} tasks, spent ~${spent:.2f}")
+    return completed
+```

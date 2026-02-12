@@ -1,0 +1,267 @@
+---
+title: Metrics Overview
+description: Complete guide to fasteval's evaluation metrics
+order: 5
+sidebar:
+  - title: Metric Categories
+    anchor: metric-categories
+  - title: LLM-Based Metrics
+    anchor: llm-based-metrics
+  - title: RAG Metrics
+    anchor: rag-metrics
+  - title: Deterministic Metrics
+    anchor: deterministic-metrics
+  - title: Conversation Metrics
+    anchor: conversation-metrics
+  - title: Choosing the Right Metrics
+    anchor: choosing-the-right-metrics
+---
+
+# Metrics Overview
+
+Metrics are the core building blocks of fasteval evaluation. Each metric assesses a specific quality dimension of LLM outputs, returning a score between 0.0 and 1.0 along with reasoning that explains the assessment.
+
+fasteval provides metrics across four categories, each designed for specific evaluation needs and use cases.
+
+![Metric Categories](docs/assets/metrics-categories.svg)
+
+## Metric Categories
+
+| Category | Evaluation Method | Speed | Primary Use Cases |
+|----------|------------------|-------|-------------------|
+| **LLM-Based Metrics** | LLM judge assessment | ~1-3s | Semantic understanding, quality assessment |
+| **RAG Metrics** | LLM judge with context | ~1-3s | Retrieval pipeline evaluation |
+| **Deterministic Metrics** | Rule-based computation | Instant | Format validation, CI/CD pipelines |
+| **Conversation Metrics** | Multi-turn LLM analysis | ~2-5s | Chatbot and dialogue systems |
+
+### When to Use Each Category
+
+- **LLM-Based Metrics**: When you need semantic understanding that goes beyond surface-level text matching. Use for evaluating correctness, relevance, safety, and nuanced quality dimensions.
+
+- **RAG Metrics**: When evaluating Retrieval-Augmented Generation systems where answers must be grounded in retrieved context. These metrics specifically assess the relationship between generated content and source documents.
+
+- **Deterministic Metrics**: When exact matching, format validation, or high-speed evaluation is required. Ideal for CI/CD pipelines, format compliance, and scenarios where LLM evaluation would be overkill.
+
+- **Conversation Metrics**: When evaluating multi-turn dialogues where context retention, consistency, and topic management matter. These metrics analyze the full conversation history.
+
+## LLM-Based Metrics
+
+LLM-based metrics use an LLM judge to assess semantic qualities of responses. They provide nuanced evaluation that understands meaning, paraphrasing, and context.
+
+### Available Metrics
+
+| Metric | What it Measures | When to Use |
+|--------|-----------------|-------------|
+| **Correctness** | Semantic accuracy vs expected output | Q&A systems, factual queries |
+| **Relevance** | Does the response address the question? | All conversational AI |
+| **Hallucination** | Is everything grounded in facts or context? | Knowledge-based systems |
+| **Toxicity** | Is the content safe and appropriate? | User-facing applications |
+| **Bias** | Is the response fair and neutral? | Sensitive topics, hiring tools |
+| **Coherence** | Is the response logically consistent? | Long-form generation |
+| **Conciseness** | Is the response appropriately brief? | Summarization, customer support |
+
+### How They Work
+
+LLM-based metrics construct evaluation prompts that ask the judge model to:
+1. Analyze the actual output against the criteria
+2. Consider the expected output (if provided) as reference
+3. Account for input context (if provided)
+4. Return a score (0.0-1.0) with detailed reasoning
+
+### Example
+
+```python
+import fasteval as fe
+
+@fe.correctness(threshold=0.8)
+@fe.relevance(threshold=0.7)
+def test_qa_bot():
+    response = my_bot("What year was Python released?")
+    fe.score(response, "Python was first released in 1991", input="What year was Python released?")
+```
+
+### Threshold Guidelines
+
+| Metric | Typical Threshold | Rationale |
+|--------|------------------|-----------|
+| Correctness | 0.75-0.85 | Must be substantially accurate |
+| Relevance | 0.70-0.80 | Should address the question |
+| Hallucination | 0.80-0.90 | Moderate tolerance for grounding |
+| Toxicity | 0.90-0.95 | Very low tolerance for harmful content |
+| Bias | 0.80-0.90 | Moderate tolerance for neutrality |
+| Coherence | 0.70-0.80 | Should be logically consistent |
+| Conciseness | 0.60-0.75 | More lenient for style metrics |
+
+## RAG Metrics
+
+RAG metrics evaluate Retrieval-Augmented Generation systems, assessing both the retrieval quality and the generation's faithfulness to retrieved context.
+
+### Available Metrics
+
+| Metric | What it Measures | When to Use |
+|--------|-----------------|-------------|
+| **Faithfulness** | Is the response grounded in retrieved documents? | Any RAG system |
+| **Contextual Precision** | Are retrieved documents actually relevant? | Tuning retrievers |
+| **Contextual Recall** | Do retrieved documents cover the answer? | Knowledge coverage |
+| **Answer Correctness** | Combined RAG quality score | Overall RAG evaluation |
+
+### Key Concepts
+
+- **Faithfulness**: Evaluates whether claims in the response are supported by the provided context. Catches hallucinations where the model generates plausible but ungrounded information.
+
+- **Contextual Precision**: Measures retrieval quality—whether the documents returned by your retriever are relevant to the query. Low precision indicates noise in retrieval results.
+
+- **Contextual Recall**: Measures retrieval coverage—whether the retrieved documents contain the information needed to answer the query. Low recall indicates missing knowledge.
+
+### Example
+
+```python
+import fasteval as fe
+
+@fe.faithfulness(threshold=0.8)
+@fe.contextual_precision(threshold=0.7)
+def test_rag_pipeline():
+    docs = retriever.search("company refund policy")
+    response = rag_agent("How do I get a refund?", context=docs)
+    fe.score(response, context=docs, input="How do I get a refund?")
+```
+
+### Threshold Guidelines
+
+| Metric | Typical Threshold | Rationale |
+|--------|------------------|-----------|
+| Faithfulness | 0.80-0.90 | High tolerance for grounding |
+| Contextual Precision | 0.70-0.80 | Some noise acceptable |
+| Contextual Recall | 0.70-0.80 | Complete coverage not always required |
+| Answer Correctness | 0.75-0.85 | Combined quality measure |
+
+## Deterministic Metrics
+
+Deterministic metrics provide instant evaluation without LLM calls. They use rule-based computation for exact matching, pattern validation, and format checking.
+
+### Available Metrics
+
+| Metric | What it Checks | Use Case |
+|--------|---------------|----------|
+| **Contains** | Substring exists in output | Required keywords, disclaimers |
+| **Exact Match** | Strings are identical | Structured outputs, specific formats |
+| **ROUGE** | Text overlap similarity | Summarization quality |
+| **JSON Schema** | Valid JSON matching schema | API responses, structured output |
+| **Regex** | Pattern matching | Format validation |
+
+### When to Use Deterministic Metrics
+
+- **CI/CD pipelines**: Fast execution without API calls
+- **Format validation**: Schema compliance, required structure
+- **Required content**: Legal disclaimers, mandatory phrases
+- **High-volume testing**: Cost-effective for large test suites
+- **Complementing LLM metrics**: Layer with semantic evaluation
+
+### Example
+
+```python
+import fasteval as fe
+
+@fe.contains()
+def test_includes_disclaimer():
+    response = legal_bot("What are your terms?")
+    fe.score(response, "not legal advice")  # Must contain this phrase
+
+@fe.json_schema(schema={"type": "object", "required": ["id", "status"]})
+def test_api_format():
+    response = my_api("get status")
+    fe.score(response, None)  # Schema validation only
+```
+
+## Conversation Metrics
+
+Conversation metrics evaluate multi-turn dialogues, analyzing how well the system maintains context, consistency, and topic coherence across turns.
+
+### Available Metrics
+
+| Metric | What it Measures | When to Use |
+|--------|-----------------|-------------|
+| **Context Retention** | Does the bot remember previous turns? | Customer support, assistants |
+| **Consistency** | Are responses consistent across turns? | Any multi-turn system |
+| **Topic Drift** | Does the conversation stay on topic? | Focused task assistants |
+
+### Key Concepts
+
+- **Context Retention**: Evaluates whether the system maintains information from earlier turns. A support bot should remember the user's order number mentioned three turns ago.
+
+- **Consistency**: Checks that the system doesn't contradict itself across turns. If it says delivery takes 3 days, it shouldn't later say 5 days.
+
+- **Topic Drift**: Monitors whether responses stay relevant to the conversation goal. Detects when the system inappropriately changes topics.
+
+### Example
+
+```python
+import fasteval as fe
+
+@fe.context_retention(threshold=0.8)
+@fe.consistency(threshold=0.9)
+@fe.conversation([
+    {"query": "My order is #12345", "expected": "order 12345"},
+    {"query": "When will it arrive?", "expected": "delivery"},  # Should remember order
+])
+def test_support_conversation(query, expected, history):
+    response = my_bot(query, history=history)
+    fe.score(response, expected, input=query)
+```
+
+## Choosing the Right Metrics
+
+### For General Q&A and Chatbots
+
+Start with core quality and safety metrics:
+
+```python
+@fe.correctness(threshold=0.8)  # Factual accuracy
+@fe.relevance(threshold=0.7)    # Answers the question
+@fe.toxicity(threshold=0.95)    # Safe content
+```
+
+### For RAG Systems
+
+Focus on retrieval quality and grounding:
+
+```python
+@fe.faithfulness(threshold=0.8)       # Grounded in context
+@fe.answer_correctness(threshold=0.7) # Overall quality
+@fe.hallucination(threshold=0.85)     # No fabricated content
+```
+
+### For Production Safety
+
+Prioritize safety metrics with strict thresholds:
+
+```python
+@fe.toxicity(threshold=0.95)    # No harmful content
+@fe.bias(threshold=0.9)         # Fair and neutral
+@fe.contains()                   # Required disclaimers
+```
+
+### For Fast CI/CD
+
+Use deterministic metrics to avoid API latency:
+
+```python
+@fe.contains()                         # Required content
+@fe.exact_match()                      # Specific format
+@fe.json_schema(schema=my_schema)      # Valid structure
+```
+
+### Combining Metrics for Comprehensive Evaluation
+
+Production evaluation often requires multiple metric types:
+
+```python
+@fe.correctness(threshold=0.8)     # LLM: semantic accuracy
+@fe.faithfulness(threshold=0.8)    # RAG: grounded in context
+@fe.contains()                      # Fast: required phrase
+@fe.json_schema(schema=my_schema)  # Fast: valid structure
+def test_comprehensive():
+    ...
+```
+
+All metrics run and report independently. The test fails if **any** metric falls below its threshold, ensuring comprehensive quality coverage.

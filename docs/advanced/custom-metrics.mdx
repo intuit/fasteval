@@ -1,0 +1,272 @@
+---
+title: Custom Metrics
+description: Create your own evaluation metrics
+order: 1
+sidebar:
+  - title: When to Create Custom Metrics
+    anchor: when-to-create-custom-metrics
+  - title: LLM-Based Custom Metrics
+    anchor: llm-based-custom-metrics
+  - title: Deterministic Custom Metrics
+    anchor: deterministic-custom-metrics
+  - title: Testing Your Custom Metrics
+    anchor: testing-your-custom-metrics
+---
+
+# Custom Metrics
+
+Built-in metrics cover common use cases, but your domain likely has unique requirements. Custom metrics let you encode your specific quality criteria into reusable, testable components.
+
+![Custom Metric Architecture](docs/assets/custom-metric-architecture.svg)
+
+## When to Create Custom Metrics
+
+**Good candidates:**
+- Domain-specific requirements (medical accuracy, legal compliance)
+- Company style guidelines
+- Response format validation
+- Business logic checks
+
+**Use built-in metrics instead for:**
+- General correctness — `@fe.correctness()`
+- Safety evaluation — `@fe.toxicity()`, `@fe.bias()`
+- Custom criteria expressible in natural language — `@fe.criteria()`
+
+## LLM-Based Custom Metrics
+
+For evaluation that requires semantic understanding, extend `BaseLLMMetric`.
+
+### Basic Example: Tone Evaluation
+
+```python
+from fasteval import BaseLLMMetric, EvalInput, MetricResult
+
+class ToneMetric(BaseLLMMetric):
+    """Evaluate if the response maintains a professional, helpful tone."""
+    
+    name = "tone"
+    
+    def get_evaluation_prompt(self, eval_input: EvalInput) -> str:
+        return f"""
+        Evaluate the tone of this customer support response.
+        
+        Customer Query: {eval_input.input}
+        Response: {eval_input.actual_output}
+        
+        Criteria:
+        - Professional language (no slang or casual speech)
+        - Empathetic and understanding
+        - Solution-focused
+        - Appropriate formality level
+        
+        Return a JSON object:
+        {{"score": <0.0-1.0>, "reasoning": "<explanation>"}}
+        """
+```
+
+Use it like any other metric:
+
+```python
+import fasteval as fe
+
+@fe.metric(ToneMetric(threshold=0.8))
+def test_professional_tone():
+    response = my_support_bot("I've been waiting forever!")
+    fe.score(response, input="I've been waiting forever!")
+```
+
+### Advanced Example: Domain-Specific Accuracy
+
+```python
+class MedicalAccuracyMetric(BaseLLMMetric):
+    """Check medical information for accuracy and appropriate disclaimers."""
+    
+    name = "medical_accuracy"
+    
+    def __init__(self, threshold: float = 0.9, require_disclaimer: bool = True):
+        super().__init__(threshold=threshold)
+        self.require_disclaimer = require_disclaimer
+    
+    def get_evaluation_prompt(self, eval_input: EvalInput) -> str:
+        disclaimer_check = ""
+        if self.require_disclaimer:
+            disclaimer_check = """
+            - REQUIRED: Must include disclaimer to consult healthcare professional
+            - Responses without disclaimers should score at most 0.5
+            """
+        
+        return f"""
+        Evaluate this medical information response for accuracy and safety.
+        
+        Question: {eval_input.input}
+        Response: {eval_input.actual_output}
+        Reference Information: {eval_input.expected_output}
+        
+        Evaluate:
+        - Medical facts are accurate and match reference
+        - No dangerous misinformation
+        - Appropriate level of caution for medical advice
+        {disclaimer_check}
+        
+        Return JSON: {{"score": <0.0-1.0>, "reasoning": "<explanation>"}}
+        """
+
+# Usage
+@fe.metric(MedicalAccuracyMetric(threshold=0.9, require_disclaimer=True))
+def test_health_advice():
+    response = health_bot("What should I take for a headache?")
+    fe.score(response, expected="Common OTC options include...", input=query)
+```
+
+## Deterministic Custom Metrics
+
+For fast, consistent checks that don't need an LLM, extend `BaseDeterministicMetric`.
+
+### Example: Word Count Limits
+
+```python
+from fasteval import BaseDeterministicMetric, EvalInput, MetricResult
+
+class ResponseLengthMetric(BaseDeterministicMetric):
+    """Ensure responses are within acceptable length bounds."""
+    
+    name = "response_length"
+    
+    def __init__(self, min_words: int = 20, max_words: int = 200, threshold: float = 1.0):
+        super().__init__(threshold=threshold)
+        self.min_words = min_words
+        self.max_words = max_words
+    
+    def evaluate(self, eval_input: EvalInput) -> MetricResult:
+        word_count = len(eval_input.actual_output.split())
+        
+        if word_count < self.min_words:
+            return MetricResult(
+                score=0.0,
+                reasoning=f"Response too short: {word_count} words (min: {self.min_words})"
+            )
+        elif word_count > self.max_words:
+            return MetricResult(
+                score=0.0,
+                reasoning=f"Response too long: {word_count} words (max: {self.max_words})"
+            )
+        else:
+            return MetricResult(
+                score=1.0,
+                reasoning=f"Response length OK: {word_count} words"
+            )
+
+# Usage
+@fe.metric(ResponseLengthMetric(min_words=50, max_words=300))
+def test_response_length():
+    response = my_agent("Explain quantum computing")
+    fe.score(response)
+```
+
+### Example: Required Keywords
+
+```python
+class RequiredKeywordsMetric(BaseDeterministicMetric):
+    """Ensure response contains required keywords or phrases."""
+    
+    name = "required_keywords"
+    
+    def __init__(self, keywords: list[str], threshold: float = 1.0):
+        super().__init__(threshold=threshold)
+        self.keywords = [kw.lower() for kw in keywords]
+    
+    def evaluate(self, eval_input: EvalInput) -> MetricResult:
+        response_lower = eval_input.actual_output.lower()
+        found = [kw for kw in self.keywords if kw in response_lower]
+        missing = [kw for kw in self.keywords if kw not in response_lower]
+        
+        score = len(found) / len(self.keywords) if self.keywords else 1.0
+        
+        if missing:
+            reasoning = f"Missing keywords: {missing}"
+        else:
+            reasoning = f"All required keywords found"
+        
+        return MetricResult(score=score, reasoning=reasoning)
+
+# Usage
+@fe.metric(RequiredKeywordsMetric(keywords=["disclaimer", "consult", "professional"]))
+def test_contains_disclaimer():
+    response = legal_bot("Can I sue my landlord?")
+    fe.score(response)
+```
+
+### Example: JSON Structure Validation
+
+```python
+import json
+
+class JSONStructureMetric(BaseDeterministicMetric):
+    """Validate that response is valid JSON with required fields."""
+    
+    name = "json_structure"
+    
+    def __init__(self, required_fields: list[str], threshold: float = 1.0):
+        super().__init__(threshold=threshold)
+        self.required_fields = required_fields
+    
+    def evaluate(self, eval_input: EvalInput) -> MetricResult:
+        try:
+            data = json.loads(eval_input.actual_output)
+        except json.JSONDecodeError as e:
+            return MetricResult(score=0.0, reasoning=f"Invalid JSON: {e}")
+        
+        missing = [f for f in self.required_fields if f not in data]
+        
+        if missing:
+            return MetricResult(
+                score=0.0,
+                reasoning=f"Missing required fields: {missing}"
+            )
+        
+        return MetricResult(score=1.0, reasoning="Valid JSON with all required fields")
+
+# Usage
+@fe.metric(JSONStructureMetric(required_fields=["id", "status", "message"]))
+def test_api_response_format():
+    response = api_agent("Get order status for #12345")
+    fe.score(response)
+```
+
+## Combining Custom and Built-in Metrics
+
+```python
+@fe.correctness(threshold=0.8)
+@fe.toxicity(threshold=0.95)
+@fe.metric(ToneMetric(threshold=0.8))
+@fe.metric(ResponseLengthMetric(min_words=50, max_words=300))
+def test_comprehensive():
+    response = my_agent(query)
+    fe.score(response, expected, input=query)
+```
+
+## Best Practices
+
+1. **Keep metrics focused**: One metric should measure one thing
+2. **Return detailed reasoning**: Helps debug failures
+3. **Use deterministic when possible**: Faster and more consistent
+4. **Test your custom metrics**: Verify they score correctly on known examples
+5. **Document the scoring rubric**: Make it clear what scores mean
+
+## Testing Your Custom Metrics
+
+```python
+def test_tone_metric_scoring():
+    """Verify ToneMetric scores correctly on known examples."""
+    metric = ToneMetric(threshold=0.8)
+    
+    # Should score high
+    good = EvalInput(actual_output="I'd be happy to help you with that.", input="Help")
+    result = metric.evaluate(good)
+    assert result.score > 0.8
+    
+    # Should score low
+    bad = EvalInput(actual_output="idk figure it out yourself lol", input="Help")
+    result = metric.evaluate(bad)
+    assert result.score < 0.5
+```

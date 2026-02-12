@@ -1,0 +1,163 @@
+---
+title: Helpfulness
+description: Evaluate practical utility of LLM responses
+order: 10
+sidebar:
+  - title: Quick Example
+    anchor: quick-example
+  - title: How Scoring Works
+    anchor: how-scoring-works
+  - title: Practical Examples
+    anchor: practical-examples
+  - title: Combining with Other Metrics
+    anchor: combining-with-other-metrics
+---
+
+# Helpfulness Metric
+
+The helpfulness metric evaluates the practical utility of responses. Beyond just being correct, it measures whether the response actually helps the user accomplish their goal with actionable, applicable information.
+
+## Quick Example
+
+```python
+import fasteval as fe
+
+@fe.helpfulness(threshold=0.7)
+def test_useful_response():
+    query = "How do I fix a leaky faucet?"
+    response = my_llm(query)
+    fe.score(response, input=query)
+```
+
+## Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `threshold` | float | 0.7 | Minimum score to pass (0.0 - 1.0) |
+| `model` | str | None | Override the default LLM model |
+
+## How Scoring Works
+
+The LLM judge evaluates practical utility:
+
+| Score | Interpretation | Example |
+|-------|---------------|---------|
+| **0.9-1.0** | Extremely helpful | Actionable, practical, anticipates needs |
+| **0.7-0.9** | Very helpful | Good practical advice with minor gaps |
+| **0.5-0.7** | Somewhat helpful | Useful but could be more practical |
+| **0.0-0.5** | Not helpful | Theoretical only or misses the point |
+
+### What Gets Evaluated
+
+1. **Actionability**: Does the response provide actionable information?
+2. **Practical Value**: Would this actually help someone with the query?
+3. **Applicability**: Is the information practical and applicable?
+4. **Anticipation**: Does it anticipate follow-up needs?
+5. **Appropriate Detail**: Is the level of detail right for the user's needs?
+
+## Practical Examples
+
+### How-To Questions
+
+```python
+@fe.helpfulness(threshold=0.8)
+def test_troubleshooting():
+    query = "My Python script is running slowly, how can I optimize it?"
+    response = my_llm(query)
+    fe.score(response, input=query)
+```
+
+### Decision Support
+
+```python
+@fe.helpfulness(threshold=0.75)
+def test_recommendation():
+    query = "Should I use PostgreSQL or MongoDB for my e-commerce app?"
+    response = my_llm(query)
+    fe.score(response, input=query)
+```
+
+### Customer Support Scenarios
+
+```python
+@fe.helpfulness(threshold=0.85)
+def test_support_response():
+    query = "I can't log into my account and the password reset isn't working"
+    response = my_llm(query)
+    fe.score(response, input=query)
+```
+
+## Example Output
+
+**Passing test:**
+
+```
+test_troubleshooting PASSED
+
+Evaluation Results:
+  ✓ helpfulness: 0.88 (threshold: 0.70)
+    Reasoning: The response provides specific, actionable optimization
+    techniques with code examples. It identifies common bottlenecks and
+    suggests profiling tools to find the actual issue first.
+```
+
+**Failing test:**
+
+```
+test_troubleshooting FAILED
+
+Evaluation Results:
+  ✗ helpfulness: 0.45 (threshold: 0.70)
+    Reasoning: The response explains what optimization means conceptually
+    but doesn't provide any specific techniques or tools the user could
+    actually apply to their situation.
+```
+
+## Choosing Your Threshold
+
+| Use Case | Suggested Threshold |
+|----------|---------------------|
+| General Q&A | 0.6 - 0.7 |
+| Technical support | 0.7 - 0.8 |
+| Customer-facing responses | 0.8 - 0.85 |
+| Critical support scenarios | 0.85+ |
+
+## When to Use Helpfulness
+
+**Good for:**
+- How-to questions
+- Troubleshooting guides
+- Customer support responses
+- Recommendation queries
+- Decision support
+
+**Consider alternatives for:**
+- Factual accuracy — use `@fe.correctness()`
+- Educational depth — use `@fe.completeness()`
+- Safety concerns — use `@fe.toxicity()` or `@fe.bias()`
+
+## Combining with Other Metrics
+
+For customer-facing applications:
+
+```python
+@fe.helpfulness(threshold=0.8)    # Is it useful?
+@fe.correctness(threshold=0.9)    # Is it accurate?
+@fe.toxicity(threshold=0.95)      # Is it safe?
+def test_customer_response():
+    query = "How do I cancel my subscription?"
+    response = my_llm(query)
+    fe.score(response, input=query)
+```
+
+For technical support:
+
+```python
+@fe.helpfulness(threshold=0.8)    # Is it practical?
+@fe.completeness(threshold=0.7)   # Does it cover the steps?
+@fe.coherence(threshold=0.8)      # Is it easy to follow?
+def test_tech_support():
+    query = "How do I configure SSL for my server?"
+    response = my_llm(query)
+    fe.score(response, input=query)
+```

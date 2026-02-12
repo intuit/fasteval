@@ -1,0 +1,140 @@
+---
+title: Node Mocking
+description: Replace graph nodes with fakes using the fluent mock builder
+order: 4
+sidebar:
+  - title: Overview
+    anchor: overview
+  - title: Fluent Builder API
+    anchor: fluent-builder-api
+  - title: Mocking Patterns
+    anchor: mocking-patterns
+  - title: Dynamic Mocks
+    anchor: dynamic-mocks
+  - title: Combining with fasteval
+    anchor: combining-with-fasteval
+---
+
+# Node Mocking
+
+Replace any graph node with a controlled fake to isolate the node under test.
+
+## Overview
+
+Node mocking lets you:
+- **Isolate nodes** -- Test the planner without calling the real RAG service
+- **Control inputs** -- Feed specific state to downstream nodes
+- **Test routing** -- Verify that nodes route correctly with `.goto()`
+- **Speed up tests** -- Skip slow LLM calls in upstream nodes
+
+## Fluent Builder API
+
+The `mock()` function returns a `NodeMock` builder with chainable methods:
+
+```python
+from fasteval_langgraph import mock
+
+# Static updates + routing
+mock("rag").updates({"docs": ["fake doc"]}).goto("planner")
+
+# Just state updates (no routing override)
+mock("logger").updates({"log": "captured"})
+
+# Just routing (no state updates)
+mock("router").goto("fallback")
+```
+
+### NodeMock Methods
+
+| Method | Description |
+|--------|-------------|
+| `.updates(dict)` | Static state updates the mock returns |
+| `.goto(str)` | Routing target (produces `Command(goto=...)`) |
+| `.fn(callable)` | Dynamic handler `(state) -> dict` |
+
+All methods return `self` for chaining.
+
+## Mocking Patterns
+
+### In-Place (mutate the harness)
+
+```python
+graph.mock("rag").updates({"docs": ["fake"]}).goto("responder")
+result = await graph.chat("test")
+graph.reset_mocks()  # restore originals
+```
+
+### Immutable Copy (safe for parallel tests)
+
+```python
+test_graph = graph.with_mocks(
+    mock("rag").updates({"docs": ["fake"]}).goto("responder"),
+    mock("classifier").updates({"intent": "FAQ"}).goto("rag"),
+)
+result = await test_graph.chat("test")
+# Original graph is unaffected
+```
+
+### Scoped Context Manager (auto-restore)
+
+```python
+with graph.mocked(
+    mock("rag").updates({"docs": ["fake"]}).goto("responder"),
+):
+    result = await graph.chat("test")
+    assert result.state["docs"] == ["fake"]
+
+# Mocks automatically restored after the with block
+result2 = await graph.chat("test")
+assert result2.state["docs"] != ["fake"]  # real node runs
+```
+
+## Dynamic Mocks
+
+Use `.fn()` for mocks that read state:
+
+```python
+with graph.mocked(
+    mock("rag").fn(
+        lambda state: {"docs": [f"doc for {state.get('intent', '?')}"]}
+    ).goto("responder"),
+):
+    result = await graph.chat("What is OAuth?")
+    assert "doc for FAQ" in result.state["docs"][0]
+```
+
+The handler receives the current state dict and should return a dict of state updates.
+For both updates and routing, return `{"updates": {...}, "goto": "..."}`:
+
+```python
+mock("smart_router").fn(lambda state: {
+    "updates": {"routed": True},
+    "goto": "planner" if state.get("complex") else "responder",
+})
+```
+
+## Combining with fasteval
+
+Mock upstream nodes and evaluate the node under test with fasteval decorators:
+
+```python
+import fasteval as fe
+from fasteval_langgraph import harness, mock
+
+graph = harness(compiled_graph)
+
+@fe.criteria("Does the planner create a multi-path diagnostic plan?")
+@pytest.mark.asyncio
+async def test_planner_with_mock_rag():
+    test_graph = graph.with_mocks(
+        mock("classifier").updates({"intent": {"category": "TROUBLESHOOTING"}}).goto("rag"),
+        mock("rag").updates({"docs": ["tracing documentation..."]}).goto("planner"),
+    )
+    result = await test_graph.chat("My traces are missing")
+    fe.score(
+        str(result.state.get("plan")),
+        "Multi-path diagnostic plan for missing traces",
+        input="My traces are missing",
+    )
+    test_graph.reset_mocks()
+```

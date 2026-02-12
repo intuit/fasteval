@@ -1,0 +1,208 @@
+---
+title: Faithfulness
+description: Evaluate if responses are grounded in provided context
+order: 1
+sidebar:
+  - title: Quick Example
+    anchor: quick-example
+  - title: Practical Examples
+    anchor: practical-examples
+  - title: Faithfulness vs Other Metrics
+    anchor: faithfulness-vs-other-metrics
+  - title: Comprehensive RAG Stack
+    anchor: comprehensive-rag-testing-stack
+---
+
+# Faithfulness Metric
+
+The core question for any RAG system: "Is the answer actually based on what we retrieved?" The faithfulness metric answers this by checking whether every claim in the response is supported by the provided context.
+
+## Quick Example
+
+```python
+import fasteval as fe
+
+@fe.faithfulness(threshold=0.8)
+def test_rag_grounding():
+    # Documents retrieved by your RAG system
+    docs = [
+        "Our return policy allows returns within 30 days of purchase.",
+        "Items must be in original packaging with receipt.",
+    ]
+    
+    response = my_rag_agent("What's your return policy?", context=docs)
+    fe.score(response, context=docs, input="What's your return policy?")
+```
+
+## Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `threshold` | float | 0.8 | Minimum score to pass (0.0 - 1.0) |
+| `model` | str | None | Override the default LLM model |
+| `weight` | float | 1.0 | Weight for score aggregation |
+
+## How Scoring Works
+
+The metric extracts claims from the response and checks each one:
+
+![Faithfulness Claim Checking](docs/assets/faithfulness-claim-checking.svg)
+
+| Score | Interpretation |
+|-------|---------------|
+| **0.95-1.0** | All claims fully supported by context |
+| **0.8-0.95** | Most claims supported, minor additions |
+| **0.6-0.8** | Some unsupported claims |
+| **0.0-0.6** | Significant unsupported content |
+
+**Calculation:** `supported_claims / total_claims`
+
+## Practical Examples
+
+### Basic RAG Testing
+
+```python
+@fe.faithfulness(threshold=0.85)
+def test_knowledge_base_qa():
+    query = "What are the system requirements?"
+    
+    # Your retriever gets relevant docs
+    docs = retriever.search(query)
+    
+    # Your LLM generates an answer using those docs
+    response = rag_agent(query, context=docs)
+    
+    # Test: is the response grounded in the docs?
+    fe.score(response, context=docs, input=query)
+```
+
+### Multiple Document Sources
+
+```python
+@fe.faithfulness(threshold=0.8)
+def test_multi_source_rag():
+    query = "Compare product A and product B"
+    
+    # Retrieve from multiple sources
+    product_a_docs = product_db.search("product A specs")
+    product_b_docs = product_db.search("product B specs")
+    all_docs = product_a_docs + product_b_docs
+    
+    response = comparison_agent(query, context=all_docs)
+    fe.score(response, context=all_docs, input=query)
+```
+
+### Testing at Scale with CSV
+
+```python
+@fe.faithfulness(threshold=0.8)
+@fe.csv("rag_test_cases.csv")
+def test_rag_faithfulness_suite(query, expected_answer):
+    docs = retriever.search(query)
+    response = rag_agent(query, context=docs)
+    fe.score(response, expected_answer, context=docs, input=query)
+```
+
+### Production Trace Evaluation
+
+```python
+@fe.faithfulness(threshold=0.8)
+@fe.traces()
+def evaluate_production_rag():
+    """Grade real user interactions for faithfulness."""
+    for trace in get_rag_traces_from_db():
+        yield EvalInput(
+            actual_output=trace.response,
+            input=trace.query,
+            context=trace.retrieved_documents
+        )
+```
+
+## Example Output
+
+**Passing test:**
+
+```
+test_knowledge_base_qa PASSED
+
+Evaluation Results:
+  ✓ faithfulness: 0.92 (threshold: 0.85)
+    Reasoning: 11 of 12 claims are supported by the retrieved documents.
+    - Supported: "Returns accepted within 30 days"
+    - Supported: "Original packaging required"
+    - Supported: "Receipt must be present"
+    - Minor addition: "Contact support for exceptions" (common knowledge, acceptable)
+```
+
+**Failing test:**
+
+```
+test_knowledge_base_qa FAILED
+
+Evaluation Results:
+  ✗ faithfulness: 0.58 (threshold: 0.85)
+    Reasoning: 7 of 12 claims lack support in the context.
+    Unsupported claims:
+    - "Refunds processed in 24-48 hours" (not mentioned in docs)
+    - "Free return shipping" (contradicts context which mentions customer pays)
+    - "Store credit option available" (not in docs)
+```
+
+## Faithfulness vs Other Metrics
+
+| Metric | What it measures | When to use |
+|--------|-----------------|-------------|
+| **Faithfulness** | Is output grounded in provided context? | RAG systems |
+| **Hallucination** | Does output contain fabrications? | Any LLM output |
+| **Correctness** | Is output semantically correct? | Q&A without context |
+
+**Key difference:** Faithfulness specifically checks against the provided context. Hallucination checks against general factual accuracy.
+
+```python
+# Use faithfulness for RAG
+@fe.faithfulness(threshold=0.85)
+def test_rag():
+    response = rag_agent(query, context=docs)
+    fe.score(response, context=docs)
+
+# Use hallucination for general LLM output
+@fe.hallucination(threshold=0.85)  
+def test_llm():
+    response = llm(query)
+    fe.score(response)
+```
+
+## Comprehensive RAG Testing Stack
+
+For production RAG systems, combine metrics:
+
+```python
+@fe.faithfulness(threshold=0.85)         # Grounded in context?
+@fe.contextual_precision(threshold=0.7)  # Retrieved docs relevant?
+@fe.contextual_recall(threshold=0.7)     # All needed info retrieved?
+@fe.answer_correctness(threshold=0.8)    # Answer factually correct?
+def test_production_rag():
+    query = "What's the cancellation policy?"
+    expected = "You can cancel within 14 days for a full refund."
+    
+    docs = retriever.search(query)
+    response = rag_agent(query, context=docs)
+    
+    fe.score(response, expected, context=docs, input=query)
+```
+
+## Choosing Your Threshold
+
+| Use Case | Suggested Threshold |
+|----------|---------------------|
+| Customer support RAG | 0.85 - 0.9 |
+| Documentation Q&A | 0.8 - 0.85 |
+| General knowledge chat | 0.7 - 0.8 |
+| Creative applications | 0.6 - 0.7 |
+
+## Best Practices
+
+1. **Always pass context**: Faithfulness requires `context=` or `retrieval_context=`
+2. **Test with realistic docs**: Use actual retriever output, not curated examples
+3. **Log failed cases**: Unsupported claims reveal retrieval gaps or hallucination patterns
+4. **Combine with precision/recall**: Low faithfulness + high precision = hallucination problem; Low faithfulness + low recall = retrieval problem

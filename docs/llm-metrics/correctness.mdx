@@ -1,0 +1,233 @@
+---
+title: Correctness
+description: Evaluate semantic correctness of LLM outputs against expected answers
+order: 1
+sidebar:
+  - title: Overview
+    anchor: overview
+  - title: How It Works
+    anchor: how-it-works
+  - title: Parameters
+    anchor: parameters
+  - title: Practical Examples
+    anchor: practical-examples
+  - title: Threshold Guidelines
+    anchor: threshold-guidelines
+  - title: Best Practices
+    anchor: best-practices
+---
+
+# Correctness Metric
+
+The correctness metric evaluates whether an LLM's response contains semantically equivalent information to an expected answer. Unlike exact string matching, correctness understands that "Paris" and "The capital of France is Paris" convey the same factual content.
+
+## Overview
+
+Correctness is the most commonly used evaluation metric for question-answering systems, knowledge retrieval, and any application where responses have a definable "right answer." It uses semantic understanding to compare actual outputs against expected outputs, accounting for paraphrasing, different phrasings, and varying levels of detail.
+
+### When to Use Correctness
+
+| Scenario | Suitability |
+|----------|-------------|
+| Factual Q&A systems | Excellent |
+| Knowledge base queries | Excellent |
+| Information extraction | Good |
+| Summarization (with reference) | Good |
+| Creative writing | Not recommended |
+| Open-ended generation | Not recommended |
+
+## How It Works
+
+The correctness metric sends the actual output and expected output to an LLM judge, which evaluates semantic equivalence:
+
+1. **Content Analysis**: The judge identifies factual claims in both outputs
+2. **Semantic Comparison**: Claims are compared for meaning, not exact wording
+3. **Scoring**: A score from 0.0 to 1.0 reflects the degree of semantic match
+4. **Reasoning**: The judge explains its assessment for debugging
+
+### Score Interpretation
+
+![Correctness Scoring Scale](docs/assets/correctness-scoring-scale.svg)
+
+| Score | Interpretation | Example Scenario |
+|-------|---------------|------------------|
+| **0.9-1.0** | Perfect or near-perfect match | Response conveys exactly the expected information |
+| **0.7-0.9** | Correct with variations | Right answer with additional context or different wording |
+| **0.5-0.7** | Partially correct | Some correct information, but incomplete or with minor errors |
+| **0.3-0.5** | Mostly incorrect | Significant errors or missing key information |
+| **0.0-0.3** | Incorrect or unrelated | Wrong answer or completely off-topic |
+
+### Semantic Equivalence Examples
+
+The correctness metric recognizes these as equivalent:
+
+- "Paris" ≈ "The capital of France is Paris"
+- "1991" ≈ "Python was first released in 1991"
+- "Water (H2O)" ≈ "Dihydrogen monoxide, commonly known as water"
+
+## Parameters
+
+```python
+@fe.correctness(
+    threshold=0.8,    # Minimum score to pass (0.0 - 1.0)
+    model="gpt-4o",   # Override the default LLM model
+    strict=False,     # Require exact semantic match, not partial
+)
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `threshold` | float | 0.7 | Minimum score to pass (0.0 - 1.0) |
+| `model` | str | None | Override the default LLM model for this metric |
+| `strict` | bool | False | When True, requires exact semantic match without tolerance for partial answers |
+
+### Strict Mode
+
+Enable strict mode when partial answers are unacceptable:
+
+```python
+# Standard mode: "30" and "approximately 30" both pass
+@fe.correctness(threshold=0.8)
+
+# Strict mode: requires precise semantic match
+@fe.correctness(threshold=0.9, strict=True)
+```
+
+## Practical Examples
+
+### Basic Q&A Testing
+
+```python
+import fasteval as fe
+
+@fe.correctness(threshold=0.8)
+def test_geography():
+    response = my_llm("What is the capital of France?")
+    fe.score(response, expected_output="Paris")
+```
+
+This test passes for responses like:
+- "Paris"
+- "The capital of France is Paris"
+- "Paris is the capital of France, located on the Seine River"
+
+### With Input Context
+
+Providing the original question improves evaluation accuracy:
+
+```python
+@fe.correctness(threshold=0.8)
+def test_with_input():
+    question = "What is the fastest land animal?"
+    response = my_llm(question)
+    fe.score(
+        actual_output=response,
+        expected_output="The cheetah, which can reach speeds up to 70 mph",
+        input=question
+    )
+```
+
+### Data-Driven Testing
+
+Evaluate across multiple test cases:
+
+```python
+@fe.correctness(threshold=0.8)
+@fe.csv("qa_test_cases.csv")
+def test_qa_dataset(question, expected_answer):
+    response = my_llm(question)
+    fe.score(response, expected_answer, input=question)
+```
+
+### Mathematical Accuracy
+
+For numerical answers, strict mode prevents approximations:
+
+```python
+@fe.correctness(threshold=0.9, strict=True)
+def test_calculation():
+    response = my_llm("What is 15% of 200?")
+    fe.score(response, "30")  # Must be exactly 30, not "around 30"
+```
+
+## Threshold Guidelines
+
+| Use Case | Recommended Threshold | Rationale |
+|----------|----------------------|-----------|
+| Development/exploration | 0.6 - 0.7 | Allow flexibility during iteration |
+| Regular testing | 0.7 - 0.8 | Balance between strictness and flexibility |
+| Production quality gates | 0.8 - 0.9 | Ensure high accuracy for users |
+| Critical accuracy requirements | 0.9+ with `strict=True` | No tolerance for errors |
+
+### Calibrating Your Threshold
+
+1. **Collect examples**: Gather known-good and known-bad responses
+2. **Run evaluation**: Score all examples without thresholds
+3. **Analyze distribution**: Find the gap between good and bad scores
+4. **Set threshold**: Choose a value that separates them with margin
+
+## Best Practices
+
+### Combine with Other Metrics
+
+Correctness alone does not tell you everything. Stack metrics for comprehensive evaluation:
+
+```python
+@fe.correctness(threshold=0.8)    # Is it factually right?
+@fe.relevance(threshold=0.7)      # Does it answer the question?
+@fe.hallucination(threshold=0.85) # Is it grounded in facts?
+def test_comprehensive_qa():
+    question = "What causes rain?"
+    response = my_llm(question)
+    fe.score(
+        response, 
+        "Water evaporates, forms clouds, and falls as precipitation", 
+        input=question
+    )
+```
+
+### Use Semantic Expected Outputs
+
+Write expected outputs that capture meaning, not exact phrasing:
+
+```python
+# Good: Captures the semantic content
+fe.score(response, expected_output="Python was released in 1991")
+
+# Less ideal: Too specific, may penalize valid variations
+fe.score(response, expected_output="Guido van Rossum released Python version 1.0 in January 1991")
+```
+
+### Consider Alternatives for Specific Use Cases
+
+| Use Case | Better Alternative |
+|----------|-------------------|
+| Open-ended creative writing | `@fe.criteria()` with custom criteria |
+| RAG systems | Combine with `@fe.faithfulness()` |
+| Safety evaluation | `@fe.toxicity()` + `@fe.bias()` |
+| Format validation | `@fe.json_schema()` or `@fe.contains()` |
+
+## Example Output
+
+**Passing test:**
+
+```
+test_geography PASSED
+
+Evaluation Results:
+  correctness: 0.92 (threshold: 0.80)
+    Reasoning: The response correctly states that Paris is the capital 
+    of France. The additional historical context does not contradict 
+    the expected answer.
+```
+
+**Failing test:**
+
+```
+test_geography FAILED
+
+Evaluation Results:
+  correctness: 0.45 (threshold: 0.80)
+    Reasoning: The response mentions France but incorrectly states 
+    Lyon as the capital instead of Paris.
+```

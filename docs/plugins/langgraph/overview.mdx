@@ -1,0 +1,109 @@
+---
+title: Overview
+description: Test any LangGraph agent with fasteval decorators, mocking, and per-node inspection
+order: 1
+sidebar:
+  - title: What is fasteval-langgraph?
+    anchor: what-is-fasteval-langgraph
+  - title: Key Features
+    anchor: key-features
+  - title: Architecture
+    anchor: architecture
+  - title: Installation
+    anchor: installation
+  - title: Quick Example
+    anchor: quick-example
+---
+
+# fasteval-langgraph
+
+Test any compiled LangGraph agent with fasteval decorators, node mocking, session management, and per-node inspection.
+
+## What is fasteval-langgraph?
+
+**fasteval-langgraph** is an optional plugin that wraps any compiled `StateGraph` with a minimal test harness. It gives you `.chat()`, `.session()`, `.mock()`, and `.node()` methods whose results feed directly into `fe.score()` and fasteval decorators.
+
+```bash
+pip install fasteval-langgraph
+```
+
+```python
+from fasteval_langgraph import harness, mock
+import fasteval as fe
+
+graph = harness(compiled_graph)
+
+@fe.correctness(threshold=0.8)
+@fe.relevance(threshold=0.7)
+async def test_agent():
+    result = await graph.chat("How do I configure OAuth?")
+    fe.score(result.response, "Use OAuth 2.0 with PKCE flow", input="How do I configure OAuth?")
+```
+
+## Key Features
+
+- **Single wrapper, not a framework** -- `GraphHarness` wraps any compiled `StateGraph`. One class, four methods.
+- **Auto-detects graph type** -- Detects `MessagesState` vs plain `TypedDict` and sets sensible defaults for input/output handling.
+- **Per-node trace capture** -- Every `.chat()` call records which nodes ran and what state updates each produced.
+- **Fluent node mocking** -- Replace any node with `mock("rag").updates({...}).goto("planner")`. Supports static, dynamic, scoped, and immutable copy patterns.
+- **Multi-turn sessions** -- `.session()` holds a thread_id, auto-detects interrupts, and handles resume.
+- **Layered config/context** -- Set defaults at constructor level, override per-session, override per-call. Deep-merged automatically.
+- **Single node execution** -- `.node("classifier").run(messages=[...])` executes one node in isolation and parses `Command` routing.
+- **Works with any LangGraph agent** -- No assumptions about state schema, node names, routing patterns, or interrupt strategies.
+
+## Architecture
+
+The plugin consists of one class (`GraphHarness`), one factory function (`harness()`), one builder (`NodeMock` via `mock()`), and three data models:
+
+```
+fasteval_langgraph/
+    graph.py     -- GraphHarness, Session, NodeHandle, harness()
+    models.py    -- ChatResult, NodeResult, NodeStep
+    mocking.py   -- NodeMock, mock(), apply/restore logic
+    _utils.py    -- deep_merge, auto-detection helpers
+```
+
+All execution is async-first. Results are Pydantic models that serialize cleanly for `fe.score()`.
+
+## Installation
+
+```bash
+pip install fasteval-langgraph
+```
+
+**Dependencies:** `fasteval>=3.0.0`, `langgraph>=0.2.0`, `pydantic>=2.0.0`
+
+## Quick Example
+
+```python
+from fasteval_langgraph import harness, mock
+import fasteval as fe
+
+# Wrap your compiled graph
+graph = harness(compiled_graph)
+
+# --- Single message ---
+result = await graph.chat("What is OAuth?")
+result.response      # "OAuth is an authorization framework..."
+result.state         # {"intent": "FAQ", "docs": [...]}
+result.trace         # [NodeStep(node="classifier", ...), NodeStep(node="rag", ...), ...]
+result.nodes_ran     # ["classifier", "rag", "responder"]
+
+# --- Multi-turn session ---
+async with graph.session() as s:
+    r1 = await s.chat("My API returns 401")
+    r2 = await s.chat("I already checked credentials")
+    assert r2.state["needs_more_info"] is False
+
+# --- Mock a node ---
+with graph.mocked(mock("rag").updates({"docs": ["fake doc"]}).goto("responder")):
+    result = await graph.chat("Test with mock")
+    assert result.state["docs"] == ["fake doc"]
+
+# --- Test a single node ---
+node_result = await graph.node("classifier").run(
+    messages=[HumanMessage(content="My app crashes")]
+)
+assert node_result.goto == "planner"
+assert node_result.updates["intent"] == "TROUBLESHOOTING"
+```

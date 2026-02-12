@@ -1,0 +1,29 @@
+---
+title: JSON Schema
+description: Validate JSON output against a schema
+order: 4
+---
+
+# JSON Schema Metric
+
+The JSON schema metric validates that JSON output conforms to a specified schema.
+
+## Usage
+
+```python
+import fasteval as fe
+
+schema = {
+    "type": "object",
+    "properties": {
+        "name": {"type": "string"},
+        "age": {"type": "integer"}
+    },
+    "required": ["name"]
+}
+
+@fe.json_schema(schema=schema)
+def test_json_output():
+    response = my_llm("Generate a person object")
+    fe.score(response, None)  # expected not needed for schema validation
+```

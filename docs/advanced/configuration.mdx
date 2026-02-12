@@ -1,0 +1,209 @@
+---
+title: Configuration
+description: Configure fasteval settings
+order: 4
+sidebar:
+  - title: Configuration Hierarchy
+    anchor: configuration-hierarchy
+  - title: Global Configuration
+    anchor: global-configuration-pyprojecttoml
+  - title: Programmatic Configuration
+    anchor: programmatic-configuration
+  - title: CI/CD Recommendations
+    anchor: ci-cd-recommendations
+---
+
+# Configuration
+
+fasteval can be configured at multiple levels: globally via config files, programmatically in code, or per-test with decorator parameters.
+
+## Configuration Hierarchy
+
+Settings are resolved in this order (highest priority first):
+
+![Configuration Hierarchy](docs/assets/configuration-hierarchy.svg)
+
+1. **Per-metric decorator parameters** — `@fe.correctness(threshold=0.9)`
+2. **Programmatic configuration** — `fe.configure(...)`
+3. **pyproject.toml settings** — `[tool.fasteval]`
+4. **Environment variables** — `OPENAI_API_KEY`, etc.
+
+## Global Configuration (pyproject.toml)
+
+Recommended for project-wide defaults:
+
+```toml
+[tool.fasteval]
+# LLM Provider Settings
+default_provider = "openai"
+default_model = "gpt-4o-mini"
+
+# Default Thresholds
+default_threshold = 0.7
+
+# Performance Settings
+max_concurrent_evals = 5
+
+# Logging
+verbose = false
+log_level = "WARNING"
+```
+
+## Programmatic Configuration
+
+For runtime configuration or conditional settings:
+
+```python
+import fasteval as fe
+
+fe.configure(
+    default_provider="openai",
+    default_model="gpt-4o-mini",
+    default_threshold=0.7,
+)
+```
+
+### Environment-Based Configuration
+
+```python
+import os
+import fasteval as fe
+
+if os.getenv("CI"):
+    # Faster, cheaper model in CI
+    fe.configure(
+        default_model="gpt-4o-mini",
+        default_threshold=0.7,
+    )
+else:
+    # More accurate model for local development
+    fe.configure(
+        default_model="gpt-4o",
+        default_threshold=0.8,
+    )
+```
+
+### conftest.py Configuration
+
+For pytest-specific setup:
+
+```python
+# conftest.py
+import pytest
+import fasteval as fe
+from fasteval import OpenAIClient
+
+@pytest.fixture(scope="session", autouse=True)
+def configure_fasteval():
+    """Configure fasteval for all tests in this session."""
+    fe.configure(
+        default_model="gpt-4o-mini",
+    )
+
+@pytest.fixture
+def strict_evaluator():
+    """Fixture for tests that need stricter evaluation."""
+    return OpenAIClient(model="gpt-4o", temperature=0)
+```
+
+## Per-Test Configuration
+
+Override defaults on individual metrics:
+
+```python
+@fe.correctness(
+    threshold=0.9,        # Override default threshold
+    model="gpt-4o",       # Override default model
+)
+def test_critical_functionality():
+    response = my_agent(query)
+    fe.score(response, expected)
+```
+
+Mix defaults and overrides:
+
+```python
+@fe.correctness(threshold=0.9)           # High threshold, default model
+@fe.relevance()                          # All defaults
+@fe.toxicity(model="gpt-4o-mini")        # Default threshold, fast model
+def test_mixed_config():
+    ...
+```
+
+## Configuration Options Reference
+
+### LLM Provider Settings
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `default_provider` | str | "openai" | Provider name or custom client |
+| `default_model` | str | "gpt-4o-mini" | Model to use for evaluation |
+| `api_key` | str | None | API key (if not in environment) |
+| `temperature` | float | 0.0 | LLM temperature (0 for deterministic) |
+
+### Threshold Settings
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `default_threshold` | float | 0.7 | Default passing threshold |
+
+### Performance Settings
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `max_concurrent_evals` | int | 5 | Parallel evaluation limit |
+| `timeout` | int | 60 | Request timeout in seconds |
+
+### Logging Settings
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `verbose` | bool | False | Detailed output |
+| `log_level` | str | "WARNING" | Logging level |
+
+## CI/CD Recommendations
+
+```toml
+# pyproject.toml for CI
+
+[tool.fasteval]
+default_model = "gpt-4o-mini"     # Faster, cheaper
+default_threshold = 0.7           # Slightly lenient for CI
+verbose = false                   # Clean output
+timeout = 30                      # Fail fast on slow calls
+```
+
+```yaml
+# GitHub Actions environment
+env:
+  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+  FASTEVAL_NO_INTERACTIVE: "1"    # Skip human review prompts
+```
+
+## Multiple Configurations
+
+For different test suites with different needs:
+
+```python
+# tests/conftest.py
+
+@pytest.fixture
+def fast_config():
+    """Configuration for quick smoke tests."""
+    fe.configure(model="gpt-4o-mini")
+
+@pytest.fixture  
+def accurate_config():
+    """Configuration for thorough evaluation."""
+    fe.configure(model="gpt-4o")
+```
+
+```python
+# tests/test_smoke.py
+def test_basic_functionality(fast_config):
+    ...
+
+# tests/test_critical.py
+def test_production_quality(accurate_config):
+    ...
+```

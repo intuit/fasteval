@@ -1,136 +1,184 @@
-# Python Package: `fasteval`
+# fasteval
 
-![Supported Python versions](https://shields.io/badge/python-3.10_|_3.11_|_3.12_|_3.13_|_3.14-green?logo=python)
-[![Artifactory Releases](https://img.shields.io/badge/Artifactory-Releases-41BF47.svg?logo=JFrog)](https://artifact.intuit.com/artifactory/api/pypi/pypi-intuit/simple/intlgntsys-mlservices.fasteval.fasteval/)
-[![Build Status](https://build.intuit.com/tech-ai/buildStatus/buildIcon?job=intlgntsys-mlservices/fasteval/fasteval/master)](https://build.intuit.com/tech-ai/job/intlgntsys-mlservices/job/fasteval/job/fasteval/job/master/)
-[![Code Coverage](https://build.intuit.com/tech-ai/buildStatus/coverageIcon?job=intlgntsys-mlservices/fasteval/fasteval/master)](https://build.intuit.com/tech-ai/job/intlgntsys-mlservices/job/fasteval/job/fasteval/job/master/)
+[![PyPI version](https://img.shields.io/pypi/v/fasteval.svg)](https://pypi.org/project/fasteval/)
+![Python versions](https://img.shields.io/badge/python-3.10_|_3.11_|_3.12_|_3.13_|_3.14-blue?logo=python)
+[![CI](https://github.com/intuit/fasteval/actions/workflows/ci.yml/badge.svg)](https://github.com/intuit/fasteval/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-This Python package was created from Intuit's Library Paved Road.  
-For support with the paved road:
-* Check [StackOverflow tag `psk`](https://stackoverflow.intuit.com/posts/tagged/4803)
-* Ask in Slack channel [#psk-support](https://intuit-teams.slack.com/archives/C04AR7RF97G)
+A **decorator-first LLM evaluation library** for testing AI agents and LLMs. Stack decorators to define evaluation criteria, run with pytest.
 
-For support with this package, use Slack channel [#REPLACEME](https://intuit-teams.slack.com/archives/REPLACEME).
+## Features
+
+- **Decorator-based metrics** -- stack `@fe.correctness`, `@fe.relevance`, `@fe.hallucination`, and 30+ more
+- **pytest native** -- run evaluations with `pytest`, get familiar pass/fail output
+- **LLM-as-judge + deterministic** -- semantic LLM metrics alongside ROUGE, exact match, JSON schema, regex
+- **Multi-modal** -- evaluate vision, audio, and image generation models
+- **Conversation metrics** -- context retention, topic drift, consistency for multi-turn agents
+- **RAG metrics** -- faithfulness, contextual precision, contextual recall, answer correctness
+- **Tool trajectory** -- verify agent tool calls, argument matching, call sequences
+- **Pluggable providers** -- OpenAI (default), Anthropic, Azure OpenAI, Ollama
+
+## Quick Start
+
+```bash
+pip install fasteval
+```
+
+Set your LLM provider key:
+
+```bash
+export OPENAI_API_KEY=sk-your-key-here
+```
+
+Write your first evaluation test:
+
+```python
+import fasteval as fe
+
+@fe.correctness(threshold=0.8)
+@fe.relevance(threshold=0.7)
+def test_qa_agent():
+    response = my_agent("What is the capital of France?")
+    fe.score(response, expected_output="Paris", input="What is the capital of France?")
+```
+
+Run it:
+
+```bash
+pytest test_qa_agent.py -v
+```
 
 ## Installation
 
-### uv
+```bash
+# pip
+pip install fasteval
 
-PSK recommends using [uv](https://docs.astral.sh/uv/) to manage Python dependencies.  
-Run the following to update `pyproject.toml`:
-
-```shell
-uv add intlgntsys-mlservices.fasteval.fasteval
+# uv
+uv add fasteval
 ```
 
-Make sure you [set uv to use Intuit Artifactory](https://stackoverflow.intuit.com/a/37136/1539) 
-for both packages and [Python standalone installations](https://docs.astral.sh/uv/guides/install-python/).
+### Optional Extras
 
-### Poetry
+```bash
+# Anthropic provider
+pip install fasteval[anthropic]
 
-PSK previously recommended using [Poetry](https://python-poetry.org/) to manage Python dependencies.  
-Run the following to update `pyproject.toml`:
+# Vision-language evaluation (GPT-4V, Claude Vision)
+pip install fasteval[vision]
 
-```shell
-poetry add intlgntsys-mlservices.fasteval.fasteval
+# Audio/speech evaluation (Whisper, ASR)
+pip install fasteval[audio]
+
+# Image generation evaluation (DALL-E, Stable Diffusion)
+pip install fasteval[image-gen]
+
+# All multi-modal features
+pip install fasteval[multimodal]
 ```
 
-Make sure you [set Poetry to use Intuit's PyPI](https://stackoverflow.intuit.com/a/24365/1539).
+## Usage Examples
 
-### Virtual Environment with pip
+### Deterministic Metrics
 
-If you prefer to keep it simple, 
-you can create a [virtual environment](https://docs.python.org/3/library/venv.html) and then [install using `pip`](https://pip.pypa.io/en/stable/user_guide/#installing-packages):
+```python
+import fasteval as fe
 
-```shell
-python -m venv venv
-venv/bin/python -m pip install intlgntsys-mlservices.fasteval.fasteval
+@fe.contains()
+def test_keyword_present():
+    fe.score("The answer is 42", expected_output="42")
+
+@fe.rouge(threshold=0.6, rouge_type="rougeL")
+def test_summary_quality():
+    fe.score(actual_output=summary, expected_output=reference)
 ```
 
-Make sure to [configure pip to read from Intuit's PyPI in Artifactory](https://wiki.intuit.com/display/CFTKB/Intuit+PyPI+Registry#IntuitPyPIRegistry-ProjectSetupforInstalling).
+### RAG Evaluation
 
+```python
+@fe.faithfulness(threshold=0.8)
+@fe.contextual_precision(threshold=0.7)
+def test_rag_pipeline():
+    result = rag_pipeline("How does photosynthesis work?")
+    fe.score(
+        actual_output=result.answer,
+        context=result.retrieved_docs,
+        input="How does photosynthesis work?",
+    )
+```
 
-## Usage
+### Tool Trajectory
 
-ASSET OWNER: This section should describe the project's functionality from an end user's point of view. What are the top features for users? Screenshots are recommended.
+```python
+@fe.tool_call_accuracy(threshold=0.9)
+def test_agent_tools():
+    result = agent.run("Book a flight to Paris")
+    fe.score(
+        actual_tools=result.tool_calls,
+        expected_tools=[
+            {"name": "search_flights", "args": {"destination": "Paris"}},
+            {"name": "book_flight"},
+        ],
+    )
+```
+
+### Metric Stacks
+
+```python
+@fe.correctness(threshold=0.8, weight=2.0)
+@fe.relevance(threshold=0.7, weight=1.0)
+@fe.coherence(threshold=0.6, weight=1.0)
+def test_comprehensive():
+    response = agent("Explain quantum computing")
+    fe.score(response, expected_output=reference_answer, input="Explain quantum computing")
+```
+
+## Plugins
+
+| Plugin | Description | Install |
+|--------|-------------|---------|
+| [fasteval-langfuse](./plugins/fasteval-langfuse/) | Evaluate Langfuse production traces with fasteval metrics | `pip install fasteval-langfuse` |
+| [fasteval-langgraph](./plugins/fasteval-langgraph/) | Test harness for LangGraph agents | `pip install fasteval-langgraph` |
+| [fasteval-observe](./plugins/fasteval-observe/) | Runtime monitoring with async sampling | `pip install fasteval-observe` |
 
 ## Local Development
 
-### uv
-
-This library uses [uv to manage Python dependencies](https://docs.astral.sh/uv/getting-started/features/#projects).  
-`brew` is The easiest way to install on macOS:
-
-```shell
+```bash
+# Install uv
 brew install uv
-```
 
-For additional installation options (e.g. setting the PATH, installing a specific version, etc),
-see the installation docs:  
-https://docs.astral.sh/uv/getting-started/installation/
-
-## Python Versions Supported
-
-### Increase Minimum Supported Version
-
-At present, the library is using Python 3.13 for packaging purposes.
-
-To modify which Python versions are supported and tested by this library:
-- Update "envlist" in "tox" section of [tox.ini](/tox.ini)
-- Update "Supported Python versions" badge in [README.md](/README.md)
-- Update "project.requires-python" in [pyproject.toml](/pyproject.toml) (if needed)
-- Update "tool.black.target-version" in [pyproject.toml](/pyproject.toml) (optional)
-- Update the "pythonBaseVersion" value in [msaas-config.yaml](/msaas-config.yaml) if that version is no longer supported
-
-### Virtual Environment
-
-Create by running:
-
-```shell
+# Create virtual environment and install dependencies
 uv sync --all-extras
-```
 
-Run a command from the virtual environment, like code formatting:
-
-```shell
-uv run black .
-```
-
-To activate the virtual environment:
-
-```shell
-source .venv/bin/activate
-```
-
-For more information, refer to [uv's documentation](https://docs.astral.sh/uv/pip/environments/#using-a-virtual-environment).
-
-### Type checking (mypy)
-
-This library supports Python type [annotation](https://peps.python.org/pep-0484/).
-Types will be checked as part of the test suite (see below).
-For more information, see the [mypy documentation](https://mypy.readthedocs.io/en/stable/getting_started.html#dynamic-vs-static-typing).
-
-### Testing
-
-To run the test suite locally:
-```shell
+# Run the test suite
 uv run tox
+
+# Format code
+uv run black .
+uv run isort .
+
+# Type checking
+uv run mypy .
 ```
 
-## Publishing
+## Documentation
 
-Versions are published by opening a PR, 
-adding a `major`/`minor`/`patch` label, 
-waiting for the checks to pass, 
-then merging the PR.  
-See https://stackoverflow.intuit.com/a/26011/1539 for details.
+Full documentation is available in the [docs/](./docs/) directory, covering:
 
-Click on the "Artifactory Releases" badge at the top to see all versions.
+- [Getting Started](./docs/getting-started/) -- installation, quickstart
+- [Core Concepts](./docs/core-concepts/) -- decorators, metrics, scoring, data sources
+- [LLM Metrics](./docs/llm-metrics/) -- correctness, relevance, hallucination, and more
+- [Deterministic Metrics](./docs/deterministic-metrics/) -- ROUGE, exact match, regex, JSON schema
+- [RAG Metrics](./docs/rag-metrics/) -- faithfulness, contextual precision/recall
+- [Conversation Metrics](./docs/conversation-metrics/) -- context retention, consistency
+- [Multi-Modal](./docs/multimodal/) -- vision, audio, image generation evaluation
+- [Plugins](./docs/plugins/) -- Langfuse, LangGraph, Observe
+- [API Reference](./docs/api-reference/) -- decorators, evaluator, models, score
 
 ## Contributing
 
-See [Contribution Guidelines](./CONTRIBUTING.md)
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for development setup, coding standards, and how to submit pull requests.
 
-## Support
+## License
 
-Please use [#REPLACEME](https://slack.com/app_redirect?team=T2G8RTHAM&channel=REPLACEME)
+Apache License 2.0 -- see [LICENSE](./LICENSE) for details.

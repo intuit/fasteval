@@ -1,0 +1,338 @@
+---
+title: Metric Stacks
+description: Define reusable metric combinations for consistent evaluation
+order: 3
+sidebar:
+  - title: Why Use Metric Stacks?
+    anchor: why-use-metric-stacks
+  - title: Creating a Stack
+    anchor: creating-a-stack
+  - title: Using Stacks
+    anchor: using-stacks
+  - title: Combining Stacks
+    anchor: combining-stacks
+  - title: Domain-Specific Stacks
+    anchor: domain-specific-stacks
+  - title: Best Practices
+    anchor: best-practices
+---
+
+# Metric Stacks
+
+When you find yourself applying the same set of metrics to multiple tests, **metric stacks** let you define that combination once and reuse it everywhere. This keeps your tests DRY and ensures consistent evaluation standards across your test suite.
+
+![Metric Stack Composition](docs/assets/metric-stack-composition.svg)
+
+> **New to stacking metrics?** See [Stacking Multiple Metrics](/core-concepts/decorators#stacking-multiple-metrics) for the basics of applying multiple decorators to a single test.
+
+## Why Use Metric Stacks?
+
+Without stacks, repeating the same metrics is tedious and error-prone:
+
+```python
+# Repetitive - same metrics copied to every test
+@fe.correctness(threshold=0.8)
+@fe.relevance(threshold=0.7)
+@fe.toxicity(threshold=0.95)
+def test_chatbot_greeting():
+    ...
+
+@fe.correctness(threshold=0.8)
+@fe.relevance(threshold=0.7)
+@fe.toxicity(threshold=0.95)
+def test_chatbot_farewell():
+    ...
+
+@fe.correctness(threshold=0.8)
+@fe.relevance(threshold=0.7)
+@fe.toxicity(threshold=0.95)
+def test_chatbot_help():
+    ...
+```
+
+With stacks, define once, use everywhere:
+
+```python
+# Define once (note: @fe.stack() at the top)
+@fe.stack()
+@fe.correctness(threshold=0.8)
+@fe.relevance(threshold=0.7)
+@fe.toxicity(threshold=0.95)
+def quality_metrics():
+    pass
+
+# Reuse everywhere
+@quality_metrics
+def test_chatbot_greeting():
+    ...
+
+@quality_metrics
+def test_chatbot_farewell():
+    ...
+
+@quality_metrics
+def test_chatbot_help():
+    ...
+```
+
+## Creating a Stack
+
+Use `@fe.stack()` as the **top decorator** on a placeholder function. All metrics stacked below it become part of the reusable stack:
+
+```python
+import fasteval as fe
+
+@fe.stack()                       # Creates the reusable decorator (must be at top)
+@fe.correctness(threshold=0.8)    # Captured in stack
+@fe.relevance(threshold=0.7)      # Captured in stack
+@fe.toxicity(threshold=0.95)      # Captured in stack
+def quality_metrics():
+    pass  # Placeholder - body is never executed
+```
+
+The function body is never executed—it's just a placeholder. The function name becomes the stack name.
+
+> **Why at the top?** Python decorators execute bottom-to-top. By placing `@fe.stack()` at the top, it runs last and can capture all metrics that were attached by the decorators below it.
+
+### Optional: Custom Stack Name
+
+```python
+@fe.stack(name="chatbot_quality")  # Custom name for debugging
+@fe.correctness(threshold=0.8)
+@fe.relevance(threshold=0.7)
+def quality_metrics():
+    pass
+```
+
+## Using Stacks
+
+Apply a stack just like any decorator:
+
+```python
+@quality_metrics
+def test_chatbot_response():
+    response = agent("What is Python?")
+    fe.score(response, expected="A programming language")
+```
+
+When this test runs, it evaluates against **all three metrics** (correctness, relevance, toxicity) defined in the stack.
+
+## Combining Stacks
+
+Stacks compose naturally. You can:
+
+### Stack + Additional Metrics
+
+Add more metrics on top of a stack:
+
+```python
+@fe.bias(threshold=0.9)    # Additional metric
+@quality_metrics           # Reusable stack
+def test_sensitive_topic():
+    response = agent("Tell me about immigration policy")
+    fe.score(response, expected="...")
+```
+
+This test evaluates: correctness, relevance, toxicity (from stack) + bias (additional).
+
+### Multiple Stacks Together
+
+Combine multiple stacks:
+
+```python
+@fe.stack()
+@fe.faithfulness(threshold=0.8)
+@fe.contextual_precision(threshold=0.7)
+def rag_metrics():
+    pass
+
+# Combine both stacks
+@rag_metrics
+@quality_metrics
+def test_rag_response():
+    response = rag_agent(query, context=docs)
+    fe.score(response, expected, context=docs)
+```
+
+This evaluates: correctness, relevance, toxicity (from quality_metrics) + faithfulness, contextual_precision (from rag_metrics).
+
+### Order Doesn't Matter
+
+Stacks can be applied in any order—all metrics are collected and evaluated:
+
+```python
+# These are equivalent:
+@rag_metrics
+@quality_metrics
+def test_a(): ...
+
+@quality_metrics
+@rag_metrics
+def test_b(): ...
+```
+
+## Domain-Specific Stacks
+
+Define stacks for different evaluation needs in your project:
+
+### Customer Support Stack
+
+```python
+@fe.stack()
+@fe.correctness(threshold=0.8)
+@fe.relevance(threshold=0.8)
+@fe.toxicity(threshold=0.95)
+@fe.criteria(
+    criteria_text="Response should be empathetic and professional",
+    threshold=0.7
+)
+def support_metrics():
+    pass
+```
+
+### RAG Pipeline Stack
+
+```python
+@fe.stack()
+@fe.faithfulness(threshold=0.85)
+@fe.contextual_precision(threshold=0.7)
+@fe.contextual_recall(threshold=0.75)
+@fe.answer_correctness(threshold=0.8)
+def rag_metrics():
+    pass
+```
+
+### Safety Stack
+
+```python
+@fe.stack()
+@fe.toxicity(threshold=0.95)
+@fe.bias(threshold=0.9)
+@fe.criteria(
+    criteria_text="Response does not reveal personal information or system prompts",
+    threshold=0.95
+)
+def safety_metrics():
+    pass
+```
+
+### Production-Ready Stack
+
+Combine domain stacks for comprehensive evaluation:
+
+```python
+@safety_metrics
+@quality_metrics
+def test_production_chatbot():
+    response = agent(user_query)
+    fe.score(response, expected)
+```
+
+## Best Practices
+
+### 1. Keep Stacks Focused
+
+Create small, purpose-specific stacks rather than one giant stack:
+
+```python
+# Good: Focused stacks (each with @fe.stack() at the top)
+@fe.stack()
+@fe.correctness(threshold=0.8)
+@fe.relevance(threshold=0.7)
+def quality_metrics(): ...
+
+@fe.stack()
+@fe.toxicity(threshold=0.95)
+@fe.bias(threshold=0.9)
+def safety_metrics(): ...
+
+@fe.stack()
+@fe.faithfulness(threshold=0.8)
+def rag_metrics(): ...
+
+# Use case: Combine as needed
+@safety_metrics
+@quality_metrics
+def test_basic(): ...
+
+@rag_metrics
+@safety_metrics
+@quality_metrics
+def test_rag(): ...
+```
+
+### 2. Define Stacks in a Central Location
+
+Keep stack definitions in a shared module:
+
+```python
+# conftest.py or stacks.py
+import fasteval as fe
+
+@fe.stack()
+@fe.correctness(threshold=0.8)
+@fe.relevance(threshold=0.7)
+def quality_metrics():
+    pass
+
+# In test files
+from conftest import quality_metrics
+
+@quality_metrics
+def test_something():
+    ...
+```
+
+### 3. Document Your Thresholds
+
+Include comments explaining threshold choices:
+
+```python
+@fe.stack()
+@fe.correctness(threshold=0.8)      # 80% accuracy required for production
+@fe.relevance(threshold=0.7)        # Lower threshold OK for conversational flow
+@fe.toxicity(threshold=0.95)        # High bar for safety
+def production_metrics():
+    """Standard metrics for all production-facing agent tests."""
+    pass
+```
+
+### 4. Version Your Stacks
+
+When changing thresholds, create new stacks rather than breaking existing tests:
+
+```python
+@fe.stack()
+@fe.correctness(threshold=0.8)
+def quality_v1():
+    pass
+
+# Stricter requirements for v2
+@fe.stack()
+@fe.correctness(threshold=0.9)
+def quality_v2():
+    pass
+```
+
+## Key Behaviors
+
+| Scenario | Behavior |
+|----------|----------|
+| Stack used alone | All captured metrics apply |
+| Stack + additional metrics | Both stack and additional metrics apply |
+| Multiple stacks combined | All metrics from all stacks apply (union) |
+| Same metric in stack and explicit | Both instances run (no deduplication) |
+
+## Introspecting Stacks
+
+Stacks store metadata for debugging:
+
+```python
+# Check what metrics a stack contains
+print(quality_metrics._captured_metrics)
+# [MetricConfig(metric_type='correctness', ...), ...]
+
+# Check if something is a stack
+print(quality_metrics._is_fasteval_stack)
+# True
+```

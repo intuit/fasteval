@@ -1,0 +1,255 @@
+---
+title: Multi-Modal RAG Metrics
+description: Evaluate retrieval and generation over documents with mixed content
+order: 5
+---
+
+# Multi-Modal RAG Metrics
+
+Evaluate RAG systems that work with documents containing text, tables, images, and figures.
+
+## Installation
+
+```bash
+pip install fasteval[vision]
+```
+
+## Available Metrics
+
+### `@fe.multimodal_faithfulness`
+
+Evaluate if the response is faithful to multi-modal context (text + images).
+
+```python
+import fasteval as fe
+from fasteval import ImageInput
+
+@fe.multimodal_faithfulness(threshold=0.8)
+def test_document_qa():
+    response = rag_system.query(
+        question="What was Q3 revenue?",
+        documents=["financial_report.pdf"]
+    )
+    fe.score(
+        actual_output=response,
+        context=retrieved_text_chunks,
+        images=[ImageInput(source="chart_page_5.png")],
+        expected="$4.2M",
+        input="What was Q3 revenue?"
+    )
+```
+
+**Checks:**
+- Claims supported by text context
+- Claims supported by visual content
+- No unsupported claims from either modality
+
+### `@fe.table_extraction`
+
+Evaluate accuracy of table data extraction from document images.
+
+```python
+@fe.table_extraction(threshold=0.9)
+def test_table_qa():
+    response = model.answer(
+        image="financial_table.png",
+        question="What is the total for 2024?"
+    )
+    fe.score(
+        actual_output=response,
+        expected="$150,000",
+        image="financial_table.png",
+        input="What is the total for 2024?"
+    )
+```
+
+**With expected fields:**
+
+```python
+@fe.table_extraction(threshold=0.9)
+def test_table_extraction():
+    extracted = model.extract_table("invoice.png")
+    fe.score(
+        actual_output=extracted,
+        image="invoice.png",
+        expected_fields={
+            "subtotal": "$1,000.00",
+            "tax": "$80.00",
+            "total": "$1,080.00",
+            "date": "2024-01-15"
+        }
+    )
+```
+
+### `@fe.figure_reference`
+
+Evaluate if the response correctly references figures and charts in documents.
+
+```python
+@fe.figure_reference(threshold=0.8)
+def test_figure_citation():
+    response = model.analyze(
+        images=["doc_with_figures.png"],
+        query="Summarize the trends shown in the figures"
+    )
+    fe.score(
+        actual_output=response,
+        images=["doc_with_figures.png"],
+        input="Summarize the trends shown in the figures"
+    )
+```
+
+**Checks:**
+- References to figures are accurate
+- Figure numbers/labels correctly attributed
+- Data cited from figures is correct
+
+### `@fe.cross_modal_coherence`
+
+Evaluate coherence between text and visual elements.
+
+```python
+@fe.cross_modal_coherence(threshold=0.8)
+def test_caption_coherence():
+    caption = model.caption(image="photo.jpg")
+    fe.score(
+        actual_output=caption,
+        image="photo.jpg"
+    )
+```
+
+**Checks:**
+- Text accurately describes visual content
+- No contradictions between text and images
+- Consistent style/tone across modalities
+
+### `@fe.document_understanding`
+
+Evaluate understanding of complex documents with mixed content types.
+
+```python
+@fe.document_understanding(threshold=0.8)
+def test_contract_qa():
+    response = model.query(
+        document="contract.pdf",
+        question="What is the termination clause?"
+    )
+    fe.score(
+        actual_output=response,
+        expected_output="30-day written notice",
+        image="contract.pdf",  # or list of page images
+        input="What is the termination clause?"
+    )
+```
+
+**Checks:**
+- Correct interpretation of document structure
+- Tables, forms, and figures read accurately
+- Context from multiple sections integrated
+
+## Complete Multi-Modal RAG Example
+
+```python
+import fasteval as fe
+from fasteval import ImageInput, MultiModalContext
+
+@fe.multimodal_faithfulness(threshold=0.8)
+@fe.table_extraction(threshold=0.9)
+@fe.figure_reference(threshold=0.8)
+def test_financial_report_qa():
+    """Evaluate QA over a financial report with charts and tables."""
+    
+    query = "Compare Q3 and Q4 revenue and explain the trend"
+    
+    # Retrieve relevant content
+    text_chunks = retriever.get_text_chunks(query, doc="report.pdf")
+    relevant_images = retriever.get_images(query, doc="report.pdf")
+    
+    # Generate response
+    response = llm.generate(
+        query=query,
+        context=text_chunks,
+        images=relevant_images
+    )
+    
+    fe.score(
+        actual_output=response,
+        context=text_chunks,
+        images=relevant_images,
+        input=query,
+        expected_output="Q4 revenue was $5.2M, up 24% from Q3's $4.2M, driven by holiday sales"
+    )
+```
+
+## Working with Multi-Modal Context
+
+### Using MultiModalContext
+
+```python
+from fasteval import MultiModalContext, ImageInput
+
+# Create rich context
+context = MultiModalContext(
+    text="The quarterly report shows strong growth...",
+    images=[
+        ImageInput(source="chart.png", alt_text="Revenue Chart"),
+        ImageInput(source="table.png", alt_text="Financial Table")
+    ],
+    metadata={"page_range": "5-8"}
+)
+
+fe.score(
+    actual_output=response,
+    multimodal_context=[context],
+    input=query
+)
+```
+
+### Multiple Page Documents
+
+```python
+# Process multi-page PDFs
+page_images = [
+    ImageInput(source=f"page_{i}.png", metadata={"page": i})
+    for i in range(1, 11)
+]
+
+fe.score(
+    actual_output=response,
+    images=page_images,
+    context=text_chunks,
+    input=query
+)
+```
+
+## Integration with RAG Pipelines
+
+### LangChain Integration
+
+```python
+from langchain.chains import RetrievalQA
+from langchain.vectorstores import Chroma
+
+@fe.multimodal_faithfulness(threshold=0.8)
+def test_langchain_rag():
+    # Your LangChain RAG setup
+    qa_chain = RetrievalQA.from_chain_type(...)
+    
+    result = qa_chain.run(query)
+    retrieved_docs = retriever.get_relevant_documents(query)
+    
+    fe.score(
+        actual_output=result,
+        context=[doc.page_content for doc in retrieved_docs],
+        images=[doc.metadata.get("image") for doc in retrieved_docs if doc.metadata.get("image")],
+        input=query
+    )
+```
+
+## Best Practices
+
+1. **Include both text and images** - Multi-modal faithfulness requires context from both modalities
+2. **Use page-level images for PDFs** - Convert PDF pages to images for visual context
+3. **Provide expected_fields for extraction** - More precise than full text comparison for tables
+4. **Test edge cases** - Include queries that span multiple tables or figures
+5. **Track source attribution** - Include page numbers in metadata for debugging
