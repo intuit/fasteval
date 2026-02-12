@@ -37,6 +37,7 @@ jobs:
 
   build-plugin-langfuse:
     name: Build fasteval-langfuse
+    needs: publish-core
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -59,6 +60,7 @@ jobs:
 
   build-plugin-langgraph:
     name: Build fasteval-langgraph
+    needs: publish-core
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -81,6 +83,7 @@ jobs:
 
   build-plugin-observe:
     name: Build fasteval-observe
+    needs: publish-core
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
