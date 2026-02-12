@@ -540,7 +540,7 @@ wheels = [
 ]
 
 [[package]]
-name = "fasteval"
+name = "fasteval-core"
 version = "1.0.0a1"
 source = { editable = "." }
 dependencies = [
@@ -600,8 +600,8 @@ test = [
 [package.metadata]
 requires-dist = [
     { name = "anthropic", marker = "extra == 'anthropic'", specifier = ">=0.30" },
-    { name = "fasteval", extras = ["audio"], marker = "extra == 'multimodal'" },
-    { name = "fasteval", extras = ["vision"], marker = "extra == 'multimodal'" },
+    { name = "fasteval-core", extras = ["audio"], marker = "extra == 'multimodal'" },
+    { name = "fasteval-core", extras = ["vision"], marker = "extra == 'multimodal'" },
     { name = "httpx", marker = "extra == 'vision'", specifier = ">=0.25" },
     { name = "jiwer", marker = "extra == 'audio'", specifier = ">=3.0" },
     { name = "langfuse", marker = "extra == 'langfuse'", specifier = ">=2.0" },

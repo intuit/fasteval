@@ -122,13 +122,13 @@ jobs:
             body += `|---------|---------|----------|\n`;
 
             for (const { package: pkg } of packages.include) {
-              const pypiName = pkg === 'core' ? 'fasteval' : `fasteval-${pkg}`;
+              const pypiName = pkg === 'core' ? 'fasteval-core' : `fasteval-${pkg}`;
               const artifactName = `dev-${pkg}`;
               body += `| \`${pypiName}\` | \`dev${context.runNumber}\` | [Download](${runUrl}) |\n`;
             }
 
             body += `\nDownload the \`.whl\` from the artifacts above, then install:\n`;
-            body += `\`\`\`bash\npip install ./fasteval-*.whl\n\`\`\`\n`;
+            body += `\`\`\`bash\npip install ./fasteval_core-*.whl\n\`\`\`\n`;
 
             // Find and update existing bot comment, or create new one
             const marker = '<!-- dev-preview-comment -->';

@@ -8,7 +8,7 @@ Includes:
 - Cross-modal coherence
 - Table/document extraction
 
-Requires: pip install fasteval[multimodal] or specific extras
+Requires: pip install fasteval-core[multimodal] or specific extras
 """
 
 import logging
@@ -479,7 +479,7 @@ class CLIPScoreMetric(BaseLLMMetric):
     this metric uses an LLM to simulate CLIP-style alignment scoring.
 
     For production image generation evaluation with actual CLIP scores,
-    install: pip install fasteval[image-gen]
+    install: pip install fasteval-core[image-gen]
 
     Example:
         @fe.clip_score(threshold=0.7)
@@ -567,7 +567,7 @@ class AestheticScoreMetric(BaseVisionMetric):
         if not PILLOW_AVAILABLE:
             raise ImportError(
                 "Vision metrics require the 'vision' extra. "
-                "Install with: pip install fasteval[vision]"
+                "Install with: pip install fasteval-core[vision]"
             )
 
         if eval_input.generated_image:

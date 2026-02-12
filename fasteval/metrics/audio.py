@@ -3,7 +3,7 @@
 This module provides metrics for evaluating speech-to-text (ASR),
 voice assistants, and audio understanding systems.
 
-Requires: pip install fasteval[audio]
+Requires: pip install fasteval-core[audio]
 """
 
 import logging
@@ -37,7 +37,7 @@ def _check_audio_available() -> None:
     if not AUDIO_AVAILABLE:
         raise ImportError(
             "Audio metrics require the 'audio' extra. "
-            "Install with: pip install fasteval[audio]"
+            "Install with: pip install fasteval-core[audio]"
         )
 
 

@@ -3,7 +3,7 @@
 This module provides utilities for loading, encoding, and processing images
 for vision-language model evaluation.
 
-Requires: pip install fasteval[vision]
+Requires: pip install fasteval-core[vision]
 """
 
 from __future__ import annotations
@@ -40,7 +40,7 @@ def _check_vision_deps() -> None:
     if not PILLOW_AVAILABLE:
         raise ImportError(
             "Vision features require the 'vision' extra. "
-            "Install with: pip install fasteval[vision]"
+            "Install with: pip install fasteval-core[vision]"
         )
 
 

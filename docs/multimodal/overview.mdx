@@ -24,22 +24,22 @@ Multi-modal features are **optional dependencies** - install only what you need:
 
 ```bash
 # Core (text-only) - no extra dependencies
-pip install fasteval
+pip install fasteval-core
 
 # Vision-language evaluation (GPT-4V, Claude Vision)
-pip install fasteval[vision]
+pip install fasteval-core[vision]
 
 # Audio/speech evaluation (Whisper, ASR)
-pip install fasteval[audio]
+pip install fasteval-core[audio]
 
 # Image generation evaluation (DALL-E, Stable Diffusion)
-pip install fasteval[image-gen]
+pip install fasteval-core[image-gen]
 
 # All multi-modal features
-pip install fasteval[multimodal]
+pip install fasteval-core[multimodal]
 
 # Combine specific ones
-pip install fasteval[vision,audio]
+pip install fasteval-core[vision,audio]
 ```
 
 ## Quick Examples
