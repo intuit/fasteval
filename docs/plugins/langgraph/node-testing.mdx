@@ -1,0 +1,127 @@
+---
+title: Node Testing
+description: Execute and test individual graph nodes in isolation
+order: 5
+sidebar:
+  - title: Single Node Execution
+    anchor: single-node-execution
+  - title: NodeResult Fields
+    anchor: noderesult-fields
+  - title: Testing Command Routing
+    anchor: testing-command-routing
+  - title: Combining with Assertions
+    anchor: combining-with-assertions
+  - title: Trace Inspection
+    anchor: trace-inspection
+---
+
+# Node Testing
+
+Execute individual nodes in isolation and inspect their state updates, routing, and responses.
+
+## Single Node Execution
+
+Use `.node(name).run()` to execute a single node with specific input state:
+
+```python
+from fasteval_langgraph import harness
+from langchain_core.messages import HumanMessage
+
+graph = harness(compiled_graph)
+
+result = await graph.node("classifier").run(
+    messages=[HumanMessage(content="My app keeps crashing")]
+)
+```
+
+### NodeResult Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `node_name` | `str` | Name of the executed node |
+| `updates` | `dict` | State updates written by the node |
+| `goto` | `str \| None` | Routing target from `Command`, if any |
+| `response` | `str \| None` | AI message content, if any |
+| `execution_time_ms` | `float` | Execution time in milliseconds |
+
+## Testing Command Routing
+
+Nodes that return `Command(goto=..., update=...)` have their routing parsed automatically:
+
+```python
+result = await graph.node("classifier").run(
+    messages=[HumanMessage(content="I need to troubleshoot this")]
+)
+assert result.goto == "planner"
+assert result.updates["intent"] == "TROUBLESHOOTING"
+
+result2 = await graph.node("classifier").run(
+    messages=[HumanMessage(content="What is OAuth?")]
+)
+assert result2.goto == "rag"
+assert result2.updates["intent"] == "FAQ"
+```
+
+## Combining with Assertions
+
+Mix deterministic assertions with fasteval LLM evaluation:
+
+```python
+import fasteval as fe
+
+@fe.criteria("Does the classifier correctly identify troubleshooting queries?")
+@pytest.mark.asyncio
+async def test_classifier():
+    result = await graph.node("classifier").run(
+        messages=[HumanMessage(content="My app crashes on startup")]
+    )
+    # Deterministic assertions
+    assert result.goto == "planner"
+    assert result.updates["intent"]["category"] == "TROUBLESHOOTING"
+    assert result.execution_time_ms < 5000
+
+    # LLM evaluation
+    fe.score(
+        str(result.updates["intent"]),
+        "TROUBLESHOOTING classification for app crash",
+        input="My app crashes on startup",
+    )
+```
+
+## Trace Inspection
+
+When using `.chat()`, the trace shows every node that executed:
+
+```python
+result = await graph.chat("My API returns 401")
+
+for step in result.trace:
+    print(f"{step.node}: {step.updates}")
+
+# Example output:
+# classifier: {"intent": "TROUBLESHOOTING"}
+# rag: {"docs": ["auth troubleshooting guide..."]}
+# planner: {"plan": {"paths": [...]}}
+# responder: {"messages": [...]}
+```
+
+### Assert on Trace
+
+```python
+# Verify the correct execution path
+assert result.nodes_ran == ["classifier", "rag", "planner", "responder"]
+
+# Verify a specific node produced expected updates
+rag_step = next(s for s in result.trace if s.node == "rag")
+assert len(rag_step.updates.get("docs", [])) > 0
+```
+
+### Graph Inspection
+
+```python
+graph = harness(compiled_graph)
+
+graph.nodes              # {"classifier", "rag", "planner", "responder"}
+graph.entry              # "classifier"
+graph.has_messages_state # True
+```

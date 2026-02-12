@@ -1,0 +1,427 @@
+---
+title: Evaluating RAG Pipelines
+description: Comprehensive guide to testing Retrieval-Augmented Generation systems
+order: 1
+sidebar:
+  - title: Overview
+    anchor: overview
+  - title: RAG Evaluation Concepts
+    anchor: rag-evaluation-concepts
+  - title: Setting Up
+    anchor: setting-up
+  - title: Retrieval Evaluation
+    anchor: evaluating-retrieval
+  - title: Generation Evaluation
+    anchor: evaluating-generation
+  - title: End-to-End Evaluation
+    anchor: end-to-end-evaluation
+  - title: Production Monitoring
+    anchor: production-monitoring
+---
+
+# Evaluating RAG Pipelines
+
+Retrieval-Augmented Generation (RAG) systems combine document retrieval with language model generation, creating unique evaluation challenges. This guide covers comprehensive strategies for evaluating both components independently and as an integrated system.
+
+## Overview
+
+RAG evaluation requires assessing multiple quality dimensions:
+
+| Component | Key Questions | Metrics |
+|-----------|--------------|---------|
+| **Retrieval** | Are the right documents retrieved? | Contextual Precision, Contextual Recall |
+| **Generation** | Is the answer grounded in context? | Faithfulness, Hallucination |
+| **End-to-End** | Is the final answer correct? | Answer Correctness, Relevance |
+
+![RAG Pipeline Evaluation Flow](docs/assets/rag-evaluation-flow.svg)
+
+### Common RAG Failure Modes
+
+Understanding failure modes helps design effective evaluation:
+
+| Failure Mode | Description | Detection Metric |
+|--------------|-------------|------------------|
+| **Retrieval miss** | Relevant documents not retrieved | Contextual Recall |
+| **Retrieval noise** | Irrelevant documents retrieved | Contextual Precision |
+| **Hallucination** | Generated content not in context | Faithfulness |
+| **Context confusion** | Mixing information incorrectly | Faithfulness |
+| **Answer incompleteness** | Missing key information | Answer Correctness |
+
+## RAG Evaluation Concepts
+
+### Retrieval Quality
+
+**Contextual Precision** measures whether retrieved documents are relevant to the query. High precision means the retriever returns focused, relevant results without noise.
+
+**Contextual Recall** measures whether the retrieved documents contain all information needed to answer the query. High recall means important information is not missed.
+
+### Generation Quality
+
+**Faithfulness** measures whether the generated response only contains information that can be attributed to the retrieved context. It catches hallucinations where the model generates plausible but unsupported claims.
+
+**Answer Correctness** measures whether the final answer is factually accurate, combining both retrieval and generation quality into a single metric.
+
+## Setting Up
+
+### Prerequisites
+
+```bash
+pip install fasteval langchain chromadb
+```
+
+### Sample RAG System
+
+For this cookbook, we use a simple RAG implementation:
+
+```python
+# rag_system.py
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_community.vectorstores import Chroma
+from langchain_core.prompts import ChatPromptTemplate
+
+class RAGSystem:
+    def __init__(self, documents: list[str]):
+        self.embeddings = OpenAIEmbeddings()
+        self.vectorstore = Chroma.from_texts(documents, self.embeddings)
+        self.llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+        
+        self.prompt = ChatPromptTemplate.from_template("""
+        Answer the question based only on the following context:
+        
+        {context}
+        
+        Question: {question}
+        
+        If the context doesn't contain enough information to answer,
+        say "I don't have enough information to answer that question."
+        
+        Answer:
+        """)
+    
+    def retrieve(self, query: str, k: int = 3) -> list[str]:
+        """Retrieve relevant documents."""
+        docs = self.vectorstore.similarity_search(query, k=k)
+        return [doc.page_content for doc in docs]
+    
+    def generate(self, query: str, context: list[str]) -> str:
+        """Generate response from context."""
+        context_str = "\n\n".join(context)
+        chain = self.prompt | self.llm
+        response = chain.invoke({"context": context_str, "question": query})
+        return response.content
+    
+    def query(self, question: str) -> tuple[str, list[str]]:
+        """Full RAG pipeline: retrieve then generate."""
+        context = self.retrieve(question)
+        answer = self.generate(question, context)
+        return answer, context
+```
+
+### Test Data Setup
+
+```python
+# conftest.py
+import pytest
+from rag_system import RAGSystem
+
+KNOWLEDGE_BASE = [
+    "The Eiffel Tower is located in Paris, France. It was built in 1889.",
+    "The Eiffel Tower is 330 meters tall, making it one of the tallest structures in Paris.",
+    "Gustave Eiffel designed the Eiffel Tower for the 1889 World's Fair.",
+    "The Louvre Museum is located in Paris and houses the Mona Lisa.",
+    "Paris is the capital city of France with a population of about 2 million.",
+    "The Seine River flows through Paris, passing by many famous landmarks.",
+]
+
+@pytest.fixture(scope="module")
+def rag_system():
+    """Create RAG system with test knowledge base."""
+    return RAGSystem(documents=KNOWLEDGE_BASE)
+```
+
+## Evaluating Retrieval
+
+Test that your retriever returns relevant, comprehensive documents.
+
+### Contextual Precision
+
+Are the retrieved documents relevant to the query?
+
+```python
+# test_rag_retrieval.py
+import fasteval as fe
+
+@fe.contextual_precision(threshold=0.7)
+def test_retrieval_precision(rag_system):
+    """Test that retrieved documents are relevant to the query."""
+    query = "How tall is the Eiffel Tower?"
+    
+    retrieved_docs = rag_system.retrieve(query, k=3)
+    
+    # Evaluate: Are these documents relevant to the height question?
+    fe.score(
+        actual_output="\n".join(retrieved_docs),
+        retrieval_context=retrieved_docs,
+        input=query,
+    )
+```
+
+### Contextual Recall
+
+Do the retrieved documents cover everything needed to answer?
+
+```python
+@fe.contextual_recall(threshold=0.8)
+def test_retrieval_recall(rag_system):
+    """Test that retrieval covers all needed information."""
+    query = "Tell me about the Eiffel Tower's history and specifications."
+    expected_answer = "The Eiffel Tower was built in 1889 by Gustave Eiffel. It is 330 meters tall."
+    
+    retrieved_docs = rag_system.retrieve(query, k=3)
+    
+    # Evaluate: Do these docs contain the information needed for the expected answer?
+    fe.score(
+        actual_output="\n".join(retrieved_docs),
+        expected_output=expected_answer,
+        retrieval_context=retrieved_docs,
+        input=query,
+    )
+```
+
+### Combined Retrieval Quality
+
+```python
+@fe.contextual_precision(threshold=0.7)
+@fe.contextual_recall(threshold=0.7)
+def test_retrieval_quality(rag_system):
+    """Combined precision and recall evaluation."""
+    test_cases = [
+        {"query": "Who designed the Eiffel Tower?", "expected": "Gustave Eiffel"},
+        {"query": "What year was the Eiffel Tower built?", "expected": "1889"},
+        {"query": "Where is the Eiffel Tower located?", "expected": "Paris, France"},
+    ]
+    
+    for case in test_cases:
+        retrieved = rag_system.retrieve(case["query"], k=3)
+        
+        fe.score(
+            actual_output="\n".join(retrieved),
+            expected_output=case["expected"],
+            retrieval_context=retrieved,
+            input=case["query"],
+        )
+```
+
+## Evaluating Generation
+
+Test that the LLM generates accurate, grounded responses.
+
+### Faithfulness
+
+Does the response only use information from the context?
+
+```python
+# test_rag_generation.py
+import fasteval as fe
+
+@fe.faithfulness(threshold=0.85)
+def test_generation_faithfulness(rag_system):
+    """Test that response is grounded in retrieved context."""
+    query = "How tall is the Eiffel Tower and when was it built?"
+    
+    context = rag_system.retrieve(query)
+    response = rag_system.generate(query, context)
+    
+    # Evaluate: Is every claim in the response supported by the context?
+    fe.score(
+        actual_output=response,
+        context=context,
+        input=query,
+    )
+```
+
+### Answer Correctness
+
+Is the answer factually correct?
+
+```python
+@fe.answer_correctness(threshold=0.8)
+def test_answer_correctness(rag_system):
+    """Test factual accuracy of generated answer."""
+    query = "When was the Eiffel Tower built?"
+    expected = "The Eiffel Tower was built in 1889."
+    
+    context = rag_system.retrieve(query)
+    response = rag_system.generate(query, context)
+    
+    fe.score(
+        actual_output=response,
+        expected_output=expected,
+        context=context,
+        input=query,
+    )
+```
+
+### Hallucination Detection
+
+Ensure the LLM does not fabricate information:
+
+```python
+@fe.faithfulness(threshold=0.9)  # Strict threshold
+def test_no_hallucination(rag_system):
+    """Verify response doesn't include information not in context."""
+    # Query about information NOT in our knowledge base
+    query = "What is the Eiffel Tower's exact weight?"
+    
+    context = rag_system.retrieve(query)
+    response = rag_system.generate(query, context)
+    
+    # A faithful response should acknowledge the information isn't available
+    # rather than making up a weight
+    fe.score(
+        actual_output=response,
+        context=context,
+        input=query,
+    )
+```
+
+## End-to-End Evaluation
+
+Combine all metrics for comprehensive RAG testing.
+
+### Full Pipeline Test
+
+```python
+# test_rag_e2e.py
+import fasteval as fe
+
+@fe.contextual_precision(threshold=0.7)   # Retrieval: relevant docs
+@fe.contextual_recall(threshold=0.7)       # Retrieval: complete coverage
+@fe.faithfulness(threshold=0.85)           # Generation: grounded in context
+@fe.answer_correctness(threshold=0.8)      # Overall: correct answer
+def test_full_rag_pipeline(rag_system):
+    """End-to-end RAG evaluation across all dimensions."""
+    query = "Who designed the Eiffel Tower and when was it completed?"
+    expected = "Gustave Eiffel designed the Eiffel Tower. It was completed in 1889."
+    
+    answer, context = rag_system.query(query)
+    
+    fe.score(
+        actual_output=answer,
+        expected_output=expected,
+        context=context,
+        retrieval_context=context,
+        input=query,
+    )
+```
+
+### Parametrized Test Suite
+
+```python
+import pytest
+import fasteval as fe
+
+RAG_TEST_CASES = [
+    {
+        "query": "How tall is the Eiffel Tower?",
+        "expected": "330 meters",
+        "min_score": 0.8,
+    },
+    {
+        "query": "What river flows through Paris?",
+        "expected": "The Seine River flows through Paris.",
+        "min_score": 0.75,
+    },
+    {
+        "query": "Where is the Mona Lisa located?",
+        "expected": "The Mona Lisa is at the Louvre Museum in Paris.",
+        "min_score": 0.8,
+    },
+]
+
+@pytest.mark.parametrize("test_case", RAG_TEST_CASES)
+@fe.faithfulness(threshold=0.8)
+@fe.answer_correctness(threshold=0.7)
+def test_rag_qa_suite(rag_system, test_case):
+    """Parametrized RAG Q&A tests."""
+    answer, context = rag_system.query(test_case["query"])
+    
+    result = fe.score(
+        actual_output=answer,
+        expected_output=test_case["expected"],
+        context=context,
+        input=test_case["query"],
+    )
+    
+    # Additional threshold check per test case
+    assert result.aggregate_score >= test_case["min_score"], \
+        f"Score {result.aggregate_score:.2f} below minimum {test_case['min_score']}"
+```
+
+### Debugging Failures
+
+When tests fail, inspect results for root cause:
+
+```python
+@fe.faithfulness(threshold=0.9)
+def test_with_debugging(rag_system):
+    query = "What year was the Eiffel Tower built?"
+    answer, context = rag_system.query(query)
+    
+    result = fe.score(answer, context=context, input=query)
+    
+    if not result.passed:
+        print(f"\n=== DEBUG INFO ===")
+        print(f"Query: {query}")
+        print(f"Retrieved context: {context}")
+        print(f"Generated answer: {answer}")
+        for mr in result.metric_results:
+            print(f"\n{mr.metric_name}: {mr.score:.2f}")
+            print(f"Reasoning: {mr.reasoning}")
+```
+
+## Production Monitoring
+
+Monitor your RAG pipeline in production with fasteval-observe:
+
+```python
+from fasteval_observe import observe
+from fasteval_observe.sampling import FixedRateSamplingStrategy
+import fasteval as fe
+
+@observe(
+    sampling=FixedRateSamplingStrategy(rate=0.05),  # Monitor 5% of requests
+    run_evaluations=True,
+    metadata={"pipeline": "rag", "version": "1.0"},
+    context_fn=lambda args, kwargs: kwargs.get("context")  # Extract context for metrics
+)
+@fe.faithfulness(threshold=0.85)
+@fe.relevance(threshold=0.75)
+async def production_rag_generate(query: str, context: list[str]) -> str:
+    """Production RAG generation with runtime evaluation."""
+    response = await generator.generate(query, context=context)
+    return response
+
+async def handle_query(query: str):
+    """Full production RAG flow."""
+    # Retrieve documents
+    docs = await retriever.retrieve(query, top_k=5)
+    
+    # Generate with monitoring (context passed for faithfulness evaluation)
+    return await production_rag_generate(query, context=docs)
+
+# Production usage
+answer = await handle_query("What are the symptoms of flu?")
+```
+
+### What Gets Monitored
+
+The observe plugin automatically:
+
+- Samples configured percentage of requests
+- Extracts context via `context_fn` for RAG metrics
+- Runs fasteval metrics in background (non-blocking)
+- Logs structured JSON for monitoring systems
+- Tracks latency, errors, and evaluation scores
+
+See [Production Monitoring Cookbook](/docs/cookbooks/production-monitoring) for comprehensive production setup.

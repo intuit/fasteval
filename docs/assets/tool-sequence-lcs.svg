@@ -1,0 +1,131 @@
+<svg viewBox="0 0 800 420" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="tslExpectedGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#10b981"/>
+      <stop offset="100%" style="stop-color:#059669"/>
+    </linearGradient>
+    <linearGradient id="tslActualGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6"/>
+      <stop offset="100%" style="stop-color:#1d4ed8"/>
+    </linearGradient>
+    <linearGradient id="tslMatchGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1"/>
+      <stop offset="100%" style="stop-color:#4f46e5"/>
+    </linearGradient>
+    <filter id="tslShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="5" flood-opacity="0.12"/>
+    </filter>
+    <marker id="tslArrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/>
+    </marker>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="800" height="420" fill="#f8fafc"/>
+  
+  <!-- Title -->
+  <text x="400" y="32" text-anchor="middle" font-size="22" font-weight="700" fill="#1e293b">Tool Sequence Matching (LCS)</text>
+  <text x="400" y="52" text-anchor="middle" font-size="12" fill="#64748b">Using Longest Common Subsequence to score tool ordering</text>
+  
+  <!-- Example Section -->
+  <g transform="translate(40, 75)">
+    <!-- Expected sequence -->
+    <text x="0" y="0" font-size="12" font-weight="600" fill="#059669">Expected Sequence:</text>
+    <g filter="url(#tslShadow)">
+      <rect x="0" y="10" width="720" height="50" rx="8" fill="white" stroke="#10b981" stroke-width="2"/>
+      <rect x="15" y="22" width="70" height="28" rx="6" fill="url(#tslExpectedGrad)"/>
+      <text x="50" y="41" text-anchor="middle" font-size="10" font-weight="500" fill="white">A</text>
+      
+      <line x1="95" y1="36" x2="125" y2="36" stroke="#10b981" stroke-width="2" marker-end="url(#tslArrow)"/>
+      
+      <rect x="135" y="22" width="70" height="28" rx="6" fill="url(#tslExpectedGrad)"/>
+      <text x="170" y="41" text-anchor="middle" font-size="10" font-weight="500" fill="white">B</text>
+      
+      <line x1="215" y1="36" x2="245" y2="36" stroke="#10b981" stroke-width="2" marker-end="url(#tslArrow)"/>
+      
+      <rect x="255" y="22" width="70" height="28" rx="6" fill="url(#tslExpectedGrad)"/>
+      <text x="290" y="41" text-anchor="middle" font-size="10" font-weight="500" fill="white">C</text>
+      
+      <text x="360" y="41" font-size="11" fill="#64748b" font-style="italic">(validate then charge then confirm)</text>
+    </g>
+    
+    <!-- Actual sequence -->
+    <text x="0" y="85" font-size="12" font-weight="600" fill="#1d4ed8">Actual Sequence:</text>
+    <g filter="url(#tslShadow)">
+      <rect x="0" y="95" width="720" height="50" rx="8" fill="white" stroke="#3b82f6" stroke-width="2"/>
+      <rect x="15" y="107" width="70" height="28" rx="6" fill="url(#tslActualGrad)"/>
+      <text x="50" y="126" text-anchor="middle" font-size="10" font-weight="500" fill="white">A</text>
+      
+      <line x1="95" y1="121" x2="125" y2="121" stroke="#3b82f6" stroke-width="2" marker-end="url(#tslArrow)"/>
+      
+      <rect x="135" y="107" width="70" height="28" rx="6" fill="#fbbf24" stroke="#f59e0b"/>
+      <text x="170" y="126" text-anchor="middle" font-size="10" font-weight="500" fill="#78350f">X</text>
+      
+      <line x1="215" y1="121" x2="245" y2="121" stroke="#3b82f6" stroke-width="2" marker-end="url(#tslArrow)"/>
+      
+      <rect x="255" y="107" width="70" height="28" rx="6" fill="url(#tslActualGrad)"/>
+      <text x="290" y="126" text-anchor="middle" font-size="10" font-weight="500" fill="white">B</text>
+      
+      <line x1="335" y1="121" x2="365" y2="121" stroke="#3b82f6" stroke-width="2" marker-end="url(#tslArrow)"/>
+      
+      <rect x="375" y="107" width="70" height="28" rx="6" fill="url(#tslActualGrad)"/>
+      <text x="410" y="126" text-anchor="middle" font-size="10" font-weight="500" fill="white">C</text>
+      
+      <text x="480" y="126" font-size="11" fill="#64748b" font-style="italic">(validate-log-charge-confirm)</text>
+    </g>
+    
+    <!-- Matching visualization -->
+    <text x="0" y="175" font-size="12" font-weight="600" fill="#6366f1">LCS Matching:</text>
+    
+    <!-- Match lines -->
+    <line x1="50" y1="50" x2="50" y2="107" stroke="#22c55e" stroke-width="2" stroke-dasharray="4,2"/>
+    <line x1="170" y1="50" x2="290" y2="107" stroke="#22c55e" stroke-width="2" stroke-dasharray="4,2"/>
+    <line x1="290" y1="50" x2="410" y2="107" stroke="#22c55e" stroke-width="2" stroke-dasharray="4,2"/>
+    
+    <!-- Unmatched indicator -->
+    <text x="170" y="92" text-anchor="middle" font-size="9" fill="#f59e0b" font-weight="500">extra</text>
+  </g>
+  
+  <!-- LCS Result box -->
+  <g filter="url(#tslShadow)" transform="translate(40, 265)">
+    <rect x="0" y="0" width="340" height="100" rx="10" fill="white" stroke="#6366f1" stroke-width="2"/>
+    <rect x="0" y="0" width="340" height="35" rx="10" fill="url(#tslMatchGrad)"/>
+    <rect x="0" y="23" width="340" height="12" fill="url(#tslMatchGrad)"/>
+    <text x="170" y="25" text-anchor="middle" font-size="12" font-weight="600" fill="white">LCS = {A, B, C}</text>
+    
+    <text x="20" y="60" font-size="12" font-weight="600" fill="#1e293b">Score Calculation:</text>
+    <text x="20" y="82" font-size="14" font-weight="700" fill="#4f46e5">LCS(3) / max(expected(3), actual(4)) = 0.75</text>
+  </g>
+  
+  <!-- Modes comparison -->
+  <g transform="translate(420, 265)">
+    <rect x="0" y="0" width="340" height="100" rx="10" fill="#f1f5f9" stroke="#e2e8f0"/>
+    <text x="170" y="25" text-anchor="middle" font-size="12" font-weight="600" fill="#475569">Matching Modes</text>
+    
+    <!-- Non-strict -->
+    <rect x="20" y="38" width="140" height="52" rx="6" fill="#d1fae5" stroke="#10b981"/>
+    <text x="90" y="55" text-anchor="middle" font-size="10" font-weight="600" fill="#059669">Non-Strict (default)</text>
+    <text x="90" y="72" text-anchor="middle" font-size="9" fill="#475569">Allows extras</text>
+    <text x="90" y="84" text-anchor="middle" font-size="9" fill="#475569">Partial credit OK</text>
+    
+    <!-- Strict -->
+    <rect x="180" y="38" width="140" height="52" rx="6" fill="#fee2e2" stroke="#ef4444"/>
+    <text x="250" y="55" text-anchor="middle" font-size="10" font-weight="600" fill="#dc2626">Strict Mode</text>
+    <text x="250" y="72" text-anchor="middle" font-size="9" fill="#475569">Exact match only</text>
+    <text x="250" y="84" text-anchor="middle" font-size="9" fill="#475569">1.0 or 0.0</text>
+  </g>
+  
+  <!-- Footer examples -->
+  <g transform="translate(40, 375)">
+    <text x="0" y="0" font-size="10" fill="#64748b">
+      <tspan font-weight="600">Examples:</tspan> 
+      A-B-C vs A-B-C = 1.0 Pass | 
+      A-B-C vs A-C-B = 0.67 | 
+      A-B-C vs A-X-B-C = 0.75 |
+      <tspan fill="#f59e0b">strict: A-X-B-C = 0.0</tspan>
+    </text>
+  </g>
+  
+  <!-- Footer -->
+  <text x="400" y="410" text-anchor="middle" font-size="11" fill="#94a3b8">fasteval • tool_sequence Metric (LCS Algorithm)</text>
+</svg>

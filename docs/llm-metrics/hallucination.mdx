@@ -1,0 +1,258 @@
+---
+title: Hallucination
+description: Detect fabricated or false information in LLM outputs
+order: 3
+sidebar:
+  - title: Overview
+    anchor: overview
+  - title: Understanding Hallucination
+    anchor: understanding-hallucination
+  - title: Parameters
+    anchor: parameters
+  - title: Practical Examples
+    anchor: practical-examples
+  - title: Hallucination vs Faithfulness
+    anchor: hallucination-vs-faithfulness
+  - title: Best Practices
+    anchor: best-practices
+---
+
+# Hallucination Metric
+
+The hallucination metric detects fabricated or unsupported information in LLM outputs. It evaluates whether claims made in responses are grounded in provided context or established factual knowledge, catching instances where models confidently generate plausible but incorrect information.
+
+## Overview
+
+Hallucination is one of the most significant challenges in LLM deployment. Research has shown that language models can generate convincing but entirely fabricated information—from fictional citations to invented statistics. This behavior poses risks in any application requiring factual accuracy.
+
+### The Hallucination Problem
+
+| Hallucination Type | Description | Example |
+|-------------------|-------------|---------|
+| **Factual errors** | Incorrect facts presented confidently | "Python was created in 1985" (actually 1991) |
+| **Fabricated details** | Made-up specifics | Inventing citation sources |
+| **Extrapolation** | Going beyond provided context | Adding unstated product features |
+| **Conflation** | Mixing information incorrectly | Combining details from different sources |
+
+### Why It Matters
+
+- **Trust**: Users cannot distinguish hallucinated content from accurate information
+- **Liability**: Incorrect information can cause real-world harm
+- **Compliance**: Many domains require factual accuracy (legal, medical, financial)
+- **User Experience**: Hallucinations erode user confidence in AI systems
+
+## Understanding Hallucination
+
+### Score Interpretation
+
+The metric evaluates every factual claim in the response against available context:
+
+| Score | Interpretation | Typical Scenario |
+|-------|---------------|------------------|
+| **0.9-1.0** | Fully grounded | All claims supported by context or established facts |
+| **0.7-0.9** | Minor unsupported details | Small embellishments that don't contradict context |
+| **0.5-0.7** | Some fabrication | Mix of grounded and unsupported claims |
+| **0.3-0.5** | Significant hallucination | Major unsupported or contradictory claims |
+| **0.0-0.3** | Extensive fabrication | Little connection to provided context |
+
+### What the Metric Evaluates
+
+1. **Claim identification**: Extracts factual statements from the response
+2. **Context matching**: Checks each claim against provided context
+3. **Factual verification**: For claims not in context, assesses general accuracy
+4. **Contradiction detection**: Identifies statements that contradict the context
+
+## Parameters
+
+```python
+@fe.hallucination(
+    threshold=0.85,   # Minimum score to pass (higher = fewer hallucinations)
+    model="gpt-4o",   # Override the default LLM model
+)
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `threshold` | float | 0.8 | Minimum score to pass (higher = stricter) |
+| `model` | str | None | Override the default LLM model for this metric |
+
+## Practical Examples
+
+### RAG System Testing
+
+For retrieval-augmented generation, verify responses stay grounded in retrieved documents:
+
+```python
+import fasteval as fe
+
+@fe.hallucination(threshold=0.85)
+def test_rag_grounding():
+    docs = retriever.search("refund policy")
+    context = "\n".join([doc.text for doc in docs])
+    
+    response = my_rag_agent("What's your refund policy?", context=context)
+    fe.score(response, context=context)
+```
+
+### Knowledge Base Q&A
+
+Verify the LLM does not invent information beyond what exists in your knowledge base:
+
+```python
+@fe.hallucination(threshold=0.9)
+def test_kb_accuracy():
+    kb_entry = """
+    Product: Widget Pro
+    Price: $99
+    Features: Wireless, Waterproof, 2-year warranty
+    """
+    
+    response = my_llm("Describe Widget Pro", context=kb_entry)
+    fe.score(response, context=kb_entry)
+```
+
+If the LLM says "Widget Pro has a 3-year warranty" when the context says 2 years, the score drops significantly.
+
+### Combining with Correctness
+
+Use both metrics for comprehensive accuracy evaluation:
+
+```python
+@fe.hallucination(threshold=0.85)  # Grounded in context
+@fe.correctness(threshold=0.8)     # Semantically correct
+def test_accurate_and_grounded():
+    context = "The Eiffel Tower is 330 meters tall and was completed in 1889."
+    
+    response = my_llm("How tall is the Eiffel Tower?", context=context)
+    fe.score(
+        actual_output=response,
+        expected_output="330 meters",
+        context=context
+    )
+```
+
+### High-Stakes Domains
+
+For medical, legal, or financial content, use strict thresholds:
+
+```python
+@fe.hallucination(threshold=0.95)  # Very strict
+@fe.contains()  # Required disclaimers
+def test_medical_information():
+    medical_context = load_verified_medical_content()
+    
+    response = health_bot("What are the symptoms of diabetes?", context=medical_context)
+    fe.score(response, context=medical_context)
+    fe.score(response, "consult a healthcare professional")  # Disclaimer check
+```
+
+## Hallucination vs Faithfulness
+
+Both metrics detect fabricated information, but they are optimized for different scenarios:
+
+| Aspect | Hallucination | Faithfulness |
+|--------|--------------|--------------|
+| **Primary use** | General fact-checking | RAG-specific evaluation |
+| **Context handling** | Optional context | Requires retrieval context |
+| **Focus** | All factual claims | Grounding in retrieved docs |
+| **Best for** | Knowledge Q&A, general chatbots | RAG pipelines |
+
+### When to Use Each
+
+**Use Hallucination when:**
+- Testing general knowledge accuracy
+- Context is optional or minimal
+- Evaluating standalone factual claims
+
+**Use Faithfulness when:**
+- Building RAG systems
+- Multiple retrieved documents form context
+- Strict adherence to source material required
+
+**Use Both when:**
+- Building production RAG systems
+- Maximum coverage of grounding issues
+
+```python
+@fe.hallucination(threshold=0.85)
+@fe.faithfulness(threshold=0.8)
+def test_rag_quality():
+    docs = retriever.search(query)
+    response = rag_agent(query, context=docs)
+    fe.score(response, context=docs)
+```
+
+## Best Practices
+
+### Always Provide Context When Available
+
+The metric works best when it has context to verify against:
+
+```python
+# Good: Context provided for verification
+@fe.hallucination(threshold=0.85)
+def test_with_context():
+    context = "Company founded in 2020. 50 employees. Headquarters in Boston."
+    response = my_llm("Tell me about the company", context=context)
+    fe.score(response, context=context)
+
+# Less effective: No context means relying on general knowledge
+@fe.hallucination(threshold=0.85)
+def test_without_context():
+    response = my_llm("Tell me about company ABC")
+    fe.score(response)  # Limited verification possible
+```
+
+### Threshold Selection by Domain
+
+| Domain | Recommended Threshold | Rationale |
+|--------|----------------------|-----------|
+| Creative/conversational | 0.7 - 0.8 | Some creative license acceptable |
+| General knowledge Q&A | 0.8 - 0.85 | Standard accuracy expectations |
+| RAG systems | 0.85 - 0.9 | Must stay grounded in sources |
+| Medical/legal/financial | 0.9+ | No tolerance for fabrication |
+
+### Monitor for Specific Hallucination Patterns
+
+Track common failure modes:
+
+```python
+@fe.hallucination(threshold=0.85)
+def test_and_analyze():
+    response = my_agent(query, context=context)
+    result = fe.score(response, context=context)
+    
+    if not result.passed:
+        # Log for pattern analysis
+        log_hallucination_failure(
+            query=query,
+            response=response,
+            context=context,
+            reasoning=result.metric_results[0].reasoning
+        )
+```
+
+## Example Output
+
+**Passing test:**
+
+```
+test_rag_grounding PASSED
+
+Evaluation Results:
+  hallucination: 0.95 (threshold: 0.85)
+    Reasoning: All factual claims in the response are directly 
+    supported by the provided context documents.
+```
+
+**Failing test:**
+
+```
+test_rag_grounding FAILED
+
+Evaluation Results:
+  hallucination: 0.62 (threshold: 0.85)
+    Reasoning: The response claims "refunds are processed within 
+    24 hours" but the context only states "refunds are processed 
+    within 5-7 business days."
+```

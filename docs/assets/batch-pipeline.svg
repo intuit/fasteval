@@ -1,0 +1,134 @@
+<svg viewBox="0 0 800 420" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="datasetGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6"/>
+      <stop offset="100%" style="stop-color:#1d4ed8"/>
+    </linearGradient>
+    <linearGradient id="loaderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8b5cf6"/>
+      <stop offset="100%" style="stop-color:#6d28d9"/>
+    </linearGradient>
+    <linearGradient id="executorGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#10b981"/>
+      <stop offset="100%" style="stop-color:#059669"/>
+    </linearGradient>
+    <linearGradient id="aggGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f59e0b"/>
+      <stop offset="100%" style="stop-color:#d97706"/>
+    </linearGradient>
+    <linearGradient id="analysisGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1"/>
+      <stop offset="100%" style="stop-color:#4f46e5"/>
+    </linearGradient>
+    <filter id="shadowBatch" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-opacity="0.12"/>
+    </filter>
+    <marker id="arrowBatch" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/>
+    </marker>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="800" height="420" fill="#f8fafc"/>
+  
+  <!-- Title -->
+  <text x="400" y="35" text-anchor="middle" font-size="22" font-weight="700" fill="#1e293b">Batch Evaluation Pipeline</text>
+  
+  <!-- Row 1: Dataset and Loader -->
+  <!-- Dataset -->
+  <g filter="url(#shadowBatch)">
+    <rect x="50" y="60" width="140" height="80" rx="12" fill="url(#datasetGrad)"/>
+    <text x="120" y="90" text-anchor="middle" font-size="13" font-weight="600" fill="white">Dataset</text>
+    <text x="120" y="110" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.8)">CSV / JSON / DB</text>
+    <text x="120" y="125" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.8)">10,000 test cases</text>
+  </g>
+  
+  <!-- Arrow 1 -->
+  <line x1="190" y1="100" x2="250" y2="100" stroke="#64748b" stroke-width="2" marker-end="url(#arrowBatch)"/>
+  
+  <!-- Batch Loader -->
+  <g filter="url(#shadowBatch)">
+    <rect x="260" y="60" width="140" height="80" rx="12" fill="url(#loaderGrad)"/>
+    <text x="330" y="90" text-anchor="middle" font-size="13" font-weight="600" fill="white">Batch Loader</text>
+    <text x="330" y="110" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.8)">Load in chunks</text>
+    <text x="330" y="125" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.8)">of 100</text>
+  </g>
+  
+  <!-- Arrow 2 -->
+  <line x1="400" y1="100" x2="460" y2="100" stroke="#64748b" stroke-width="2" marker-end="url(#arrowBatch)"/>
+  
+  <!-- Parallel Executor Container -->
+  <g>
+    <rect x="470" y="50" width="280" height="145" rx="12" fill="#ecfdf5" stroke="#10b981" stroke-width="2" stroke-dasharray="5,3"/>
+    <text x="610" y="75" text-anchor="middle" font-size="12" font-weight="600" fill="#059669">Parallel Executor</text>
+    
+    <!-- Worker boxes (evenly spaced) -->
+    <g filter="url(#shadowBatch)">
+      <rect x="490" y="90" width="50" height="45" rx="8" fill="url(#executorGrad)"/>
+      <text x="515" y="118" text-anchor="middle" font-size="10" font-weight="500" fill="white">W1</text>
+    </g>
+    <g filter="url(#shadowBatch)">
+      <rect x="550" y="90" width="50" height="45" rx="8" fill="url(#executorGrad)"/>
+      <text x="575" y="118" text-anchor="middle" font-size="10" font-weight="500" fill="white">W2</text>
+    </g>
+    <g filter="url(#shadowBatch)">
+      <rect x="610" y="90" width="50" height="45" rx="8" fill="url(#executorGrad)"/>
+      <text x="635" y="118" text-anchor="middle" font-size="10" font-weight="500" fill="white">W3</text>
+    </g>
+    <g filter="url(#shadowBatch)">
+      <rect x="670" y="90" width="50" height="45" rx="8" fill="url(#executorGrad)"/>
+      <text x="695" y="118" text-anchor="middle" font-size="10" font-weight="500" fill="white">W4</text>
+    </g>
+    
+    <!-- Lines from workers to merge point -->
+    <line x1="515" y1="135" x2="515" y2="160" stroke="#64748b" stroke-width="1"/>
+    <line x1="575" y1="135" x2="575" y2="160" stroke="#64748b" stroke-width="1"/>
+    <line x1="635" y1="135" x2="635" y2="160" stroke="#64748b" stroke-width="1"/>
+    <line x1="695" y1="135" x2="695" y2="160" stroke="#64748b" stroke-width="1"/>
+    
+    <!-- Horizontal merge line -->
+    <line x1="515" y1="160" x2="695" y2="160" stroke="#64748b" stroke-width="1"/>
+    
+    <!-- Center point -->
+    <line x1="605" y1="160" x2="605" y2="180" stroke="#64748b" stroke-width="2"/>
+    
+    <!-- Async label -->
+    <text x="610" y="190" text-anchor="middle" font-size="9" fill="#64748b">asyncio.gather()</text>
+  </g>
+  
+  <!-- Arrow down from executor -->
+  <line x1="605" y1="195" x2="605" y2="225" stroke="#64748b" stroke-width="2" marker-end="url(#arrowBatch)"/>
+  
+  <!-- Row 2: Progress + Aggregator -->
+  <!-- Progress Tracker -->
+  <g filter="url(#shadowBatch)">
+    <rect x="200" y="240" width="180" height="70" rx="12" fill="white" stroke="#8b5cf6" stroke-width="2"/>
+    <text x="290" y="265" text-anchor="middle" font-size="12" font-weight="600" fill="#6d28d9">Progress Tracker</text>
+    <!-- Progress bar -->
+    <rect x="220" y="280" width="140" height="16" rx="4" fill="#e2e8f0"/>
+    <rect x="220" y="280" width="56" height="16" rx="4" fill="#8b5cf6"/>
+    <text x="290" y="292" text-anchor="middle" font-size="9" font-weight="500" fill="white">40%</text>
+  </g>
+  
+  <!-- Dotted line from executor to progress (side connection) -->
+  <line x1="470" y1="175" x2="380" y2="275" stroke="#64748b" stroke-width="1" stroke-dasharray="4,2"/>
+  
+  <!-- Results Aggregator -->
+  <g filter="url(#shadowBatch)">
+    <rect x="440" y="240" width="180" height="70" rx="12" fill="url(#aggGrad)"/>
+    <text x="530" y="270" text-anchor="middle" font-size="12" font-weight="600" fill="white">Results Aggregator</text>
+    <text x="530" y="290" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.8)">Collect &amp; merge</text>
+  </g>
+  
+  <!-- Arrow from Aggregator down to Analysis -->
+  <line x1="530" y1="310" x2="530" y2="340" stroke="#64748b" stroke-width="2" marker-end="url(#arrowBatch)"/>
+  
+  <!-- Analysis & Reporting (full width) -->
+  <g filter="url(#shadowBatch)">
+    <rect x="50" y="350" width="700" height="45" rx="12" fill="url(#analysisGrad)"/>
+    <text x="400" y="378" text-anchor="middle" font-size="14" font-weight="600" fill="white">Analysis &amp; Reporting</text>
+  </g>
+  
+  <!-- Footer -->
+  <text x="400" y="415" text-anchor="middle" font-size="11" fill="#94a3b8">fasteval • Efficient batch evaluation with parallelization</text>
+</svg>

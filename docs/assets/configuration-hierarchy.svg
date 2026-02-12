@@ -1,0 +1,112 @@
+<svg viewBox="0 0 800 420" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="chLevel1Grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1"/>
+      <stop offset="100%" style="stop-color:#4f46e5"/>
+    </linearGradient>
+    <linearGradient id="chLevel2Grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8b5cf6"/>
+      <stop offset="100%" style="stop-color:#6d28d9"/>
+    </linearGradient>
+    <linearGradient id="chLevel3Grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#a78bfa"/>
+      <stop offset="100%" style="stop-color:#7c3aed"/>
+    </linearGradient>
+    <linearGradient id="chLevel4Grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#c4b5fd"/>
+      <stop offset="100%" style="stop-color:#a78bfa"/>
+    </linearGradient>
+    <filter id="chShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-opacity="0.15"/>
+    </filter>
+    <marker id="chArrowUp" markerWidth="10" markerHeight="7" refX="5" refY="7" orient="auto">
+      <polygon points="5 0, 10 7, 0 7" fill="#f59e0b"/>
+    </marker>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="800" height="420" fill="#f8fafc"/>
+  
+  <!-- Title -->
+  <text x="400" y="35" text-anchor="middle" font-size="22" font-weight="700" fill="#1e293b">Configuration Hierarchy</text>
+  <text x="400" y="55" text-anchor="middle" font-size="12" fill="#64748b">Settings resolved from highest to lowest priority</text>
+  
+  <!-- Pyramid structure -->
+  <!-- Level 1: Per-metric (top, smallest) -->
+  <g filter="url(#chShadow)">
+    <polygon points="400,85 500,150 300,150" fill="url(#chLevel1Grad)"/>
+    <text x="400" y="125" text-anchor="middle" font-size="11" font-weight="700" fill="white">Per-Metric</text>
+    <text x="400" y="140" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.9)">Parameters</text>
+  </g>
+  
+  <!-- Level 2: Programmatic -->
+  <g filter="url(#chShadow)">
+    <polygon points="300,155 500,155 550,220 250,220" fill="url(#chLevel2Grad)"/>
+    <text x="400" y="185" text-anchor="middle" font-size="12" font-weight="700" fill="white">Programmatic</text>
+    <text x="400" y="202" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.9)">fe.configure()</text>
+  </g>
+  
+  <!-- Level 3: pyproject.toml -->
+  <g filter="url(#chShadow)">
+    <polygon points="250,225 550,225 600,290 200,290" fill="url(#chLevel3Grad)"/>
+    <text x="400" y="255" text-anchor="middle" font-size="12" font-weight="700" fill="white">pyproject.toml</text>
+    <text x="400" y="272" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.9)">[tool.fasteval]</text>
+  </g>
+  
+  <!-- Level 4: Environment Variables (base, largest) -->
+  <g filter="url(#chShadow)">
+    <polygon points="200,295 600,295 660,360 140,360" fill="url(#chLevel4Grad)"/>
+    <text x="400" y="325" text-anchor="middle" font-size="12" font-weight="700" fill="#4c1d95">Environment Variables</text>
+    <text x="400" y="342" text-anchor="middle" font-size="10" fill="#5b21b6">OPENAI_API_KEY, ANTHROPIC_API_KEY</text>
+  </g>
+  
+  <!-- Priority arrow on left side -->
+  <line x1="110" y1="340" x2="110" y2="100" stroke="#f59e0b" stroke-width="3" marker-end="url(#chArrowUp)"/>
+  <text x="108" y="220" text-anchor="middle" font-size="12" font-weight="600" fill="#f59e0b" transform="rotate(-90 108,220)">PRIORITY</text>
+  <text x="90" y="355" font-size="9" fill="#64748b">Lowest</text>
+  <text x="90" y="95" font-size="9" fill="#64748b">Highest</text>
+  
+  <!-- Right side: Examples -->
+  <g transform="translate(630, 95)">
+    <rect x="0" y="0" width="155" height="55" rx="8" fill="#f1f5f9" stroke="#6366f1" stroke-width="1.5"/>
+    <text x="10" y="18" font-size="9" font-weight="600" fill="#6366f1">Priority 1 Example:</text>
+    <text x="10" y="33" font-size="8" fill="#475569" font-family="monospace">@fe.correctness(</text>
+    <text x="10" y="45" font-size="8" fill="#475569" font-family="monospace">  model="gpt-4o")</text>
+  </g>
+  
+  <g transform="translate(630, 160)">
+    <rect x="0" y="0" width="155" height="55" rx="8" fill="#f1f5f9" stroke="#8b5cf6" stroke-width="1.5"/>
+    <text x="10" y="18" font-size="9" font-weight="600" fill="#8b5cf6">Priority 2 Example:</text>
+    <text x="10" y="33" font-size="8" fill="#475569" font-family="monospace">fe.configure(</text>
+    <text x="10" y="45" font-size="8" fill="#475569" font-family="monospace">  model="gpt-4o-mini")</text>
+  </g>
+  
+  <g transform="translate(630, 225)">
+    <rect x="0" y="0" width="155" height="55" rx="8" fill="#f1f5f9" stroke="#a78bfa" stroke-width="1.5"/>
+    <text x="10" y="18" font-size="9" font-weight="600" fill="#7c3aed">Priority 3 Example:</text>
+    <text x="10" y="33" font-size="8" fill="#475569" font-family="monospace">[tool.fasteval]</text>
+    <text x="10" y="45" font-size="8" fill="#475569" font-family="monospace">default_model = "..."</text>
+  </g>
+  
+  <g transform="translate(630, 290)">
+    <rect x="0" y="0" width="155" height="55" rx="8" fill="#f1f5f9" stroke="#c4b5fd" stroke-width="1.5"/>
+    <text x="10" y="18" font-size="9" font-weight="600" fill="#7c3aed">Priority 4 Example:</text>
+    <text x="10" y="33" font-size="8" fill="#475569" font-family="monospace">export OPENAI_API_KEY=</text>
+    <text x="10" y="45" font-size="8" fill="#475569" font-family="monospace">  sk-...</text>
+  </g>
+  
+  <!-- Override arrows connecting levels -->
+  <text x="510" y="142" font-size="9" font-weight="500" fill="#10b981">overrides</text>
+  <text x="560" y="212" font-size="9" font-weight="500" fill="#10b981">overrides</text>
+  <text x="610" y="282" font-size="9" font-weight="500" fill="#10b981">overrides</text>
+  
+  <!-- Bottom note -->
+  <g transform="translate(140, 375)">
+    <rect x="0" y="0" width="520" height="35" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="1"/>
+    <text x="260" y="15" text-anchor="middle" font-size="10" font-weight="600" fill="#92400e">Tip: Start with environment variables, add pyproject.toml for defaults,</text>
+    <text x="260" y="28" text-anchor="middle" font-size="10" fill="#92400e">then override per-metric only when needed.</text>
+  </g>
+  
+  <!-- Footer -->
+  <text x="400" y="415" text-anchor="middle" font-size="11" fill="#94a3b8">fasteval • Configuration Priority</text>
+</svg>

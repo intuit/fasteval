@@ -1,0 +1,233 @@
+---
+title: Custom Criteria
+description: Evaluate using custom criteria in plain English
+order: 6
+sidebar:
+  - title: Quick Example
+    anchor: quick-example
+  - title: Writing Good Criteria
+    anchor: writing-good-criteria
+  - title: Practical Examples
+    anchor: practical-examples
+  - title: Using Evaluation Steps
+    anchor: using-evaluation-steps
+---
+
+# Custom Criteria Evaluation
+
+When the built-in metrics don't fit your use case, `@fe.criteria()` lets you define custom evaluation criteria in plain English. Need to check if responses are "empathetic"? "Technically accurate"? "Written for a 5th-grade reading level"? Define it in words and fasteval handles the rest.
+
+## Quick Example
+
+```python
+import fasteval as fe
+
+@fe.criteria("Is the response empathetic and acknowledges the customer's frustration?")
+def test_empathy():
+    response = my_agent("I've been on hold for 2 hours and no one can help me!")
+    fe.score(response)
+```
+
+## Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| First argument | str | Required | What to evaluate in plain English |
+| `threshold` | float | 0.5 | Minimum score to pass (0.0 - 1.0) |
+| `evaluation_steps` | list | None | Explicit evaluation steps for chain-of-thought |
+| `model` | str | None | Override the default LLM model |
+
+## Writing Good Criteria
+
+### Be Specific
+
+Vague criteria produce inconsistent scores.
+
+```python
+# Bad: Too vague
+@fe.criteria("Is it good?")
+
+# Good: Specific and measurable
+@fe.criteria("Does the response provide at least 3 concrete, actionable steps?")
+```
+
+### Focus on One Thing
+
+Each criteria decorator should measure one aspect. Stack multiple for comprehensive evaluation.
+
+```python
+# Bad: Too many concepts
+@fe.criteria("Is the response helpful, professional, and concise?")
+
+# Good: Separate concerns
+@fe.criteria("Is the response helpful with actionable advice?", threshold=0.8)
+@fe.criteria("Is the tone professional and respectful?", threshold=0.9)
+@fe.criteria("Is the response concise without unnecessary filler?", threshold=0.7)
+```
+
+### Include Context When Needed
+
+Reference the domain or expectations:
+
+```python
+@fe.criteria(
+    "For a medical information chatbot: Does the response include appropriate "
+    "disclaimers about consulting healthcare professionals?"
+)
+```
+
+## Practical Examples
+
+### Tone and Style
+
+```python
+@fe.criteria(
+    "Is the response written in a friendly, conversational tone "
+    "suitable for a consumer mobile app?",
+    threshold=0.8
+)
+def test_friendly_tone():
+    response = my_app_bot("How do I change my notification settings?")
+    fe.score(response)
+```
+
+### Technical Accuracy
+
+```python
+@fe.criteria(
+    "Is the Python code syntactically correct and does it follow PEP 8 style guidelines?",
+    threshold=0.85
+)
+def test_code_quality():
+    response = my_coding_assistant("Write a function to reverse a string")
+    fe.score(response)
+```
+
+### Completeness
+
+```python
+@fe.criteria(
+    "Does the response address ALL parts of the multi-part question?",
+    threshold=0.9
+)
+def test_completeness():
+    query = "What is the capital of France, when was it founded, and what is its population?"
+    response = my_llm(query)
+    fe.score(response, input=query)
+```
+
+### Domain-Specific Evaluation
+
+```python
+@fe.criteria(
+    "For a legal document assistant: Does the response clearly state it's not "
+    "legal advice and recommend consulting an attorney for specific situations?",
+    threshold=0.95
+)
+def test_legal_disclaimers():
+    response = my_legal_bot("Can I break my lease early?")
+    fe.score(response)
+```
+
+### Reading Level
+
+```python
+@fe.criteria(
+    "Is the response written at approximately a 6th-grade reading level, "
+    "avoiding jargon and complex sentence structures?",
+    threshold=0.8
+)
+def test_accessibility():
+    response = my_llm("Explain how vaccines work")
+    fe.score(response)
+```
+
+## Using Evaluation Steps
+
+For complex criteria, provide explicit evaluation steps. This improves consistency through chain-of-thought reasoning:
+
+```python
+@fe.criteria(
+    "Is the technical explanation accurate and appropriate for the audience?",
+    threshold=0.8,
+    evaluation_steps=[
+        "1. Identify the technical claims made in the response",
+        "2. Check each claim for factual accuracy",
+        "3. Assess if the explanation level matches a beginner audience",
+        "4. Note any jargon that isn't explained",
+        "5. Provide an overall score from 0-1"
+    ]
+)
+def test_technical_explanation():
+    response = my_llm("Explain machine learning to a beginner")
+    fe.score(response)
+```
+
+## Example Output
+
+**Passing test:**
+
+```
+test_empathy PASSED
+
+Evaluation Results:
+  ✓ criteria:Is the response empathetic...: 0.88 (threshold: 0.80)
+    Reasoning: The response acknowledges the customer's frustration 
+    with phrases like "I completely understand how frustrating this 
+    must be" and offers immediate, concrete help.
+```
+
+**Failing test:**
+
+```
+test_empathy FAILED
+
+Evaluation Results:
+  ✗ criteria:Is the response empathetic...: 0.52 (threshold: 0.80)
+    Reasoning: The response jumps directly to troubleshooting steps 
+    without acknowledging the customer's expressed frustration about 
+    the long wait time.
+```
+
+## When to Use Custom Criteria vs Built-in Metrics
+
+| Use Case | Recommendation |
+|----------|---------------|
+| Semantic correctness | Use `@fe.correctness()` — optimized for this |
+| Harmful content | Use `@fe.toxicity()` — trained for safety |
+| Domain-specific needs | Use `@fe.criteria()` with custom criteria |
+| Subjective qualities | Use `@fe.criteria()` (tone, style, readability) |
+| Business requirements | Use `@fe.criteria()` (disclaimers, formatting) |
+
+## Combining with Built-in Metrics
+
+```python
+@fe.correctness(threshold=0.8)      # Factually accurate
+@fe.toxicity(threshold=0.95)        # Safe content
+@fe.criteria(                       # Custom business requirement
+    "Does the response include a call-to-action to schedule a demo?",
+    threshold=0.9
+)
+def test_sales_response():
+    response = my_sales_bot("Tell me about your enterprise plan")
+    fe.score(response, "Enterprise plan includes SSO, SLA, and dedicated support")
+```
+
+## Tips for Reliable Evaluation
+
+1. **Test your criteria**: Run the same test multiple times to ensure consistent scores
+2. **Iterate on wording**: Small changes in criteria can affect results
+3. **Use steps for complex criteria**: Improves consistency
+4. **Set appropriate thresholds**: Start at 0.5, adjust based on results
+5. **Log reasoning**: Use the reasoning output to refine criteria
+
+## Aliases
+
+For compatibility with DeepEval and the academic literature, `@fe.geval()` and `@fe.g_eval()` are available as aliases for `@fe.criteria()`:
+
+```python
+# These are all equivalent:
+@fe.criteria("Is the response professional?")
+@fe.geval(criteria="Is the response professional?")
+@fe.g_eval(criteria="Is the response professional?")
+```

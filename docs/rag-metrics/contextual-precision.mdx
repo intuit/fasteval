@@ -1,0 +1,181 @@
+---
+title: Contextual Precision
+description: Evaluate if retrieved documents are relevant to the query
+order: 2
+sidebar:
+  - title: Quick Example
+    anchor: quick-example
+  - title: Practical Examples
+    anchor: practical-examples
+  - title: Precision vs Recall
+    anchor: precision-vs-recall
+  - title: Common Issues
+    anchor: common-issues
+---
+
+# Contextual Precision Metric
+
+Your RAG system retrieves 5 documents, but are they actually relevant? Contextual precision measures retrieval quality by checking what percentage of retrieved documents actually help answer the question.
+
+**In simple terms:** "Of the docs we retrieved, how many are useful?"
+
+## Quick Example
+
+```python
+import fasteval as fe
+
+@fe.contextual_precision(threshold=0.7)
+def test_retrieval_relevance():
+    query = "How do I reset my password?"
+    
+    # Documents from your retriever
+    docs = retriever.search(query, k=5)
+    
+    response = rag_agent(query, context=docs)
+    fe.score(response, retrieval_context=docs, input=query)
+```
+
+## Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `threshold` | float | 0.7 | Minimum score to pass (0.0 - 1.0) |
+| `model` | str | None | Override the default LLM model |
+
+## How Scoring Works
+
+**Formula:** `relevant_documents / total_documents`
+
+| Score | Interpretation |
+|-------|---------------|
+| **1.0** | All retrieved docs are relevant |
+| **0.8** | 4 of 5 docs relevant (one noise doc) |
+| **0.6** | 3 of 5 docs relevant (some noise) |
+| **0.4** | 2 of 5 docs relevant (mostly noise) |
+
+## Practical Examples
+
+### Testing Retriever Directly
+
+Evaluate retrieval quality without running the full RAG pipeline:
+
+```python
+@fe.contextual_precision(threshold=0.8)
+def test_vector_search():
+    query = "What are the side effects of aspirin?"
+    
+    docs = vector_db.similarity_search(query, k=5)
+    
+    # No actual_output needed - testing retrieval only
+    fe.score(actual_output="", retrieval_context=docs, input=query)
+```
+
+### Comparing Different Retrievers
+
+```python
+@fe.contextual_precision(threshold=0.75)
+@fe.csv("retrieval_test_queries.csv")
+def test_bm25_retriever(query):
+    docs = bm25_retriever.search(query, k=5)
+    fe.score(actual_output="", retrieval_context=docs, input=query)
+
+@fe.contextual_precision(threshold=0.75)
+@fe.csv("retrieval_test_queries.csv")  
+def test_dense_retriever(query):
+    docs = dense_retriever.search(query, k=5)
+    fe.score(actual_output="", retrieval_context=docs, input=query)
+```
+
+### Optimizing k (Number of Documents)
+
+```python
+# Test: does retrieving more docs hurt precision?
+for k in [3, 5, 10, 20]:
+    @fe.contextual_precision(threshold=0.7)
+    def test_retrieval_at_k():
+        docs = retriever.search(query, k=k)
+        print(f"Testing k={k}")
+        fe.score(actual_output="", retrieval_context=docs, input=query)
+```
+
+## Example Output
+
+**Passing test:**
+
+```
+test_retrieval_relevance PASSED
+
+Evaluation Results:
+  ✓ contextual_precision: 0.80 (threshold: 0.70)
+    Reasoning: 4 of 5 retrieved documents are relevant to the query.
+    - Doc 1 ✓ Password reset instructions
+    - Doc 2 ✓ Account security settings
+    - Doc 3 ✓ Login troubleshooting guide
+    - Doc 4 ✓ Two-factor authentication setup
+    - Doc 5 ✗ Billing FAQ (not relevant to password reset)
+```
+
+**Failing test:**
+
+```
+test_retrieval_relevance FAILED
+
+Evaluation Results:
+  ✗ contextual_precision: 0.40 (threshold: 0.70)
+    Reasoning: Only 2 of 5 retrieved documents are relevant.
+    - Doc 1 ✓ Password reset instructions
+    - Doc 2 ✗ Company about page
+    - Doc 3 ✗ Pricing information
+    - Doc 4 ✓ Account settings guide
+    - Doc 5 ✗ Contact support page
+```
+
+## Precision vs Recall
+
+These are the classic retrieval trade-offs:
+
+| Metric | Question | High score means |
+|--------|----------|------------------|
+| **Precision** | "Are retrieved docs relevant?" | Few irrelevant docs |
+| **Recall** | "Did we get all needed docs?" | Few missing docs |
+
+Use both together:
+
+```python
+@fe.contextual_precision(threshold=0.7)  # Relevant docs
+@fe.contextual_recall(threshold=0.7)     # Complete coverage
+def test_retrieval_quality():
+    docs = retriever.search(query)
+    fe.score(response, expected, retrieval_context=docs, input=query)
+```
+
+## Choosing Your Threshold
+
+| Use Case | Suggested Threshold |
+|----------|---------------------|
+| Precision-focused (legal, medical) | 0.85+ |
+| General Q&A | 0.7 - 0.8 |
+| Broad knowledge retrieval | 0.5 - 0.7 |
+
+## Common Issues
+
+### Low Precision (Lots of Noise)
+
+**Symptoms:** Many irrelevant documents retrieved
+
+**Causes:**
+- Chunk size too small (partial matches)
+- Embedding model not domain-specific
+- k value too high
+
+**Fixes:**
+- Increase chunk size
+- Fine-tune embeddings on your domain
+- Reduce k or add reranking
+
+### Perfect Precision but Poor RAG Output
+
+If precision is high but answers are still wrong, the problem is likely:
+- Low recall (missing key documents)
+- Poor faithfulness (LLM ignoring context)
+- Incorrect expected answers

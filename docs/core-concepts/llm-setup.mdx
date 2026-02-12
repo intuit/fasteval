@@ -1,0 +1,371 @@
+---
+title: LLM Setup
+description: Configure LLM providers for fasteval evaluation
+order: 1
+sidebar:
+  - title: Quick Start
+    anchor: quick-start-environment-variables
+  - title: Built-in Providers
+    anchor: built-in-providers
+  - title: Custom LLM Client
+    anchor: custom-llm-client
+  - title: LangChain Integration
+    anchor: langchain-integration
+  - title: Testing with Mocks
+    anchor: testing-with-mock-providers
+---
+
+# LLM Setup
+
+fasteval uses LLM providers to power its evaluation metrics like correctness, relevance, and hallucination detection. This guide covers all the ways to configure your LLM provider.
+
+## Quick Start (Environment Variables)
+
+The simplest way to get started is to set an environment variable. fasteval auto-detects common providers:
+
+```bash
+# Option 1: OpenAI (recommended)
+export OPENAI_API_KEY=sk-...
+
+# Option 2: Anthropic
+export ANTHROPIC_API_KEY=sk-ant-...
+```
+
+With an environment variable set, fasteval automatically creates a provider:
+
+```python
+import fasteval as fe
+
+# No setup needed - fasteval auto-detects from environment
+@fe.correctness(threshold=0.8)
+def test_qa():
+    response = my_agent("What is 2+2?")
+    fe.score(response, "4")
+```
+
+## Built-in Providers
+
+### OpenAI
+
+The `OpenAIClient` is the recommended provider for most use cases:
+
+```python
+import fasteval as fe
+from fasteval import OpenAIClient, set_default_provider
+
+# Basic setup
+client = OpenAIClient(model="gpt-4o-mini")
+set_default_provider(client)
+
+# With custom parameters
+client = OpenAIClient(
+    model="gpt-4o",
+    api_key="sk-...",  # Optional if OPENAI_API_KEY is set
+    temperature=0.0,   # 0.0 for deterministic evaluation
+)
+set_default_provider(client)
+```
+
+### Anthropic
+
+For Anthropic's Claude models:
+
+```python
+from fasteval.providers.anthropic import AnthropicClient
+from fasteval import set_default_provider
+
+client = AnthropicClient(
+    model="claude-3-5-sonnet-20241022",
+    api_key="sk-ant-...",  # Optional if ANTHROPIC_API_KEY is set
+)
+set_default_provider(client)
+```
+
+## Custom LLM Client
+
+You can create a custom client for any LLM by implementing the `LLMClient` protocol. Your class just needs an async `invoke()` method:
+
+```python
+from typing import Dict, List
+import fasteval as fe
+
+class MyCustomClient:
+    """Custom LLM client for any API."""
+    
+    def __init__(self, api_key: str, endpoint: str):
+        self.api_key = api_key
+        self.endpoint = endpoint
+    
+    async def invoke(self, messages: List[Dict[str, str]]) -> str:
+        """
+        Call your LLM API.
+        
+        Args:
+            messages: List of message dicts with "role" and "content" keys.
+                     Example: [
+                         {"role": "system", "content": "You are a helpful assistant"},
+                         {"role": "user", "content": "Hello"}
+                     ]
+        
+        Returns:
+            The response content as a string.
+        """
+        import httpx
+        
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                self.endpoint,
+                headers={"Authorization": f"Bearer {self.api_key}"},
+                json={"messages": messages}
+            )
+            return response.json()["content"]
+
+# Use your custom client
+client = MyCustomClient(api_key="...", endpoint="https://my-llm-api.com/chat")
+fe.set_default_provider(client)
+```
+
+### Protocol Requirements
+
+The `LLMClient` protocol requires only one method:
+
+```python
+async def invoke(self, messages: List[Dict[str, str]]) -> str:
+    """
+    Args:
+        messages: List of dicts with "role" (str) and "content" (str) keys.
+    
+    Returns:
+        Response content string from the LLM.
+    """
+```
+
+## LangChain Integration
+
+If you're already using LangChain, you can wrap your existing models:
+
+![LangChain Integration](docs/assets/langchain-integration.svg)
+
+```python
+from langchain_openai import ChatOpenAI
+from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
+import fasteval as fe
+
+class LangChainClient:
+    """Wrapper to use LangChain models with fasteval."""
+    
+    def __init__(self, llm):
+        self.llm = llm
+    
+    async def invoke(self, messages: list) -> str:
+        # Convert dict messages to LangChain message objects
+        lc_messages = []
+        for msg in messages:
+            role = msg["role"]
+            content = msg["content"]
+            if role == "system":
+                lc_messages.append(SystemMessage(content=content))
+            elif role == "user":
+                lc_messages.append(HumanMessage(content=content))
+            elif role == "assistant":
+                lc_messages.append(AIMessage(content=content))
+        
+        response = await self.llm.ainvoke(lc_messages)
+        return response.content
+
+# Use with LangChain
+llm = ChatOpenAI(model="gpt-4o", temperature=0)
+client = LangChainClient(llm)
+fe.set_default_provider(client)
+```
+
+### Using GenOS or Custom LLM Configurations
+
+For enterprise LLM configurations (like GenOS):
+
+```python
+from your_company.llm import get_configured_llm
+import fasteval as fe
+
+class EnterpriseClient:
+    def __init__(self):
+        self.llm = get_configured_llm()  # Your company's LLM setup
+    
+    async def invoke(self, messages: list) -> str:
+        response = await self.llm.ainvoke(messages)
+        return response.content
+
+fe.set_default_provider(EnterpriseClient())
+```
+
+## Per-Metric Model Overrides
+
+You can override the model for specific metrics using the `model` or `llm` parameter:
+
+```python
+import fasteval as fe
+
+# Set a default provider
+fe.set_default_provider(OpenAIClient(model="gpt-4o-mini"))
+
+# Override for specific metrics
+@fe.correctness(model="gpt-4o")  # Use GPT-4o for correctness
+@fe.relevance()                   # Uses default (gpt-4o-mini)
+@fe.toxicity(model="gpt-4o")     # Use GPT-4o for toxicity
+def test_comprehensive():
+    response = my_agent(query)
+    fe.score(response, expected)
+```
+
+### Using `llm` Parameter for Custom Clients
+
+For per-metric custom clients:
+
+```python
+import fasteval as fe
+
+fast_client = OpenAIClient(model="gpt-4o-mini")
+accurate_client = OpenAIClient(model="gpt-4o")
+
+@fe.correctness(llm=accurate_client)  # Use accurate client
+@fe.relevance(llm=fast_client)        # Use fast client
+def test_qa():
+    response = my_agent(query)
+    fe.score(response, expected)
+```
+
+## Provider Resolution Priority
+
+When determining which LLM to use, fasteval follows this priority order:
+
+![Provider Resolution Flow](docs/assets/provider-resolution-flow.svg)
+
+1. **Per-metric `llm=` parameter** - Explicit client instance
+2. **Per-metric `model=` parameter** - Model name string
+3. **Global `set_default_provider()`** - Explicitly set default
+4. **Environment variable auto-detection** - `OPENAI_API_KEY` or `ANTHROPIC_API_KEY`
+
+```python
+import fasteval as fe
+
+# Priority 4: Environment variable (lowest)
+# export OPENAI_API_KEY=sk-...
+
+# Priority 3: Global default
+fe.set_default_provider(OpenAIClient(model="gpt-4o-mini"))
+
+# Priority 2: Per-metric model override
+@fe.correctness(model="gpt-4o")
+
+# Priority 1: Per-metric llm override (highest)
+@fe.relevance(llm=my_custom_client)
+```
+
+## Testing with Mock Providers
+
+For unit tests that don't need real LLM calls:
+
+```python
+import fasteval as fe
+
+class MockClient:
+    """Mock LLM client for testing."""
+    
+    def __init__(self, response: str = "mocked response"):
+        self.response = response
+        self.calls = []  # Track calls for assertions
+    
+    async def invoke(self, messages: list) -> str:
+        self.calls.append(messages)
+        return self.response
+
+# Use in tests
+def test_with_mock():
+    mock = MockClient(response='{"score": 0.9, "reasoning": "Good answer"}')
+    fe.set_default_provider(mock)
+    
+    # Run your test
+    @fe.correctness(threshold=0.8)
+    def test_qa():
+        fe.score("actual", "expected")
+    
+    # Verify the mock was called
+    assert len(mock.calls) > 0
+```
+
+### Pytest Fixture Example
+
+```python
+import pytest
+import fasteval as fe
+
+@pytest.fixture
+def mock_llm():
+    """Fixture that provides a mock LLM client."""
+    mock = MockClient()
+    original = fe.get_default_provider() if hasattr(fe, '_default_provider') else None
+    fe.set_default_provider(mock)
+    yield mock
+    if original:
+        fe.set_default_provider(original)
+
+def test_evaluation_calls_llm(mock_llm):
+    @fe.correctness(threshold=0.8)
+    def inner_test():
+        fe.score("response", "expected")
+    
+    inner_test()
+    assert len(mock_llm.calls) > 0
+```
+
+## Troubleshooting
+
+### "No LLM provider configured" Error
+
+This error occurs when fasteval can't find a provider:
+
+```
+ValueError: No LLM provider configured. Either:
+  1. Set OPENAI_API_KEY or ANTHROPIC_API_KEY environment variable
+  2. Call fasteval.set_default_provider(your_client)
+```
+
+**Solutions:**
+1. Set an environment variable: `export OPENAI_API_KEY=sk-...`
+2. Explicitly set a provider in your test setup
+
+### API Key Issues
+
+If you get authentication errors:
+
+```python
+# Check your API key is set
+import os
+print(os.getenv("OPENAI_API_KEY"))  # Should print your key
+
+# Or pass it explicitly
+client = OpenAIClient(api_key="sk-...")
+```
+
+### Rate Limiting
+
+For high-volume testing, consider:
+
+1. Using a faster/cheaper model for most tests
+2. Adding retries with backoff
+
+```python
+# Use cheaper model for most tests
+fe.set_default_provider(OpenAIClient(model="gpt-4o-mini"))
+
+# Only use expensive model where needed
+@fe.correctness(model="gpt-4o")  # Override for critical tests
+def test_critical_functionality():
+    ...
+```
+
+## Next Steps
+
+- Learn about [Custom Metrics](/docs/advanced/custom-metrics) to create your own evaluation logic
+- See [Configuration](/docs/advanced/configuration) for performance tuning
+- Explore [all available metrics](/docs/core-concepts/metrics)

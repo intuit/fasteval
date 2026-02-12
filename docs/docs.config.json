@@ -1,0 +1,64 @@
+{
+  "title": "fasteval Documentation",
+  "description": "Decorator-first LLM evaluation for Python",
+  "sections": [
+    "getting-started",
+    "concepts",
+    "core-concepts",
+    "cookbooks",
+    "llm-metrics",
+    "rag-metrics",
+    "tool-tranjectory-metrics",
+    "deterministic-metrics",
+    "conversation-metrics",
+    "multimodal",
+    "human-review",
+    "plugins",
+    "advanced",
+    "api-reference"
+  ],
+  "categories": [
+    {
+      "id": "learn",
+      "label": "Learn",
+      "icon": "rocket",
+      "color": "#3b82f6",
+      "sections": ["Getting Started", "Concepts", "Core Concepts"]
+    },
+    {
+      "id": "metrics",
+      "label": "Metrics",
+      "icon": "gauge",
+      "color": "#10b981",
+      "sections": ["LLM Metrics", "RAG Metrics", "Tool Trajectory Metrics", "Deterministic Metrics", "Conversation Metrics", "Multi-Modal"]
+    },
+    {
+      "id": "guides",
+      "label": "Guides",
+      "icon": "code",
+      "color": "#f59e0b",
+      "sections": ["Cookbooks"]
+    },
+    {
+      "id": "plugins",
+      "label": "Plugins",
+      "icon": "puzzle-piece",
+      "color": "#ec4899",
+      "sections": ["Langfuse Plugin", "LangGraph", "observe Plugin"]
+    },
+    {
+      "id": "advanced",
+      "label": "Advanced",
+      "icon": "settings",
+      "color": "#64748b",
+      "sections": ["Human Review", "Advanced"]
+    },
+    {
+      "id": "reference",
+      "label": "Reference",
+      "icon": "docs",
+      "color": "#6b7280",
+      "sections": ["API Reference"]
+    }
+  ]
+}

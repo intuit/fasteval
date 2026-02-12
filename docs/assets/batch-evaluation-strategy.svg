@@ -1,0 +1,144 @@
+<svg viewBox="0 0 800 380" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="besLoadGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6"/>
+      <stop offset="100%" style="stop-color:#1d4ed8"/>
+    </linearGradient>
+    <linearGradient id="besBatchGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8b5cf6"/>
+      <stop offset="100%" style="stop-color:#6d28d9"/>
+    </linearGradient>
+    <linearGradient id="besParallelGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#10b981"/>
+      <stop offset="100%" style="stop-color:#059669"/>
+    </linearGradient>
+    <linearGradient id="besAggregateGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f59e0b"/>
+      <stop offset="100%" style="stop-color:#d97706"/>
+    </linearGradient>
+    <linearGradient id="besReportGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1"/>
+      <stop offset="100%" style="stop-color:#4f46e5"/>
+    </linearGradient>
+    <filter id="besShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="5" flood-opacity="0.12"/>
+    </filter>
+    <marker id="besArrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/>
+    </marker>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="800" height="380" fill="#f8fafc"/>
+  
+  <!-- Title -->
+  <text x="400" y="32" text-anchor="middle" font-size="22" font-weight="700" fill="#1e293b">Batch Evaluation Strategy</text>
+  <text x="400" y="52" text-anchor="middle" font-size="12" fill="#64748b">Efficient pipeline for evaluating large datasets</text>
+  
+  <!-- Step 1: Load Data -->
+  <g filter="url(#besShadow)" transform="translate(30, 80)">
+    <rect x="0" y="0" width="130" height="90" rx="10" fill="url(#besLoadGrad)"/>
+    <text x="65" y="28" text-anchor="middle" font-size="12" font-weight="600" fill="white">Load Data</text>
+    <text x="65" y="50" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.85)">CSV / JSON / DB</text>
+    <text x="65" y="68" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.7)">10,000+ cases</text>
+    <text x="65" y="82" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.6)">Streaming load</text>
+  </g>
+  
+  <!-- Arrow 1 -->
+  <line x1="160" y1="125" x2="195" y2="125" stroke="#64748b" stroke-width="2" marker-end="url(#besArrow)"/>
+  
+  <!-- Step 2: Batch -->
+  <g filter="url(#besShadow)" transform="translate(205, 80)">
+    <rect x="0" y="0" width="130" height="90" rx="10" fill="url(#besBatchGrad)"/>
+    <text x="65" y="28" text-anchor="middle" font-size="12" font-weight="600" fill="white">📦 Batch</text>
+    <text x="65" y="50" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.85)">Size: 50-100</text>
+    <text x="65" y="68" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.7)">Memory efficient</text>
+    <text x="65" y="82" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.6)">Iterator pattern</text>
+  </g>
+  
+  <!-- Arrow 2 -->
+  <line x1="335" y1="125" x2="370" y2="125" stroke="#64748b" stroke-width="2" marker-end="url(#besArrow)"/>
+  
+  <!-- Step 3: Parallel Eval -->
+  <g filter="url(#besShadow)" transform="translate(380, 70)">
+    <rect x="0" y="0" width="160" height="110" rx="10" fill="white" stroke="#10b981" stroke-width="2"/>
+    <rect x="0" y="0" width="160" height="35" rx="10" fill="url(#besParallelGrad)"/>
+    <rect x="0" y="23" width="160" height="12" fill="url(#besParallelGrad)"/>
+    <text x="80" y="25" text-anchor="middle" font-size="12" font-weight="600" fill="white">⚡ Parallel Eval</text>
+    
+    <!-- Worker boxes -->
+    <rect x="10" y="45" width="42" height="25" rx="4" fill="#dcfce7"/>
+    <text x="31" y="62" text-anchor="middle" font-size="8" fill="#059669">W1</text>
+    
+    <rect x="58" y="45" width="42" height="25" rx="4" fill="#dcfce7"/>
+    <text x="79" y="62" text-anchor="middle" font-size="8" fill="#059669">W2</text>
+    
+    <rect x="106" y="45" width="42" height="25" rx="4" fill="#dcfce7"/>
+    <text x="127" y="62" text-anchor="middle" font-size="8" fill="#059669">...</text>
+    
+    <text x="80" y="88" text-anchor="middle" font-size="9" fill="#475569">asyncio.gather()</text>
+    <text x="80" y="102" text-anchor="middle" font-size="8" fill="#64748b">max_concurrent=20</text>
+  </g>
+  
+  <!-- Arrow 3 -->
+  <line x1="540" y1="125" x2="575" y2="125" stroke="#64748b" stroke-width="2" marker-end="url(#besArrow)"/>
+  
+  <!-- Step 4: Aggregate -->
+  <g filter="url(#besShadow)" transform="translate(585, 80)">
+    <rect x="0" y="0" width="130" height="90" rx="10" fill="url(#besAggregateGrad)"/>
+    <text x="65" y="28" text-anchor="middle" font-size="12" font-weight="600" fill="white">Aggregate</text>
+    <text x="65" y="50" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.85)">Collect results</text>
+    <text x="65" y="68" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.7)">Pass/fail stats</text>
+    <text x="65" y="82" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.6)">Per-metric scores</text>
+  </g>
+  
+  <!-- Arrow down to report -->
+  <line x1="650" y1="170" x2="650" y2="200" stroke="#64748b" stroke-width="2" marker-end="url(#besArrow)"/>
+  
+  <!-- Step 5: Report -->
+  <g filter="url(#besShadow)" transform="translate(530, 210)">
+    <rect x="0" y="0" width="240" height="80" rx="10" fill="url(#besReportGrad)"/>
+    <text x="120" y="28" text-anchor="middle" font-size="12" font-weight="600" fill="white">📋 Generate Report</text>
+    <text x="120" y="50" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.85)">JSON / HTML / CSV export</text>
+    <text x="120" y="68" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.7)">Failure analysis - CI integration</text>
+  </g>
+  
+  <!-- Progress tracking box -->
+  <g transform="translate(30, 210)">
+    <rect x="0" y="0" width="200" height="80" rx="8" fill="#f1f5f9" stroke="#e2e8f0"/>
+    <text x="100" y="20" text-anchor="middle" font-size="10" font-weight="600" fill="#475569">📈 Progress Tracking</text>
+    <text x="15" y="40" font-size="9" fill="#64748b">- tqdm progress bar</text>
+    <text x="15" y="55" font-size="9" fill="#64748b">- ETA estimation</text>
+    <text x="15" y="70" font-size="9" fill="#64748b">- Real-time pass rate</text>
+  </g>
+  
+  <!-- Cost management box -->
+  <g transform="translate(250, 210)">
+    <rect x="0" y="0" width="200" height="80" rx="8" fill="#fef3c7" stroke="#f59e0b"/>
+    <text x="100" y="20" text-anchor="middle" font-size="10" font-weight="600" fill="#92400e">💰 Cost Management</text>
+    <text x="15" y="40" font-size="9" fill="#78350f">- Pre-run estimation</text>
+    <text x="15" y="55" font-size="9" fill="#78350f">- Budget limits</text>
+    <text x="15" y="70" font-size="9" fill="#78350f">- Model selection</text>
+  </g>
+  
+  <!-- Data flow indicators -->
+  <g transform="translate(30, 310)">
+    <rect x="0" y="0" width="740" height="50" rx="8" fill="white" stroke="#e2e8f0"/>
+    <text x="370" y="18" text-anchor="middle" font-size="11" font-weight="600" fill="#475569">Key Performance Numbers</text>
+    
+    <text x="80" y="38" text-anchor="middle" font-size="10" fill="#64748b">~100 evals/min</text>
+    <text x="80" y="48" text-anchor="middle" font-size="8" fill="#94a3b8">(20 workers)</text>
+    
+    <text x="250" y="38" text-anchor="middle" font-size="10" fill="#64748b">~$0.50 / 1000 evals</text>
+    <text x="250" y="48" text-anchor="middle" font-size="8" fill="#94a3b8">(gpt-4o-mini)</text>
+    
+    <text x="440" y="38" text-anchor="middle" font-size="10" fill="#64748b">Batch: 50-100</text>
+    <text x="440" y="48" text-anchor="middle" font-size="8" fill="#94a3b8">(optimal)</text>
+    
+    <text x="620" y="38" text-anchor="middle" font-size="10" fill="#64748b">Memory: O(batch)</text>
+    <text x="620" y="48" text-anchor="middle" font-size="8" fill="#94a3b8">(streaming)</text>
+  </g>
+  
+  <!-- Footer -->
+  <text x="400" y="375" text-anchor="middle" font-size="11" fill="#94a3b8">fasteval • Efficient Batch Evaluation Pipeline</text>
+</svg>

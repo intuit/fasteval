@@ -1,0 +1,273 @@
+---
+title: How It Works
+description: Understanding fasteval's architecture and evaluation flow
+order: 3
+sidebar:
+  - title: The Evaluation Pipeline
+    anchor: the-evaluation-pipeline
+  - title: Step-by-Step Walkthrough
+    anchor: step-by-step-walkthrough
+  - title: Under the Hood
+    anchor: under-the-hood
+  - title: Metric Types
+    anchor: metric-types
+  - title: Pytest Integration
+    anchor: pytest-integration
+---
+
+# How It Works
+
+![Evaluation Flow](docs/assets/evaluation-flow-animated.svg)
+
+## The Evaluation Pipeline
+
+fasteval's evaluation flow consists of five distinct stages that transform your test into a quality assessment:
+
+```
+┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐
+│ DECORATE │ -> │   TEST   │ -> │  SCORE   │ -> │ EVALUATE │ -> │  RESULT  │
+│          │    │          │    │          │    │          │    │          │
+│ @fe.xxx  │    │ Call LLM │    │ fe.score │    │ LLM Judge│    │ PASS/FAIL│
+└──────────┘    └──────────┘    └──────────┘    └──────────┘    └──────────┘
+```
+
+Each stage has a specific responsibility, creating a clean separation between your application logic and evaluation logic.
+
+## Step-by-Step Walkthrough
+
+### Step 1: Decorate
+
+Apply metric decorators to define your quality criteria:
+
+```python
+import fasteval as fe
+
+@fe.correctness(threshold=0.8)    # Must be factually accurate
+@fe.toxicity(threshold=0.95)      # Must be safe for users
+def test_customer_support():
+    ...
+```
+
+**What happens**: Decorators register their metrics and thresholds to a test context. Multiple decorators stack—the test must pass ALL metrics.
+
+### Step 2: Test
+
+Execute your LLM, agent, or application inside the test function:
+
+```python
+@fe.correctness(threshold=0.8)
+@fe.toxicity(threshold=0.95)
+def test_customer_support():
+    # Your application logic runs here
+    response = support_agent("How do I cancel my subscription?")
+    ...
+```
+
+**What happens**: Your code runs exactly as it would in production. fasteval doesn't modify or intercept your application—it only observes outputs.
+
+### Step 3: Score
+
+Record the output for evaluation using `fe.score()`:
+
+```python
+@fe.correctness(threshold=0.8)
+@fe.toxicity(threshold=0.95)
+def test_customer_support():
+    response = support_agent("How do I cancel my subscription?")
+    
+    # Record what to evaluate
+    fe.score(
+        actual_output=response,
+        expected_output="Go to Account Settings > Subscription > Cancel",
+        input="How do I cancel my subscription?"
+    )
+```
+
+**What happens**: `fe.score()` captures the actual output, expected output, and any context. It doesn't evaluate yet—it stores the data for the evaluation phase.
+
+### Step 4: Evaluate
+
+After the test function completes, fasteval's pytest plugin triggers evaluation:
+
+```python
+# This happens automatically after your test function returns
+
+for metric in registered_metrics:
+    score = await metric.evaluate(
+        actual_output=response,
+        expected_output=expected,
+        input=query
+    )
+    # score: 0.0 - 1.0
+```
+
+**What happens**: Each metric constructs an evaluation prompt and calls an LLM judge. The judge assesses the output and returns a score with reasoning.
+
+### Step 5: Result
+
+Scores are compared against thresholds to determine pass/fail:
+
+```
+$ pytest test_support.py -v
+
+test_support.py::test_customer_support PASSED
+
+Evaluation Results:
+  correctness: 0.92 (threshold: 0.80) ✓
+  toxicity: 0.98 (threshold: 0.95) ✓
+  
+  Aggregate Score: 0.95
+```
+
+**What happens**: If ALL metrics meet their thresholds, the test passes. If ANY metric falls below its threshold, the test fails with detailed reasoning.
+
+## Under the Hood
+
+### Evaluation Prompt Construction
+
+When you call `fe.score()` with a `correctness` metric, fasteval constructs a prompt like:
+
+```
+You are an evaluation judge assessing the correctness of an AI response.
+
+**User Query**: How do I cancel my subscription?
+
+**Expected Answer**: Go to Account Settings > Subscription > Cancel
+
+**Actual Response**: To cancel your subscription, navigate to your Account 
+Settings, find the Subscription section, and click Cancel. You'll be asked 
+to confirm.
+
+**Task**: Rate how correctly the actual response answers the query compared 
+to the expected answer. Consider semantic equivalence, not exact wording.
+
+Provide:
+1. A score from 0.0 to 1.0
+2. Brief reasoning for your score
+```
+
+### Score Computation
+
+The LLM judge returns structured output:
+
+```json
+{
+  "score": 0.92,
+  "reasoning": "The response correctly describes the cancellation process 
+               and matches the expected navigation path. It provides 
+               additional helpful context about confirmation without 
+               contradicting the expected answer."
+}
+```
+
+### Threshold Comparison
+
+```python
+if score >= threshold:
+    return TestResult.PASS
+else:
+    return TestResult.FAIL
+```
+
+## Metric Types
+
+fasteval provides two categories of metrics with different evaluation mechanisms:
+
+### LLM-Based Metrics
+
+Use an LLM judge for semantic evaluation:
+
+| Metric | What It Measures |
+|--------|------------------|
+| `correctness` | Factual accuracy against expected output |
+| `relevance` | Alignment with the original query |
+| `toxicity` | Safety and appropriateness |
+| `hallucination` | Detection of fabricated information |
+| `faithfulness` | Grounding in provided context |
+| `coherence` | Logical flow and consistency |
+
+**Characteristics**:
+- Semantic understanding (paraphrase-tolerant)
+- Requires LLM API call (~100-500ms)
+- Returns score + reasoning
+
+### Deterministic Metrics
+
+Use programmatic checks for instant evaluation:
+
+| Metric | What It Measures |
+|--------|------------------|
+| `contains` | Substring presence |
+| `exact_match` | Exact string equality |
+| `regex` | Pattern matching |
+| `json_schema` | JSON structure validation |
+| `word_count` | Length constraints |
+
+**Characteristics**:
+- Instant execution (no API call)
+- Binary or threshold-based
+- Ideal for format validation
+
+### Combining Metrics
+
+Stack decorators to create comprehensive evaluations:
+
+```python
+@fe.correctness(threshold=0.8)     # LLM-based
+@fe.toxicity(threshold=0.95)       # LLM-based
+@fe.contains()                     # Deterministic
+@fe.json_schema()                  # Deterministic
+def test_comprehensive():
+    response = my_agent(query)
+    fe.score(response, expected, schema=my_schema)
+```
+
+All metrics run in parallel for efficiency. The test passes only if ALL metrics meet their thresholds.
+
+## Pytest Integration
+
+fasteval integrates with pytest through a custom plugin that hooks into the test lifecycle:
+
+```
+pytest discovers test_*.py
+         │
+         ▼
+    ┌─────────────────┐
+    │ Collection Hook │  ← fasteval identifies decorated tests
+    └────────┬────────┘
+             │
+             ▼
+    ┌─────────────────┐
+    │  Test Execution │  ← Your test function runs
+    └────────┬────────┘
+             │
+             ▼
+    ┌─────────────────┐
+    │   fe.score()    │  ← Captures evaluation data
+    └────────┬────────┘
+             │
+             ▼
+    ┌─────────────────┐
+    │ Teardown Hook   │  ← fasteval triggers evaluation
+    └────────┬────────┘
+             │
+             ▼
+    ┌─────────────────┐
+    │ Report Results  │  ← Scores displayed in output
+    └─────────────────┘
+```
+
+### Benefits of Pytest Integration
+
+- **Familiar workflow**: `pytest test_file.py -v`
+- **IDE support**: Click to run tests in VS Code, PyCharm
+- **Parallel execution**: `pytest -n auto` for concurrent evaluation
+- **CI/CD ready**: Standard exit codes (0 = pass, 1 = fail)
+- **Rich output**: Detailed failure messages with reasoning
+
+## Next Steps
+
+Now that you understand how fasteval works:
+
+- [**Installation**](/docs/getting-started/installation) — Set up fasteval and configure your LLM provider
+- [**Quick Start**](/docs/getting-started/quickstart) — Write your first evaluation test

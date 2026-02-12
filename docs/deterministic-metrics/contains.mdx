@@ -1,0 +1,40 @@
+---
+title: Contains
+description: Check if expected output is contained in actual output
+order: 1
+---
+
+# Contains Metric
+
+The contains metric checks if the expected output is a substring of the actual output.
+
+## Usage
+
+```python
+import fasteval as fe
+
+@fe.contains()
+def test_contains_keyword():
+    response = my_llm("What is Python?")
+    fe.score(response, "programming language")
+```
+
+## Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `case_sensitive` | bool | False | Case-sensitive matching |
+
+## Examples
+
+```python
+# Case insensitive (default)
+@fe.contains()
+def test_case_insensitive():
+    fe.score("Hello World", "hello")  # Passes
+
+# Case sensitive
+@fe.contains(case_sensitive=True)
+def test_case_sensitive():
+    fe.score("Hello World", "hello")  # Fails
+```

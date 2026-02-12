@@ -1,0 +1,43 @@
+[project]
+name = "fasteval-langgraph"
+version = "0.1.0"
+description = "LangGraph testing plugin for fasteval -- wrap any compiled StateGraph with a minimal harness for chat, session, mocking, and node-level testing"
+authors = [{name = "Intuit"}]
+license = {text = "Apache-2.0"}
+readme = "README.md"
+requires-python = ">=3.10,<4.0"
+
+dependencies = [
+    "fasteval>=3.0.0",
+    "langgraph>=0.2.0",
+    "pydantic>=2.0.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.21.0",
+    "black>=23.0.0",
+    "mypy>=1.0.0",
+    "isort>=5.0.0",
+]
+
+[tool.uv.build-backend]
+module-name = "fasteval_langgraph"
+module-root = ""
+
+[build-system]
+requires = ["uv_build>=0.9.3,<0.10.0"]
+build-backend = "uv_build"
+
+[tool.black]
+line-length = 88
+target-version = ['py310', 'py311', 'py312', 'py313']
+
+[tool.isort]
+profile = "black"
+
+[tool.pytest.ini_options]
+pythonpath = "."
+testpaths = ["tests"]
+asyncio_mode = "auto"

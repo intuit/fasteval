@@ -1,0 +1,580 @@
+---
+title: Production Runtime Monitoring
+description: Monitor and evaluate LLM agents in production with fasteval-observe
+order: 7
+sidebar:
+  - title: Overview
+    anchor: overview
+  - title: Setup
+    anchor: setup
+  - title: Basic Monitoring
+    anchor: basic-monitoring
+  - title: Sampling Strategies
+    anchor: sampling-strategies
+  - title: FastAPI Integration
+    anchor: fastapi-integration
+  - title: Kubernetes Deployment
+    anchor: kubernetes-deployment
+  - title: Metrics Collection
+    anchor: metrics-collection
+  - title: Alerting
+    anchor: alerting
+---
+
+# Production Runtime Monitoring
+
+This cookbook shows how to monitor and evaluate LLM agents in production using the **fasteval-observe** plugin.
+
+## Overview
+
+Production monitoring requires a different approach than testing:
+
+- **Sampling**: Can't evaluate every request (cost/latency)
+- **Async**: Evaluation must not block request path
+- **Observability**: Need structured logs for external collectors
+- **Adaptive**: Sample more on errors/anomalies
+
+The `fasteval-observe` plugin handles all of this:
+
+```python
+from fasteval_observe import observe
+from fasteval_observe.sampling import AdaptiveSamplingStrategy
+
+@observe(
+    sampling=AdaptiveSamplingStrategy(base_rate=0.01),
+    run_evaluations=True
+)
+@fe.relevance(threshold=0.7)
+async def my_agent(query: str) -> str:
+    return await llm.invoke(query)
+```
+
+## Setup
+
+### Installation
+
+```bash
+# Install both packages
+pip install fasteval fasteval-observe
+```
+
+### Configuration
+
+Create a configuration file for your environment:
+
+```python
+# config/production.py
+from fasteval_observe import ObserveConfig, configure_observe
+
+configure_observe(ObserveConfig(
+    enabled=True,
+    
+    # Privacy: Don't log sensitive data in production
+    include_inputs=False,
+    include_outputs=False,
+    
+    # Performance
+    max_queue_size=10000,
+    flush_interval_seconds=5.0,
+))
+```
+
+> **Note:** Use the `metadata` parameter in `@observe()` to add service_name, environment, or other custom fields to observations.
+
+## Basic Monitoring
+
+### Simple Agent Monitoring
+
+```python
+import fasteval as fe
+from fasteval_observe import observe, initialize_observer, shutdown_observer
+from fasteval_observe.sampling import FixedRateSamplingStrategy
+
+# Initialize at app startup
+initialize_observer()
+
+@observe(
+    sampling=FixedRateSamplingStrategy(rate=0.05),  # Monitor 5%
+    run_evaluations=True
+)
+@fe.relevance(threshold=0.7)
+@fe.toxicity(threshold=0.95)
+async def customer_support_agent(query: str) -> str:
+    """Production agent with monitoring."""
+    response = await llm.invoke(query)
+    return response
+
+# Use as normal
+response = await customer_support_agent("How do I reset my password?")
+
+# Shutdown at app shutdown
+shutdown_observer()
+```
+
+### Observation Output
+
+Logs are JSON-formatted for easy parsing:
+
+```json
+{
+  "timestamp": "2026-02-03T10:15:30.123Z",
+  "trace_id": "550e8400-e29b-41d4-a716-446655440000",
+  "span_id": "a1b2c3d4e5f6",
+  "function_name": "customer_support_agent",
+  "sampling_strategy": "FixedRateSamplingStrategy",
+  "metrics": {
+    "latency_ms": 1234.56,
+    "success": true
+  },
+  "evaluation_results": {
+    "metrics_evaluated": ["relevance", "toxicity"],
+    "aggregate_score": 0.89,
+    "passed": true,
+    "metric_scores": {
+      "relevance": 0.85,
+      "toxicity": 0.98
+    }
+  },
+  "metadata": {
+    "service_name": "my-agent-service",
+    "environment": "production",
+    "team": "customer-support"
+  }
+}
+```
+
+## Sampling Strategies
+
+### Fixed Rate (Baseline)
+
+Sample a constant percentage of requests:
+
+```python
+from fasteval_observe.sampling import FixedRateSamplingStrategy
+
+@observe(
+    sampling=FixedRateSamplingStrategy(rate=0.01),  # 1% of all requests
+)
+async def agent(query: str) -> str:
+    return await llm.invoke(query)
+```
+
+**Use when:** Steady-state monitoring, budget constraints
+
+### Adaptive (Error-Aware)
+
+Increase sampling on errors and slow responses:
+
+```python
+from fasteval_observe.sampling import AdaptiveSamplingStrategy
+
+@observe(
+    sampling=AdaptiveSamplingStrategy(
+        base_rate=0.01,           # 1% baseline
+        error_rate=1.0,           # 100% on errors
+        slow_threshold_ms=2000,   # >2s considered slow
+        slow_rate=0.5,            # 50% of slow calls
+    ),
+    run_evaluations=True
+)
+@fe.relevance(threshold=0.7)
+async def agent(query: str) -> str:
+    return await llm.invoke(query)
+```
+
+**Use when:** Debugging performance issues, incident response
+
+### Token Budget (Cost-Aware)
+
+Limit evaluation costs by token budget:
+
+```python
+from fasteval_observe.sampling import TokenBudgetSamplingStrategy
+
+@observe(
+    sampling=TokenBudgetSamplingStrategy(
+        max_tokens_per_hour=100000,  # 100k tokens/hour max
+        avg_tokens_per_eval=1500,    # Estimated tokens per evaluation
+    ),
+    run_evaluations=True
+)
+async def agent(query: str) -> str:
+    return await llm.invoke(query)
+```
+
+**Use when:** Strict budget constraints, high-volume production
+
+### Composable (Combined Strategies)
+
+Combine multiple strategies with AND/OR logic:
+
+```python
+from fasteval_observe.sampling import (
+    ComposableSamplingStrategy,
+    FixedRateSamplingStrategy,
+    AdaptiveSamplingStrategy,
+)
+
+# Sample if (1% baseline) OR (error occurred)
+strategy = ComposableSamplingStrategy(
+    strategies=[
+        FixedRateSamplingStrategy(rate=0.01),
+        AdaptiveSamplingStrategy(base_rate=0, error_rate=1.0),
+    ],
+    mode="any"  # OR logic
+)
+
+@observe(sampling=strategy, run_evaluations=True)
+async def agent(query: str) -> str:
+    return await llm.invoke(query)
+```
+
+## FastAPI Integration
+
+### Application Setup
+
+```python
+from fastapi import FastAPI
+from contextlib import asynccontextmanager
+import fasteval as fe
+from fasteval_observe import (
+    observe,
+    initialize_observer,
+    shutdown_observer,
+    configure_observe,
+    ObserveConfig,
+)
+from fasteval_observe.sampling import AdaptiveSamplingStrategy
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage observer lifecycle."""
+    # Startup
+    configure_observe(ObserveConfig(
+        enabled=True,
+        include_inputs=False,  # Privacy in production
+        include_outputs=False,
+    ))
+    initialize_observer()
+    
+    yield
+    
+    # Shutdown
+    shutdown_observer()
+
+app = FastAPI(lifespan=lifespan)
+
+@observe(
+    sampling=AdaptiveSamplingStrategy(
+        base_rate=0.02,
+        error_rate=1.0,
+        slow_threshold_ms=3000,
+        slow_rate=0.8,
+    ),
+    run_evaluations=True,
+    metadata={
+        "service_name": "api-gateway",
+        "environment": "production",
+        "endpoint": "/chat"
+    }
+)
+@fe.relevance(threshold=0.7)
+@fe.toxicity(threshold=0.95)
+async def chat_agent(message: str, user_id: str) -> str:
+    """Main chat endpoint logic."""
+    response = await llm.invoke(message)
+    return response
+
+@app.post("/chat")
+async def chat_endpoint(message: str, user_id: str):
+    """Chat API endpoint."""
+    response = await chat_agent(message, user_id)
+    return {"response": response}
+```
+
+### Health Check Integration
+
+```python
+from fasteval_observe import get_observation_queue
+
+@app.get("/health")
+async def health_check():
+    """Health check with queue monitoring."""
+    queue = get_observation_queue()
+    queue_size = queue._queue.qsize() if queue._queue else 0
+    
+    return {
+        "status": "healthy",
+        "observer": {
+            "enabled": True,
+            "queue_size": queue_size,
+            "worker_alive": queue._worker_thread.is_alive() if queue._worker_thread else False,
+        }
+    }
+```
+
+## Kubernetes Deployment
+
+### Logging to Stdout (Sidecar Collection)
+
+Default configuration logs to stdout for collection by log aggregators:
+
+```yaml
+# deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-agent
+spec:
+  template:
+    spec:
+      containers:
+      - name: agent
+        image: my-agent:latest
+        env:
+        - name: OBSERVE_ENABLED
+          value: "true"
+        - name: K8S_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: K8S_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+      
+      # Fluentd sidecar to collect logs
+      - name: fluentd
+        image: fluent/fluentd-kubernetes-daemonset:v1-debian-elasticsearch
+        env:
+        - name: FLUENT_ELASTICSEARCH_HOST
+          value: "elasticsearch"
+        - name: FLUENT_ELASTICSEARCH_PORT
+          value: "9200"
+        volumeMounts:
+        - name: varlog
+          mountPath: /var/log
+```
+
+```python
+# In your application code
+import os
+from fasteval_observe import observe
+
+# Extract k8s metadata from environment
+namespace = os.getenv("K8S_NAMESPACE", "default")
+pod_name = os.getenv("K8S_POD_NAME", "unknown")
+
+@observe(
+    sampling=FixedRateSamplingStrategy(rate=0.05),
+    metadata={
+        "service_name": "my-agent",
+        "environment": "production",
+        "namespace": namespace,
+        "pod_name": pod_name,
+    }
+)
+async def my_agent(query: str) -> str:
+    return await llm.invoke(query)
+```
+
+### Custom Logger (Direct to Service)
+
+Send logs directly to your logging service:
+
+```python
+import logging
+from logging.handlers import HTTPHandler
+from fasteval_observe import set_logger
+
+# Create custom logger
+custom_logger = logging.getLogger("production_observations")
+custom_logger.setLevel(logging.INFO)
+
+# Add HTTP handler for remote logging
+http_handler = HTTPHandler(
+    host="logs.example.com",
+    url="/api/logs",
+    method="POST",
+)
+custom_logger.addHandler(http_handler)
+
+# Set as the observe logger
+set_logger(custom_logger)
+```
+
+### Environment-Based Config
+
+```python
+import os
+from fasteval_observe import configure_observe, ObserveConfig, observe
+
+env = os.getenv("ENVIRONMENT", "development")
+
+if env == "production":
+    configure_observe(ObserveConfig(
+        enabled=True,
+        include_inputs=False,  # Privacy in prod
+        include_outputs=False,
+    ))
+elif env == "staging":
+    configure_observe(ObserveConfig(
+        enabled=True,
+        include_inputs=True,   # Debug in staging
+        include_outputs=True,
+    ))
+else:
+    configure_observe(ObserveConfig(enabled=False))
+
+# Add environment to metadata in decorator
+@observe(
+    sampling=FixedRateSamplingStrategy(rate=0.05),
+    metadata={"environment": env}
+)
+async def my_agent(query: str) -> str:
+    return await llm.invoke(query)
+```
+
+## Metrics Collection
+
+### Parsing Logs with jq
+
+```bash
+# Get average latency
+cat observations.jsonl | jq -s '[.[].metrics.latency_ms] | add / length'
+
+# Find failed evaluations
+cat observations.jsonl | jq 'select(.evaluation_results.passed == false)'
+
+# Get score distribution
+cat observations.jsonl | \
+  jq -r '.evaluation_results.aggregate_score' | \
+  sort -n | \
+  uniq -c
+```
+
+### Elasticsearch Integration
+
+```python
+from elasticsearch import AsyncElasticsearch
+import logging
+from fasteval_observe import set_logger
+
+class ElasticsearchHandler(logging.Handler):
+    """Log observations to Elasticsearch."""
+    
+    def __init__(self, es_client: AsyncElasticsearch, index: str):
+        super().__init__()
+        self.es = es_client
+        self.index = index
+    
+    def emit(self, record):
+        """Send log record to Elasticsearch."""
+        try:
+            import json
+            doc = json.loads(record.getMessage())
+            asyncio.create_task(
+                self.es.index(index=self.index, document=doc)
+            )
+        except Exception:
+            self.handleError(record)
+
+# Setup
+es = AsyncElasticsearch(["http://localhost:9200"])
+logger = logging.getLogger("observations")
+logger.addHandler(ElasticsearchHandler(es, "agent-observations"))
+set_logger(logger)
+```
+
+## Alerting
+
+### Score Degradation Detection
+
+```python
+from collections import deque
+from datetime import datetime, timedelta
+
+class ScoreMonitor:
+    """Monitor evaluation scores and alert on degradation."""
+    
+    def __init__(self, window_minutes: int = 60):
+        self.window = timedelta(minutes=window_minutes)
+        self.scores = deque()
+    
+    def add_score(self, score: float):
+        """Add a new score."""
+        now = datetime.utcnow()
+        self.scores.append((now, score))
+        
+        # Remove old scores outside window
+        cutoff = now - self.window
+        while self.scores and self.scores[0][0] < cutoff:
+            self.scores.popleft()
+    
+    def check_degradation(self, threshold: float = 0.7) -> bool:
+        """Check if average score dropped below threshold."""
+        if len(self.scores) < 10:  # Need minimum samples
+            return False
+        
+        avg_score = sum(s for _, s in self.scores) / len(self.scores)
+        return avg_score < threshold
+
+# Usage
+monitor = ScoreMonitor(window_minutes=60)
+
+# In your observation processing
+def process_observation(obs):
+    if obs.get("evaluation_results"):
+        score = obs["evaluation_results"]["aggregate_score"]
+        monitor.add_score(score)
+        
+        if monitor.check_degradation(threshold=0.7):
+            send_alert("Agent quality degraded!")
+```
+
+### PagerDuty Integration
+
+```python
+import httpx
+
+async def send_pagerduty_alert(message: str, severity: str = "error"):
+    """Send alert to PagerDuty."""
+    payload = {
+        "routing_key": os.getenv("PAGERDUTY_ROUTING_KEY"),
+        "event_action": "trigger",
+        "payload": {
+            "summary": message,
+            "severity": severity,
+            "source": "fasteval-observe",
+        }
+    }
+    
+    async with httpx.AsyncClient() as client:
+        await client.post(
+            "https://events.pagerduty.com/v2/enqueue",
+            json=payload
+        )
+
+# Alert on low scores
+if result.aggregate_score < 0.6:
+    await send_pagerduty_alert(
+        f"Agent score dropped to {result.aggregate_score}",
+        severity="warning"
+    )
+```
+
+## Best Practices
+
+1. **Start with low sampling rates** (1-5%) and increase as needed
+2. **Use adaptive sampling** to catch errors without high costs
+3. **Monitor queue health** in your health checks
+4. **Don't log PII** in production (set `include_inputs=False`)
+5. **Set up alerting** on score degradation
+6. **Review metrics weekly** to catch trends
+7. **Test sampling strategies** in staging first
+
+## Next Steps
+
+- [Sampling Strategies](/docs/plugins/observe/sampling-strategies) - Deep dive into strategies
+- [Custom Strategies](/docs/plugins/observe/custom-strategies) - Build your own
+- [Observability Concepts](/docs/concepts/observability) - Trace integration patterns

@@ -1,0 +1,47 @@
+---
+title: fe.score()
+description: Record evaluation scores
+order: 1
+---
+
+# fe.score()
+
+Record an output for evaluation by fasteval metrics.
+
+## Signature
+
+```python
+fe.score(
+    actual_output: str,
+    expected_output: str = None,
+    input: str = None,
+    context: str = None,
+    history: List[Dict] = None
+)
+```
+
+## Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `actual_output` | str | Yes | The output to evaluate |
+| `expected_output` | str | No | The expected/reference output |
+| `input` | str | No | The input query |
+| `context` | str | No | Additional context |
+| `history` | List[Dict] | No | Conversation history |
+
+## Examples
+
+```python
+# Basic usage
+fe.score(response, expected)
+
+# With input
+fe.score(response, expected, input=query)
+
+# With context
+fe.score(response, expected, input=query, context=document)
+
+# With conversation history
+fe.score(response, expected, input=query, history=messages)
+```

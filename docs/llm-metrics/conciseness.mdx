@@ -1,0 +1,140 @@
+---
+title: Conciseness
+description: Evaluate brevity and information density of LLM outputs
+order: 7
+sidebar:
+  - title: Quick Example
+    anchor: quick-example
+  - title: How Scoring Works
+    anchor: how-scoring-works
+  - title: Practical Examples
+    anchor: practical-examples
+  - title: Combining with Other Metrics
+    anchor: combining-with-other-metrics
+---
+
+# Conciseness Metric
+
+The conciseness metric evaluates whether responses are efficiently written without unnecessary verbosity, repetition, or filler content. It measures information density — how much useful information is conveyed per word.
+
+## Quick Example
+
+```python
+import fasteval as fe
+
+@fe.conciseness(threshold=0.7)
+def test_summary():
+    response = my_llm("Summarize this article in one paragraph")
+    fe.score(response, input="Summarize this article in one paragraph")
+```
+
+## Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `threshold` | float | 0.7 | Minimum score to pass (0.0 - 1.0) |
+| `model` | str | None | Override the default LLM model |
+
+## How Scoring Works
+
+The LLM judge evaluates information efficiency:
+
+| Score | Interpretation | Example |
+|-------|---------------|---------|
+| **0.9-1.0** | Perfectly concise | Every word adds value, no redundancy |
+| **0.7-0.9** | Very concise | Minimal unnecessary content |
+| **0.5-0.7** | Moderately concise | Some filler or repetition |
+| **0.0-0.5** | Verbose | Excessive padding, repetition, or filler |
+
+## Practical Examples
+
+### Evaluating Summaries
+
+```python
+@fe.conciseness(threshold=0.8)
+def test_summary_brevity():
+    article = "Long article text..."
+    response = my_llm(f"Summarize in 2-3 sentences: {article}")
+    fe.score(response, input="Summarize in 2-3 sentences")
+```
+
+### API Response Descriptions
+
+```python
+@fe.conciseness(threshold=0.7)
+def test_error_message():
+    response = my_llm("Generate an error message for 'file not found'")
+    fe.score(response, input="Generate an error message for 'file not found'")
+```
+
+### Documentation Generation
+
+```python
+@fe.conciseness(threshold=0.75)
+def test_function_docs():
+    code = "def calculate_total(items): ..."
+    response = my_llm(f"Write a one-line docstring for: {code}")
+    fe.score(response, input="Write a one-line docstring")
+```
+
+## Example Output
+
+**Passing test:**
+
+```
+test_summary PASSED
+
+Evaluation Results:
+  ✓ conciseness: 0.85 (threshold: 0.70)
+    Reasoning: The response efficiently conveys the key points without
+    unnecessary repetition or filler words. Information density is high.
+```
+
+**Failing test:**
+
+```
+test_summary FAILED
+
+Evaluation Results:
+  ✗ conciseness: 0.45 (threshold: 0.70)
+    Reasoning: The response contains significant repetition of the same
+    points and uses filler phrases like "it is important to note that"
+    multiple times without adding value.
+```
+
+## Choosing Your Threshold
+
+| Use Case | Suggested Threshold |
+|----------|---------------------|
+| General responses | 0.6 - 0.7 |
+| Summaries | 0.7 - 0.8 |
+| API/error messages | 0.8 - 0.9 |
+| One-liner responses | 0.85+ |
+
+## When to Use Conciseness
+
+**Good for:**
+- Summary generation
+- API response messages
+- Documentation snippets
+- Chatbot responses where brevity matters
+
+**Consider alternatives for:**
+- Educational content (may need detail) — use `@fe.completeness()`
+- Creative writing — use `@fe.criteria()` with custom criteria
+- Technical explanations — balance with `@fe.completeness()`
+
+## Combining with Other Metrics
+
+Conciseness alone doesn't guarantee quality. Combine with other metrics:
+
+```python
+@fe.conciseness(threshold=0.7)    # Is it brief?
+@fe.completeness(threshold=0.8)   # Does it cover everything?
+@fe.coherence(threshold=0.8)      # Is it well-written?
+def test_quality_summary():
+    response = my_llm("Summarize the quarterly report")
+    fe.score(response, input="Summarize the quarterly report")
+```
+
+This ensures the response is brief but still complete and readable.

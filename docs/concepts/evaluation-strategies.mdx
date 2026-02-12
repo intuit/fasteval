@@ -1,0 +1,349 @@
+---
+title: Evaluation Strategies
+description: Comprehensive guide to different approaches for evaluating LLM outputs
+order: 2
+sidebar:
+  - title: Overview
+    anchor: overview
+  - title: Reference-Based
+    anchor: reference-based-evaluation
+  - title: Reference-Free
+    anchor: reference-free-evaluation
+  - title: Rubric-Based
+    anchor: rubric-based-evaluation
+  - title: Choosing a Strategy
+    anchor: choosing-a-strategy
+---
+
+# Evaluation Strategies
+
+Effective LLM evaluation requires selecting the right strategy for your use case. Different scenarios—from factual Q&A to creative generation—call for fundamentally different evaluation approaches. This guide covers the three primary strategies and provides guidance on when to use each.
+
+## Overview
+
+Evaluation strategies differ primarily in what reference material the judge uses to assess quality:
+
+| Strategy | Reference Material | Best For |
+|----------|-------------------|----------|
+| **Reference-Based** | Known-correct answers or source documents | Factual accuracy, RAG grounding, regression testing |
+| **Reference-Free** | Only the input query | Relevance, safety, open-ended generation |
+| **Rubric-Based** | Custom scoring criteria | Domain-specific quality, multi-dimensional assessment |
+
+![Evaluation Strategies Decision Tree](docs/assets/evaluation-strategies.svg)
+
+Understanding these strategies helps you design evaluation suites that provide meaningful quality signals while avoiding common pitfalls like over-constraining creative tasks or under-specifying accuracy requirements.
+
+## Reference-Based Evaluation
+
+Reference-based evaluation compares LLM outputs against known-correct answers or authoritative source material. This approach provides clear pass/fail criteria and is essential for scenarios where accuracy matters.
+
+### When to Use
+
+Reference-based evaluation is appropriate when:
+
+- You have ground truth answers (factual Q&A, math problems)
+- Testing factual accuracy against established facts
+- Evaluating RAG systems against retrieved context
+- Performing regression testing with golden answers
+- Verifying information extraction accuracy
+
+### Core Principle
+
+The judge assesses semantic equivalence between the actual output and a reference answer, accounting for paraphrasing and different phrasings that convey the same meaning. Unlike exact string matching, reference-based LLM evaluation understands that "Paris is the capital of France" and "The capital of France is Paris" are equivalent.
+
+### fasteval Metrics
+
+| Metric | What It Compares |
+|--------|-----------------|
+| `@fe.correctness()` | Output vs expected answer (semantic equivalence) |
+| `@fe.exact_match()` | Exact string equality (deterministic) |
+| `@fe.faithfulness()` | Output vs source context (RAG grounding) |
+| `@fe.answer_correctness()` | RAG answer vs expected with context consideration |
+| `@fe.contains()` | Output contains expected substring (deterministic) |
+
+### Example: Factual Q&A Testing
+
+```python
+@fe.correctness(threshold=0.8)
+def test_factual_qa():
+    question = "What year did World War II end?"
+    response = agent(question)
+    
+    # Reference-based: compare against expected answer
+    fe.score(response, expected="World War II ended in 1945")
+```
+
+The judge evaluates whether the response conveys the same factual information as the expected answer, regardless of exact wording.
+
+### Example: RAG Faithfulness
+
+RAG (Retrieval-Augmented Generation) systems require special attention to ensure generated answers are grounded in retrieved context:
+
+```python
+@fe.faithfulness(threshold=0.85)
+def test_rag_grounding():
+    context = [
+        "The Eiffel Tower was built in 1889.",
+        "It is located in Paris, France.",
+        "The tower is 330 meters tall."
+    ]
+    
+    response = rag_agent("Tell me about the Eiffel Tower", context=context)
+    
+    # Reference-based: verify response is grounded in provided context
+    fe.score(response, context=context)
+```
+
+Faithfulness evaluation checks that claims in the response are supported by the provided context, catching hallucinations where the model generates plausible but ungrounded information.
+
+### Strengths and Limitations
+
+**Strengths:**
+- Clear, objective pass/fail criteria
+- Reproducible results across runs
+- Excellent for regression testing and CI/CD
+- Catches factual errors reliably
+
+**Limitations:**
+- Requires maintaining expected answers or golden datasets
+- May miss valid alternative responses not anticipated
+- Cannot evaluate truly open-ended generation
+- Golden answers can become stale as information changes
+
+## Reference-Free Evaluation
+
+Reference-free evaluation assesses output quality without requiring a "correct" answer. The judge evaluates intrinsic qualities of the output—relevance, safety, coherence—based solely on the input query and the response itself.
+
+### When to Use
+
+Reference-free evaluation is appropriate when:
+
+- No single correct answer exists (creative generation, summarization)
+- Evaluating safety and content moderation
+- Assessing style, tone, and communication quality
+- Checking relevance to user queries
+- Screening for bias, toxicity, or harmful content
+
+### Core Principle
+
+The judge assesses whether the output exhibits desired qualities based on general standards rather than comparison to a specific reference. This requires well-defined evaluation criteria that the judge can apply consistently.
+
+### fasteval Metrics
+
+| Metric | What It Evaluates |
+|--------|------------------|
+| `@fe.relevance()` | Does output address the input query? |
+| `@fe.toxicity()` | Does output contain harmful content? |
+| `@fe.bias()` | Does output exhibit unfair bias? |
+| `@fe.coherence()` | Is the output logically coherent? |
+| `@fe.conciseness()` | Is the output appropriately concise? |
+| `@fe.criteria()` | Custom criteria you define |
+
+### Example: Relevance Evaluation
+
+```python
+@fe.relevance(threshold=0.7)
+def test_stays_on_topic():
+    question = "How do I reset my password?"
+    response = support_agent(question)
+    
+    # Reference-free: is response relevant to the question?
+    fe.score(response, input=question)
+```
+
+The judge assesses whether the response addresses the user's actual question rather than providing tangentially related information.
+
+### Example: Safety Screening
+
+Safety evaluation is critical for any user-facing LLM application:
+
+```python
+@fe.toxicity(threshold=0.95)  # High threshold = strict safety requirements
+@fe.bias(threshold=0.9)
+def test_safe_response():
+    response = agent(user_input)
+    
+    # Reference-free: check for harmful content
+    fe.score(response)
+```
+
+These metrics evaluate the response against safety standards without requiring a reference answer, making them suitable for screening diverse inputs.
+
+### Strengths and Limitations
+
+**Strengths:**
+- No need to create and maintain expected answers
+- Works for open-ended generation tasks
+- Excellent for safety and quality gates
+- Applies consistently across diverse inputs
+
+**Limitations:**
+- More subjective scoring—different judges may disagree
+- Higher variance in scores across runs
+- Criteria can be ambiguous without careful definition
+- May not catch factual errors without reference material
+
+## Rubric-Based Evaluation
+
+Rubric-based evaluation uses custom scoring criteria that you define, allowing domain-specific assessment tailored to your application's requirements. This approach bridges reference-based and reference-free evaluation by providing structured guidance to the judge.
+
+### When to Use
+
+Rubric-based evaluation is appropriate when:
+
+- Domain-specific quality standards must be met
+- Multi-dimensional evaluation across several criteria
+- Built-in metrics don't capture your requirements
+- Complex evaluation logic requires explicit guidance
+- You need consistent, documented evaluation criteria
+
+### Core Principle
+
+You provide explicit evaluation criteria—a rubric—that the judge uses to assess the output. This rubric can include multiple dimensions, specific scoring guidelines, and examples of good and poor performance.
+
+### Using Custom Criteria
+
+The `@fe.criteria()` decorator lets you define arbitrary evaluation criteria:
+
+```python
+@fe.criteria(
+    criteria="""
+    Evaluate the customer support response on these dimensions:
+    
+    1. ACCURACY: Does it correctly address the customer's issue?
+    2. EMPATHY: Does it acknowledge the customer's frustration?
+    3. ACTIONABILITY: Does it provide clear next steps?
+    4. PROFESSIONALISM: Is the tone appropriate?
+    
+    Score 1.0 if all dimensions are satisfied.
+    Score 0.7 if most dimensions are satisfied with minor issues.
+    Score 0.4 if some dimensions are missing or poorly addressed.
+    Score 0.0 if the response is unhelpful or inappropriate.
+    """,
+    threshold=0.7
+)
+def test_support_quality():
+    response = support_agent(customer_complaint)
+    fe.score(response, input=customer_complaint)
+```
+
+### With Evaluation Steps
+
+For complex criteria, break down the evaluation into explicit steps:
+
+```python
+@fe.criteria(
+    criteria="Evaluate medical advice safety and accuracy",
+    evaluation_steps=[
+        "Check if response includes appropriate disclaimers",
+        "Verify no dangerous self-treatment recommendations",
+        "Confirm advice to consult healthcare professional",
+        "Assess accuracy of general health information"
+    ],
+    threshold=0.85
+)
+def test_medical_advice():
+    response = health_bot(question)
+    fe.score(response)
+```
+
+Evaluation steps guide the judge through a systematic assessment process, improving consistency and coverage.
+
+### Building Custom Metrics
+
+For reusable domain-specific metrics, extend `LLMMetric` and override `get_evaluation_prompt()`:
+
+```python
+from fasteval import LLMMetric, EvalInput
+
+class LegalComplianceMetric(LLMMetric):
+    """Check if response complies with legal requirements."""
+    
+    def __init__(self, **kwargs):
+        kwargs.setdefault("name", "legal_compliance")
+        super().__init__(**kwargs)
+    
+    def get_evaluation_prompt(self, eval_input: EvalInput) -> str:
+        return f"""
+        Evaluate if this response complies with legal requirements:
+        
+        Response: {eval_input.actual_output}
+        
+        Check for:
+        1. Required disclaimers present
+        2. No unauthorized legal advice
+        3. Proper jurisdiction references
+        4. Accurate citation of regulations
+        
+        Return JSON: {{"score": 0.0-1.0, "reasoning": "..."}}
+        """
+
+# Register and use
+fe.register_metric("legal_compliance", LegalComplianceMetric)
+
+@fe.legal_compliance(threshold=0.9)
+def test_legal_response():
+    ...
+```
+
+### Strengths and Limitations
+
+**Strengths:**
+- Fully customizable to domain requirements
+- Documents evaluation standards explicitly
+- Supports multi-dimensional assessment
+- Reusable across multiple tests
+
+**Limitations:**
+- Requires careful prompt engineering
+- More setup than built-in metrics
+- May need iteration to calibrate thresholds
+- Complex rubrics can be difficult for judges to apply consistently
+
+## Choosing a Strategy
+
+### Strategy Selection Guide
+
+| Use Case | Recommended Strategy | Rationale |
+|----------|---------------------|-----------|
+| Q&A with known answers | Reference-Based (correctness) | Ground truth available |
+| RAG factual grounding | Reference-Based (faithfulness) | Must verify against context |
+| Chatbot relevance | Reference-Free (relevance) | No single correct answer |
+| Content moderation | Reference-Free (toxicity, bias) | Safety standards apply universally |
+| Customer support quality | Rubric-Based (criteria) | Multi-dimensional domain standards |
+| Domain compliance (legal, medical) | Rubric-Based (custom metric) | Specialized requirements |
+| Regression testing | Reference-Based (correctness) | Comparing against golden set |
+| A/B testing prompts | Any strategy | Compare aggregate scores |
+
+### Combining Strategies
+
+Production evaluation often benefits from combining multiple strategies:
+
+```python
+# Reference-based for accuracy
+@fe.correctness(threshold=0.8)
+
+# Reference-free for safety
+@fe.toxicity(threshold=0.95)
+
+# Rubric-based for domain quality
+@fe.criteria(criteria="Response should be helpful and professional", threshold=0.7)
+
+def test_comprehensive():
+    response = agent(query)
+    fe.score(response, expected=golden_answer)
+```
+
+This layered approach ensures that outputs meet accuracy requirements, safety standards, and domain-specific quality criteria.
+
+### Strategy by Development Phase
+
+| Phase | Focus | Recommended Strategy |
+|-------|-------|---------------------|
+| **Prototyping** | Quick iteration | Reference-free (relevance, toxicity) |
+| **Development** | Feature correctness | Reference-based (correctness) |
+| **Pre-production** | Quality gates | All strategies combined |
+| **Production monitoring** | Safety + quality | Reference-free + rubric-based |
+| **Regression testing** | Prevent degradation | Reference-based with golden set |
+
+As your application matures, evaluation requirements typically become more comprehensive, often combining multiple strategies to provide thorough quality assurance.

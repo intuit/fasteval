@@ -1,0 +1,166 @@
+---
+title: Config and Context
+description: Customize graph invocation with layered config and context overrides
+order: 6
+sidebar:
+  - title: Constructor Hooks
+    anchor: constructor-hooks
+  - title: Config Factory
+    anchor: config-factory
+  - title: Context Factory
+    anchor: context-factory
+  - title: Input and Output Hooks
+    anchor: input-and-output-hooks
+  - title: Auto-Detection
+    anchor: auto-detection
+  - title: Recursion Limit
+    anchor: recursion-limit
+---
+
+# Config and Context
+
+Customize how `GraphHarness` invokes your graph with constructor hooks and per-call overrides.
+
+## Constructor Hooks
+
+```python
+from fasteval_langgraph import harness
+
+graph = harness(
+    compiled_graph,
+    input_fn=...,           # (str) -> dict
+    output_fn=...,          # (dict) -> str
+    state_filter=...,       # (dict) -> dict
+    config_factory=...,     # (thread_id) -> dict
+    context_factory=...,    # () -> dict | None
+    resume_fn=...,          # (str) -> Any
+    recursion_limit=25,     # int
+)
+```
+
+All hooks are optional. Defaults are auto-detected based on the graph type.
+
+## Config Factory
+
+`config_factory` generates the `RunnableConfig` for every invocation:
+
+```python
+graph = harness(
+    compiled_graph,
+    config_factory=lambda tid: {
+        "configurable": {
+            "thread_id": tid,
+            "model": "gpt-4",
+            "temperature": 0.7,
+        }
+    },
+)
+```
+
+**Default:** `lambda tid: {"configurable": {"thread_id": tid}}`
+
+### Per-Call Override
+
+```python
+result = await graph.chat(
+    "Hello",
+    config={"configurable": {"model": "gpt-3.5-turbo"}},
+)
+# Effective: {"configurable": {"thread_id": "...", "model": "gpt-3.5-turbo", "temperature": 0.7}}
+```
+
+## Context Factory
+
+For graphs using LangGraph's `context_schema`, provide a `context_factory`:
+
+```python
+graph = harness(
+    compiled_graph,
+    context_factory=lambda: {"db_conn": mock_db, "user_id": "default"},
+)
+
+# Override per call
+result = await graph.chat("Hello", context={"user_id": "test-42"})
+```
+
+**Default:** `None` (no context passed). If your graph doesn't use `context_schema`, leave this unset.
+
+## Input and Output Hooks
+
+### input_fn
+
+Converts a user message string into the graph's input dict:
+
+```python
+# For an agent that expects {"query": str, "session_id": str}
+graph = harness(
+    compiled_graph,
+    input_fn=lambda msg: {"query": msg, "session_id": "test"},
+)
+```
+
+**Default (MessagesState):** `lambda msg: {"messages": [HumanMessage(content=msg)]}`
+**Default (plain state):** `lambda msg: {"input": msg}`
+
+### output_fn
+
+Extracts a string response from the graph's state:
+
+```python
+# For a graph that stores the response in state["answer"]
+graph = harness(
+    compiled_graph,
+    output_fn=lambda state: state.get("answer", ""),
+)
+```
+
+**Default (MessagesState):** Extract last AI message content
+**Default (plain state):** `str(state)`
+
+### state_filter
+
+Filters the raw state snapshot for `ChatResult.state`:
+
+```python
+# Only keep specific keys
+graph = harness(
+    compiled_graph,
+    state_filter=lambda state: {
+        k: v for k, v in state.items()
+        if k in ("intent", "docs", "plan", "problem_solved")
+    },
+)
+```
+
+**Default (MessagesState):** Exclude `messages` key
+**Default (plain state):** Identity (keep all keys)
+
+## Auto-Detection
+
+At construction time, `GraphHarness` inspects the compiled graph to detect whether it uses `MessagesState`:
+
+```python
+graph = harness(compiled_graph)
+graph.has_messages_state  # True or False
+```
+
+- **MessagesState detected** -- Uses HumanMessage input, AI message extraction, messages excluded from state
+- **Plain TypedDict detected** -- Uses dict input, string output, all keys in state
+
+You can always override any default by passing the corresponding hook.
+
+## Recursion Limit
+
+Set the max recursion depth for graph execution:
+
+```python
+graph = harness(compiled_graph, recursion_limit=50)
+```
+
+**Default:** 25. Injected into `config["recursion_limit"]` on every invocation.
+
+Override per call:
+
+```python
+result = await graph.chat("Complex query", config={"recursion_limit": 100})
+```

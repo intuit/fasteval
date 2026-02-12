@@ -1,0 +1,167 @@
+---
+title: Tool Args Match
+description: Evaluate if agents pass correct arguments to tools
+order: 3
+sidebar:
+  - title: Usage
+    anchor: usage
+  - title: How It Works
+    anchor: how-it-works
+  - title: Argument Comparison
+    anchor: argument-comparison
+  - title: Fuzzy Matching
+    anchor: fuzzy-matching-llm-based
+---
+
+# Tool Args Match
+
+The `tool_args_match` metric evaluates whether an agent passed the correct arguments to tools. This is primarily a **deterministic metric**, with optional LLM-based fuzzy matching.
+
+## Usage
+
+```python
+import fasteval as fe
+from fasteval import ExpectedTool
+
+@fe.tool_args_match(threshold=0.9)
+def test_search_agent():
+    response, tool_calls = agent("Search for flights to NYC")
+    
+    expected = [
+        ExpectedTool(name="search_flights", args={"destination": "NYC"}),
+    ]
+    
+    fe.score(response, tool_calls=tool_calls, expected_tools=expected)
+```
+
+## Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `threshold` | float | 0.8 | Minimum score to pass (0.0 - 1.0) |
+| `ignore_extra` | bool | True | Don't penalize extra arguments |
+| `partial_match` | bool | True | Allow subset of expected args |
+| `fuzzy_match` | bool | False | Use LLM for semantic comparison |
+| `weight` | float | 1.0 | Weight for score aggregation |
+
+## How It Works
+
+**Score Calculation:**
+```
+score = matched_args / total_expected_args
+```
+
+For each expected tool:
+1. Find the matching actual tool call
+2. Compare expected args against actual args
+3. Count matches (exact or fuzzy)
+
+## Argument Comparison
+
+### Exact Match (Default)
+
+```python
+# Expected: {"destination": "NYC"}
+# Actual:   {"destination": "NYC", "class": "economy"}
+# Result: ✓ destination matches (extra args ignored by default)
+```
+
+### Case-Insensitive String Matching
+
+```python
+# Expected: {"destination": "nyc"}
+# Actual:   {"destination": "NYC"}
+# Result: ✓ matches (case-insensitive)
+```
+
+### Numeric Tolerance
+
+```python
+# Expected: {"price": 100.0}
+# Actual:   {"price": 100.00001}
+# Result: ✓ matches (within tolerance)
+```
+
+## Fuzzy Matching (LLM-Based)
+
+Enable semantic comparison for flexible argument matching:
+
+```python
+@fe.tool_args_match(threshold=0.8, fuzzy_match=True)
+def test_location_search():
+    response, tool_calls = agent("Find flights to New York City")
+    
+    # Agent might call: search_flights(destination="NYC")
+    # Expected: search_flights(destination="New York City")
+    # With fuzzy_match=True: "NYC" ≈ "New York City" → PASS
+    
+    expected = [
+        ExpectedTool(name="search_flights", args={"destination": "New York City"}),
+    ]
+    
+    fe.score(response, tool_calls=tool_calls, expected_tools=expected)
+```
+
+**When to use fuzzy matching:**
+- Location names: "NYC" vs "New York City"
+- Date formats: "2024-01-15" vs "January 15, 2024"
+- Synonyms: "flight" vs "airplane ticket"
+
+Fuzzy matching uses the same default LLM provider configured for other metrics or can be overriden with llm_client.
+
+## Example Output
+
+```
+tool_args_match: 0.75 (threshold: 0.80) ✗
+Reasoning: 3/4 expected arguments matched; Issues: search_flights: date (value mismatch)
+Details:
+  - search_flights:
+    - Expected: {destination: "NYC", date: "2024-01-15"}
+    - Actual: {destination: "NYC", date: "tomorrow"}
+    - Matched: destination
+    - Missing: date (value mismatch)
+```
+
+## Handling Missing Tools
+
+If an expected tool wasn't called, all its args count as missing:
+
+```python
+# Expected: search_flights(destination="NYC")
+# Actual: (no tool calls)
+# Score: 0/1 = 0.0
+
+# Output:
+# tool_args_match: 0.00 (threshold: 0.80) ✗
+# Reasoning: 0/1 expected arguments matched
+# Details:
+#   - search_flights: not_called, missing: destination
+```
+
+## Combining All Tool Metrics
+
+```python
+import fasteval as fe
+from fasteval import ExpectedTool
+
+@fe.tool_call_accuracy(threshold=0.8)   # Correct tools?
+@fe.tool_sequence(threshold=0.8)         # Correct order?
+@fe.tool_args_match(threshold=0.9)       # Correct arguments?
+def test_booking_workflow():
+    response, tool_calls = agent("Book a flight to NYC for tomorrow")
+    
+    expected = [
+        ExpectedTool(name="search_flights", args={"destination": "NYC"}),
+        ExpectedTool(name="select_flight", required=False),
+        ExpectedTool(name="book_flight", args={"confirm": True}),
+    ]
+    
+    fe.score(response, tool_calls=tool_calls, expected_tools=expected)
+```
+
+## Best Practices
+
+- Only specify args you care about (others are ignored)
+- Use `fuzzy_match=True` for user-facing values that may vary
+- Set higher thresholds (0.9+) for critical arguments
+- Use `ignore_extra=False` if unexpected args are problematic

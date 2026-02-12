@@ -1,0 +1,13 @@
+{
+  "title": "Langfuse Plugin",
+  "order": 1,
+  "items": [
+    "overview",
+    "configuration",
+    "trace-evaluation",
+    "datasets",
+    "sampling-strategies",
+    "score-reporting",
+    "examples"
+  ]
+}

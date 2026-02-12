@@ -1,0 +1,343 @@
+---
+title: Decorator API
+description: Complete guide to fasteval's decorator-first evaluation approach
+order: 2
+sidebar:
+  - title: How Decorators Work
+    anchor: how-decorators-work
+  - title: Execution Model
+    anchor: execution-model
+  - title: Stacking Multiple Metrics
+    anchor: stacking-multiple-metrics
+  - title: Available Decorators
+    anchor: available-decorators
+  - title: Decorator Parameters
+    anchor: decorator-parameters
+  - title: The fe.score() Function
+    anchor: the-fescore-function
+  - title: Best Practices
+    anchor: best-practices
+---
+
+# Decorator API
+
+fasteval uses Python decorators to define evaluation criteria directly on test functions. This approach keeps evaluation logic visible, co-located with test code, and follows Python conventions that developers already understand.
+
+The decorator pattern offers several advantages over configuration-based alternatives:
+- **Explicit**: Evaluation criteria are visible at the test definition
+- **Composable**: Multiple metrics can be stacked on a single test
+- **Discoverable**: IDE autocomplete shows available metrics
+- **Type-safe**: Type hints enable static analysis
+
+![Decorator Execution Flow](docs/assets/decorator-flow.svg)
+
+## How Decorators Work
+
+A basic fasteval test looks like this:
+
+```python
+import fasteval as fe
+
+@fe.correctness(threshold=0.7)
+def test_my_agent():
+    response = my_agent("Hello")
+    fe.score(response, "Hi there!")
+```
+
+The decorator transforms the test function to include evaluation logic:
+
+1. **Registration**: The decorator registers the metric (correctness) with its configuration (threshold=0.7)
+2. **Interception**: When the test runs, fasteval intercepts the `fe.score()` call
+3. **Collection**: The actual output, expected output, and any context are recorded
+4. **Evaluation**: After the test body completes, each registered metric evaluates the recorded data
+5. **Assertion**: If any metric score falls below its threshold, the test fails with detailed diagnostics
+
+## Execution Model
+
+Understanding the execution model helps you write effective tests and debug issues:
+
+### Execution Order
+
+```python
+@fe.correctness(threshold=0.8)
+@fe.relevance(threshold=0.7)
+def test_my_agent():
+    # 1. Test body executes normally
+    response = my_agent(query)
+    
+    # 2. fe.score() records data (does not block)
+    fe.score(response, expected)
+    
+    # 3. After test body: metrics evaluate in parallel
+    # 4. Results aggregated, test passes/fails based on thresholds
+```
+
+### What Happens When Metrics Fail
+
+When any metric fails its threshold:
+
+1. The test is marked as FAILED
+2. All metric results are reported (not just the failed ones)
+3. Reasoning is provided for each metric to help diagnose issues
+4. The aggregate score is computed for trend analysis
+
+```
+test_agent.py::test_my_agent FAILED
+
+Evaluation Results:
+  correctness: 0.75 (threshold: 0.80) FAILED
+    Reasoning: The response is partially correct but omits key information...
+  relevance: 0.82 (threshold: 0.70) PASSED
+    Reasoning: The response directly addresses the user's question...
+```
+
+## Stacking Multiple Metrics
+
+Real-world evaluation requires assessing multiple quality dimensions. Stack decorators to evaluate different aspects of the same output:
+
+```python
+@fe.correctness(threshold=0.7)    # Is the content factually accurate?
+@fe.relevance(threshold=0.7)      # Does it answer the actual question?
+@fe.toxicity(threshold=0.95)      # Is it safe for users?
+@fe.hallucination(threshold=0.8)  # Is it grounded in facts or context?
+def test_customer_support_agent():
+    response = my_agent("How do I get a refund?")
+    fe.score(response, "Contact support or use the self-service portal")
+```
+
+### Execution Semantics
+
+- **Order independence**: Decorators can be applied in any order
+- **Parallel evaluation**: All metrics evaluate concurrently for efficiency
+- **All-or-nothing**: Test passes only if ALL metrics meet their thresholds
+- **Complete reporting**: All metric results are reported, regardless of pass/fail status
+
+### Reusable Metric Combinations
+
+For metric combinations used across multiple tests, see [Metric Stacks](/docs/core-concepts/metric-stacks) for creating reusable evaluation profiles.
+
+## Available Decorators
+
+### LLM-Based Metrics
+
+These metrics use an LLM judge to evaluate semantic qualities. Each call involves an API request to your configured LLM provider.
+
+| Decorator | What it Measures | Typical Threshold | Use Case |
+|-----------|-----------------|-------------------|----------|
+| `@fe.correctness()` | Semantic accuracy vs expected output | 0.7 - 0.8 | Q&A, factual responses |
+| `@fe.relevance()` | Response addresses the question | 0.7 - 0.8 | All conversational AI |
+| `@fe.hallucination()` | Absence of fabricated facts | 0.8 - 0.9 | Knowledge-based systems |
+| `@fe.toxicity()` | Absence of harmful content | 0.9 - 0.95 | User-facing applications |
+| `@fe.bias()` | Fairness and neutrality | 0.8 - 0.9 | Sensitive topics |
+| `@fe.coherence()` | Logical consistency | 0.7 - 0.8 | Long-form generation |
+| `@fe.conciseness()` | Appropriate brevity | 0.6 - 0.8 | Summarization |
+
+### RAG Metrics
+
+Specialized metrics for Retrieval-Augmented Generation systems that consider retrieved context:
+
+| Decorator | What it Measures | Use Case |
+|-----------|-----------------|----------|
+| `@fe.faithfulness()` | Response grounded in retrieved context | Any RAG system |
+| `@fe.contextual_precision()` | Retrieved docs are relevant to query | Retriever tuning |
+| `@fe.contextual_recall()` | Retrieved docs cover the answer | Knowledge coverage |
+| `@fe.answer_correctness()` | Combined RAG quality score | Overall RAG evaluation |
+
+### Deterministic Metrics
+
+Fast metrics that do not require LLM calls. Ideal for format validation and CI/CD pipelines:
+
+| Decorator | What it Checks | Use Case |
+|-----------|---------------|----------|
+| `@fe.contains()` | Expected string is in output | Required phrases |
+| `@fe.exact_match()` | Strings are identical | Structured outputs |
+| `@fe.json_schema()` | Output matches JSON schema | API responses |
+| `@fe.regex()` | Output matches pattern | Format validation |
+| `@fe.rouge()` | Text similarity scores | Summarization |
+
+### Data Source Decorators
+
+Control where test inputs come from:
+
+| Decorator | Use Case |
+|-----------|----------|
+| `@fe.csv("file.csv")` | Run test for each CSV row |
+| `@fe.conversation([...])` | Multi-turn dialogue testing |
+| `@fe.traces()` | Evaluate production data |
+
+## Decorator Parameters
+
+### Common Parameters
+
+All metric decorators accept these parameters:
+
+```python
+@fe.correctness(
+    threshold=0.8,      # Minimum score to pass (0.0 to 1.0)
+    model="gpt-4o",     # Override default LLM model for this metric
+    weight=1.0,         # Weight for aggregate scoring (default: 1.0)
+)
+```
+
+### Threshold Parameter
+
+The threshold determines the minimum score required to pass:
+
+| Threshold | Interpretation | Typical Use |
+|-----------|----------------|-------------|
+| 0.95+ | Very strict | Safety-critical metrics |
+| 0.80-0.94 | Standard | Production quality gates |
+| 0.70-0.79 | Moderate | Development and testing |
+| 0.50-0.69 | Lenient | Exploratory, creative tasks |
+
+### Model Override
+
+Use different models for different metrics based on their requirements:
+
+```python
+@fe.correctness(threshold=0.8, model="gpt-4o")      # Accuracy needs best model
+@fe.toxicity(threshold=0.95, model="gpt-4o-mini")   # Faster model sufficient
+def test_with_overrides():
+    response = my_agent(query)
+    fe.score(response, expected)
+```
+
+Model selection considerations:
+- **Accuracy-critical metrics**: Use more capable models (GPT-4o, Claude Opus)
+- **High-volume metrics**: Use efficient models (GPT-4o-mini, Claude Haiku)
+- **Safety metrics**: Prefer models specifically trained for safety evaluation
+
+### Weight Parameter
+
+Weights affect the aggregate score calculation:
+
+```python
+@fe.correctness(threshold=0.8, weight=2.0)  # Double weight for accuracy
+@fe.conciseness(threshold=0.7, weight=0.5)  # Lower weight for style
+def test_with_weights():
+    ...
+```
+
+The aggregate score is the weighted average of all metric scores.
+
+## The fe.score() Function
+
+Every test must call `fe.score()` to record outputs for evaluation. This function captures the data that metrics will assess.
+
+### Basic Usage
+
+```python
+# Minimal: actual output and expected output
+fe.score(actual_output, expected_output)
+
+# With input context (helps relevance evaluation)
+fe.score(actual_output, expected_output, input=user_query)
+
+# With retrieval context (required for RAG metrics)
+fe.score(actual_output, expected_output, context=retrieved_docs)
+```
+
+### Full Signature
+
+```python
+fe.score(
+    actual_output="The capital of France is Paris.",
+    expected_output="Paris",
+    input="What is the capital of France?",
+    context=["France is a country in Europe. Its capital is Paris."]
+)
+```
+
+### Parameter Details
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `actual_output` | str | Yes | The LLM's generated response |
+| `expected_output` | str | For most metrics | Reference answer or expected content |
+| `input` | str | For relevance metrics | The original user query |
+| `context` | List[str] | For RAG metrics | Retrieved documents or context |
+
+### Return Value
+
+`fe.score()` returns an `EvalResult` object containing detailed evaluation information:
+
+```python
+result = fe.score(response, expected)
+
+# Access overall results
+result.passed          # True if all metrics passed
+result.aggregate_score # Weighted average score (0.0-1.0)
+
+# Access individual metric results
+for mr in result.metric_results:
+    print(f"{mr.metric_name}: {mr.score:.2f}")
+    print(f"  Passed: {mr.passed}")
+    print(f"  Reasoning: {mr.reasoning}")
+```
+
+## Best Practices
+
+### Start Lenient, Tighten Over Time
+
+Begin with moderate thresholds and increase them as your system matures:
+
+```python
+# During development
+@fe.correctness(threshold=0.7)
+
+# After stabilization
+@fe.correctness(threshold=0.85)
+```
+
+### Use Deterministic Metrics for Speed
+
+When exact matching suffices, avoid LLM calls:
+
+```python
+# Fast: No LLM call needed
+@fe.contains()
+def test_has_disclaimer():
+    fe.score(response, "This is not legal advice")
+
+# Slower: Requires LLM judge
+@fe.correctness(threshold=0.8)
+def test_semantic_accuracy():
+    fe.score(response, expected)
+```
+
+### Group Metrics by Category
+
+Organize metrics logically for readability:
+
+```python
+# Quality metrics
+@fe.correctness(threshold=0.8)
+@fe.relevance(threshold=0.8)
+# Safety metrics  
+@fe.toxicity(threshold=0.95)
+@fe.bias(threshold=0.9)
+# Format checks
+@fe.contains()
+def test_production_ready():
+    ...
+```
+
+### Provide Context When Available
+
+Always provide `input` and `context` parameters when available—they improve evaluation accuracy:
+
+```python
+@fe.relevance(threshold=0.8)
+@fe.faithfulness(threshold=0.85)
+def test_rag_response():
+    query = "What's the return policy?"
+    docs = retriever.search(query)
+    response = rag_agent(query, docs)
+    
+    fe.score(
+        response,
+        expected="Returns accepted within 30 days",
+        input=query,          # Helps relevance evaluation
+        context=docs          # Required for faithfulness
+    )
+```

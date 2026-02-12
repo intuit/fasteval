@@ -1,0 +1,281 @@
+---
+title: Pytest Integration
+description: How fasteval integrates with pytest
+order: 4
+sidebar:
+  - title: How It Works
+    anchor: how-it-works
+  - title: Running Tests
+    anchor: running-tests
+  - title: Understanding Output
+    anchor: understanding-output
+  - title: Fixtures
+    anchor: fixtures
+  - title: CI/CD Integration
+    anchor: ci-cd-integration
+---
+
+# Pytest Integration
+
+fasteval works as a pytest plugin. You don't need to learn a new test runner—just write tests the way you already know.
+
+## How It Works
+
+![Pytest Integration Flow](docs/assets/pytest-integration-flow.svg)
+
+The plugin registers automatically when you `pip install fasteval`. No additional setup required.
+
+## Running Tests
+
+```bash
+# Run all fasteval tests
+pytest
+
+# Verbose output (see individual metric scores)
+pytest -v
+
+# Run specific file
+pytest tests/test_my_agent.py
+
+# Run specific test
+pytest tests/test_my_agent.py::test_qa_response
+
+# Run tests matching a pattern
+pytest -k "test_support"
+
+# Stop on first failure
+pytest -x
+
+# Run in parallel (requires pytest-xdist)
+pytest -n auto
+```
+
+## Understanding Output
+
+A passing test shows scores above thresholds:
+
+```
+tests/test_agent.py::test_qa_response PASSED
+
+Evaluation Results:
+  ✓ correctness: 0.92 (threshold: 0.80)
+  ✓ relevance: 0.88 (threshold: 0.70)
+```
+
+A failing test shows what went wrong:
+
+```
+tests/test_agent.py::test_support_flow FAILED
+
+Evaluation Results:
+  ✓ correctness: 0.85 (threshold: 0.80)
+  ✗ toxicity: 0.72 (threshold: 0.95)
+    Reasoning: Response contains dismissive language that may 
+    be perceived as unhelpful or rude.
+```
+
+## Configuration
+
+### Using pyproject.toml (Recommended)
+
+```toml
+[tool.fasteval]
+default_provider = "openai"
+default_model = "gpt-4o-mini"
+```
+
+### Using conftest.py
+
+For programmatic configuration or test-scoped setup:
+
+```python
+# conftest.py
+import pytest
+import fasteval as fe
+from fasteval import OpenAIClient
+
+@pytest.fixture(scope="session", autouse=True)
+def configure_fasteval():
+    """Configure fasteval for all tests."""
+    client = OpenAIClient(model="gpt-4o-mini")
+    fe.set_default_provider(client)
+
+@pytest.fixture
+def strict_client():
+    """A stricter evaluator for critical tests."""
+    return OpenAIClient(model="gpt-4o", temperature=0)
+```
+
+### Environment-Based Configuration
+
+Use different settings for CI vs local development:
+
+```python
+# conftest.py
+import os
+import fasteval as fe
+
+def pytest_configure(config):
+    if os.getenv("CI"):
+        # Faster model in CI
+        fe.set_default_provider("openai", model="gpt-4o-mini")
+    else:
+        # More accurate model locally
+        fe.set_default_provider("openai", model="gpt-4o")
+```
+
+## Fixtures
+
+### Built-in Fixtures
+
+```python
+def test_with_evaluator(evaluator):
+    """Access the underlying evaluator for advanced use cases."""
+    from fasteval.models import EvalInput, MetricConfig
+    
+    result = await evaluator.evaluate(
+        eval_input=EvalInput(
+            actual_output="Paris is the capital",
+            expected_output="Paris",
+            input="What is the capital of France?"
+        ),
+        metrics=[MetricConfig(name="correctness", threshold=0.8)]
+    )
+    
+    assert result.passed
+```
+
+### Custom Fixtures
+
+Create fixtures for your specific testing needs:
+
+```python
+# conftest.py
+import pytest
+
+@pytest.fixture
+def test_agent():
+    """Fixture that provides your agent instance."""
+    from my_app import Agent
+    return Agent(model="gpt-4o")
+
+@pytest.fixture
+def sample_queries():
+    """Common test queries."""
+    return [
+        "How do I reset my password?",
+        "What are your business hours?",
+        "Can I get a refund?",
+    ]
+```
+
+```python
+# test_agent.py
+@fe.correctness(threshold=0.8)
+def test_agent_responses(test_agent, sample_queries):
+    for query in sample_queries:
+        response = test_agent.answer(query)
+        fe.score(response, expected="helpful response", input=query)
+```
+
+## CI/CD Integration
+
+### GitHub Actions
+
+```yaml
+name: Evaluation Tests
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: pip install -e ".[test]"
+      
+      - name: Run evaluations
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: pytest tests/ -v --tb=short
+```
+
+### Separating Fast and Slow Tests
+
+Use pytest markers to separate deterministic (fast) from LLM (slow) tests:
+
+```python
+# conftest.py
+import pytest
+
+def pytest_configure(config):
+    config.addinivalue_line("markers", "slow: LLM-based tests")
+
+# test_agent.py
+@pytest.mark.slow
+@fe.correctness(threshold=0.8)
+def test_llm_evaluation():
+    ...
+
+@fe.contains()  # Fast, no marker needed
+def test_contains_disclaimer():
+    ...
+```
+
+```bash
+# Run only fast tests in CI
+pytest -m "not slow"
+
+# Run full suite nightly
+pytest
+```
+
+## Troubleshooting
+
+### Tests Not Discovered
+
+Ensure test files match `test_*.py` and functions start with `test_`:
+
+```python
+# Correct
+def test_my_agent():
+    ...
+
+# Wrong - not discovered
+def my_agent_test():
+    ...
+```
+
+### Async Test Issues
+
+Use `pytest-asyncio` for async tests:
+
+```bash
+pip install pytest-asyncio
+```
+
+```python
+import pytest
+
+@pytest.mark.asyncio
+@fe.correctness(threshold=0.8)
+async def test_async_agent():
+    response = await my_async_agent("query")
+    fe.score(response, "expected")
+```
+
+### Timeout Issues
+
+LLM evaluations can take a few seconds. Increase timeout if needed:
+
+```toml
+# pyproject.toml
+[tool.pytest.ini_options]
+timeout = 60
+```
+```

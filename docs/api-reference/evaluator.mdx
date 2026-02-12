@@ -1,0 +1,52 @@
+---
+title: Evaluator
+description: API reference for the Evaluator class
+order: 3
+---
+
+# Evaluator API Reference
+
+The Evaluator class runs metrics against evaluation inputs.
+
+## Creating an Evaluator
+
+```python
+from fasteval import create_evaluator
+
+evaluator = create_evaluator()
+```
+
+## Methods
+
+### evaluate()
+
+```python
+async def evaluate(
+    eval_input: EvalInput,
+    metrics: List[MetricConfig]
+) -> EvalResult
+```
+
+Run evaluation metrics on an input.
+
+## Example
+
+```python
+from fasteval import create_evaluator, EvalInput, MetricConfig
+
+evaluator = create_evaluator()
+
+result = await evaluator.evaluate(
+    eval_input=EvalInput(
+        actual_output="Paris",
+        expected_output="Paris",
+        input="What is the capital of France?"
+    ),
+    metrics=[
+        MetricConfig(metric_type="correctness", threshold=0.7)
+    ]
+)
+
+print(result.passed)  # True
+print(result.metric_results[0].score)  # 0.95
+```

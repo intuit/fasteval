@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Documentation
+    url: https://github.com/intuit/fasteval/tree/main/docs
+    about: Browse the documentation for guides and API reference.
+  - name: Discussions
+    url: https://github.com/intuit/fasteval/discussions
+    about: Ask questions and discuss ideas with the community.

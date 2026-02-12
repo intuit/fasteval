@@ -1,0 +1,156 @@
+---
+title: Completeness
+description: Evaluate if responses cover all aspects of the query
+order: 9
+sidebar:
+  - title: Quick Example
+    anchor: quick-example
+  - title: How Scoring Works
+    anchor: how-scoring-works
+  - title: Practical Examples
+    anchor: practical-examples
+  - title: Combining with Other Metrics
+    anchor: combining-with-other-metrics
+---
+
+# Completeness Metric
+
+The completeness metric evaluates whether a response fully addresses all parts of a query. It checks if important information is missing and if the user would need follow-up questions to get complete information.
+
+## Quick Example
+
+```python
+import fasteval as fe
+
+@fe.completeness(threshold=0.8)
+def test_comprehensive_answer():
+    query = "What are the pros and cons of remote work?"
+    response = my_llm(query)
+    fe.score(response, input=query)
+```
+
+## Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `threshold` | float | 0.8 | Minimum score to pass (0.0 - 1.0) |
+| `model` | str | None | Override the default LLM model |
+
+## How Scoring Works
+
+The LLM judge evaluates coverage of the query:
+
+| Score | Interpretation | Example |
+|-------|---------------|---------|
+| **0.9-1.0** | Fully complete | All aspects thoroughly covered |
+| **0.7-0.9** | Mostly complete | Minor gaps but main points covered |
+| **0.5-0.7** | Partially complete | Some aspects missing |
+| **0.0-0.5** | Incomplete | Major gaps in coverage |
+
+### What Gets Evaluated
+
+1. **Query Coverage**: Does the response address all parts of the query?
+2. **Information Gaps**: Are there obvious missing pieces?
+3. **Multi-Aspect Handling**: If the query has multiple aspects, are all covered?
+4. **Context Inclusion**: Is important background information included?
+5. **Follow-up Need**: Would the user need to ask more questions?
+
+## Practical Examples
+
+### Multi-Part Questions
+
+```python
+@fe.completeness(threshold=0.85)
+def test_comparison():
+    query = "Compare Python and JavaScript: syntax, use cases, and performance"
+    response = my_llm(query)
+    fe.score(response, input=query)
+```
+
+### With Expected Content
+
+You can optionally specify expected topics:
+
+```python
+@fe.completeness(threshold=0.8)
+def test_coverage():
+    query = "Explain the water cycle"
+    expected_topics = "evaporation, condensation, precipitation, collection"
+    response = my_llm(query)
+    fe.score(response, expected_topics, input=query)
+```
+
+### Checklist-Style Requirements
+
+```python
+@fe.completeness(threshold=0.9)
+def test_api_documentation():
+    query = "Document this API endpoint including: URL, method, parameters, response format, and error codes"
+    response = my_llm(f"{query}\n\nEndpoint: POST /users")
+    fe.score(response, input=query)
+```
+
+## Example Output
+
+**Passing test:**
+
+```
+test_comparison PASSED
+
+Evaluation Results:
+  ✓ completeness: 0.92 (threshold: 0.80)
+    Reasoning: The response thoroughly covers all three requested aspects:
+    syntax differences are explained with examples, use cases are listed
+    for both languages, and performance characteristics are compared.
+```
+
+**Failing test:**
+
+```
+test_comparison FAILED
+
+Evaluation Results:
+  ✗ completeness: 0.55 (threshold: 0.80)
+    Reasoning: The response covers syntax well but only briefly mentions
+    use cases and completely omits the performance comparison that was
+    requested.
+```
+
+## Choosing Your Threshold
+
+| Use Case | Suggested Threshold |
+|----------|---------------------|
+| Quick Q&A | 0.6 - 0.7 |
+| General explanations | 0.7 - 0.8 |
+| Documentation | 0.8 - 0.85 |
+| Compliance/checklist requirements | 0.9+ |
+
+## When to Use Completeness
+
+**Good for:**
+- Multi-part questions
+- Documentation generation
+- Comparison tasks
+- Educational explanations
+- Any query with explicit requirements
+
+**Consider alternatives for:**
+- Accuracy verification — use `@fe.correctness()`
+- Brevity requirements — balance with `@fe.conciseness()`
+- Format compliance — use `@fe.instruction_following()`
+
+## Combining with Other Metrics
+
+Balance completeness with other quality aspects:
+
+```python
+@fe.completeness(threshold=0.8)   # Does it cover everything?
+@fe.conciseness(threshold=0.7)    # Is it efficient?
+@fe.correctness(threshold=0.8)    # Is it accurate?
+def test_balanced_response():
+    query = "Explain the benefits and risks of cloud computing"
+    response = my_llm(query)
+    fe.score(response, input=query)
+```
+
+This ensures comprehensive yet efficient and accurate responses.

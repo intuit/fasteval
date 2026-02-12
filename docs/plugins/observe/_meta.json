@@ -1,0 +1,10 @@
+{
+  "title": "observe Plugin",
+  "order": 100,
+  "items": [
+    "overview",
+    "quickstart",
+    "sampling-strategies",
+    "custom-strategies"
+  ]
+}

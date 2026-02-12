@@ -1,0 +1,262 @@
+---
+title: Quick Start
+description: Write your first LLM evaluation test in 5 minutes
+order: 3
+sidebar:
+  - title: Prerequisites
+    anchor: prerequisites
+  - title: Step 1 - Create Test File
+    anchor: step-1-create-your-test-file
+  - title: Step 2 - Run the Test
+    anchor: step-2-run-the-test
+  - title: Step 3 - Understand Results
+    anchor: step-3-understand-the-results
+  - title: Step 4 - Add More Metrics
+    anchor: step-4-add-more-metrics
+  - title: Step 5 - Iterate
+    anchor: step-5-iterate-and-improve
+  - title: Common Patterns
+    anchor: common-patterns
+---
+
+# Quick Start
+
+![Progress Timeline](docs/assets/quickstart-progress.svg)
+
+This guide walks you through writing, running, and understanding your first LLM evaluation test. By the end, you'll have a working evaluation and understand the core fasteval workflow.
+
+## Prerequisites
+
+Before starting, ensure you have:
+
+| Requirement | Check |
+|-------------|-------|
+| fasteval installed | `pip install fasteval` |
+| LLM provider configured | `echo $OPENAI_API_KEY` returns your key |
+| pytest knowledge | Basic familiarity with Python testing |
+
+```bash
+# Quick setup if needed
+pip install fasteval openai
+export OPENAI_API_KEY=sk-your-key-here
+```
+
+## Step 1: Create Your Test File
+
+Create a file called `test_agent.py`:
+
+```python
+import fasteval as fe
+
+# Your LLM/agent function (replace with your actual implementation)
+def my_agent(query: str) -> str:
+    """Simple agent that answers questions."""
+    # In reality, this calls your LLM
+    return "The capital of France is Paris, known for the Eiffel Tower."
+
+@fe.correctness(threshold=0.7)
+def test_geography_qa():
+    """Test that our agent correctly answers geography questions."""
+    response = my_agent("What is the capital of France?")
+    fe.score(response, expected_output="Paris")
+```
+
+### What Each Part Does
+
+| Component | Purpose |
+|-----------|---------|
+| `@fe.correctness(threshold=0.7)` | Evaluate factual correctness; pass if score ≥ 0.7 |
+| `my_agent(query)` | Your LLM function (replace with your real code) |
+| `fe.score(response, expected_output)` | Record actual vs expected for evaluation |
+
+## Step 2: Run the Test
+
+Execute with pytest:
+
+```bash
+pytest test_agent.py -v
+```
+
+You'll see output like:
+
+```
+test_agent.py::test_geography_qa PASSED
+
+Evaluation Results:
+  correctness: 0.95 (threshold: 0.70) ✓
+    Reasoning: The response correctly identifies Paris as the capital 
+    of France and provides accurate additional context.
+```
+
+**Congratulations!** You've run your first LLM evaluation.
+
+## Step 3: Understand the Results
+
+### Score Interpretation
+
+fasteval scores range from **0.0 to 1.0**:
+
+| Score | Meaning | Action |
+|-------|---------|--------|
+| **0.9 - 1.0** | Excellent | Ship with confidence |
+| **0.7 - 0.9** | Good | Minor improvements possible |
+| **0.5 - 0.7** | Partial | Needs attention |
+| **0.3 - 0.5** | Poor | Significant issues |
+| **0.0 - 0.3** | Failure | Major problems |
+
+### Reading the Reasoning
+
+Every evaluation includes reasoning that explains the score:
+
+```
+correctness: 0.45 (threshold: 0.70) ✗
+  Reasoning: The response mentions the topic but provides outdated 
+  information. The current capital is Berlin, not Bonn.
+```
+
+Use reasoning to understand:
+- Why scores are lower than expected
+- What specific aspects need improvement
+- Whether your expected output needs adjustment
+
+### Threshold Selection
+
+| Use Case | Threshold | Why |
+|----------|-----------|-----|
+| Development | 0.5 - 0.6 | Flexibility for iteration |
+| CI/CD | 0.7 - 0.8 | Catch regressions |
+| Production gates | 0.8 - 0.9 | High quality bar |
+| Safety-critical | 0.95+ | Minimize risk |
+
+> **Tip:** Start with lower thresholds (0.6-0.7) when developing, then raise them as your system matures.
+
+## Step 4: Add More Metrics
+
+Real applications need multi-dimensional quality checks. Stack decorators:
+
+```python
+@fe.correctness(threshold=0.7)    # Is it accurate?
+@fe.relevance(threshold=0.7)      # Does it answer the question?
+@fe.toxicity(threshold=0.95)      # Is it safe?
+def test_customer_support():
+    """Evaluate support agent across multiple dimensions."""
+    response = my_agent("How do I cancel my subscription?")
+    fe.score(
+        actual_output=response,
+        expected_output="Go to Account Settings > Subscription > Cancel",
+        input="How do I cancel my subscription?"
+    )
+```
+
+**Key points:**
+- All metrics are evaluated independently
+- Test passes only if **all** thresholds are met
+- Each metric reports its own score and reasoning
+
+## Step 5: Iterate and Improve
+
+### Debugging a Failed Test
+
+```
+test_agent.py::test_customer_support FAILED
+
+Evaluation Results:
+  correctness: 0.85 (threshold: 0.70) ✓
+  relevance: 0.55 (threshold: 0.70) ✗
+    Reasoning: The response provides general information about account 
+    management but doesn't specifically address subscription cancellation.
+
+AssertionError: Metric 'relevance' failed: 0.55 < 0.70
+```
+
+### Debugging Workflow
+
+1. **Read the reasoning** — Understand exactly why it failed
+2. **Check expected output** — Is it appropriate for this test?
+3. **Review threshold** — Too strict for current stage?
+4. **Improve your agent** — Or adjust expectations
+
+### Common Fixes
+
+| Issue | Likely Cause | Solution |
+|-------|--------------|----------|
+| Low scores | Expected output too specific | Use semantic descriptions |
+| Inconsistent scores | Non-deterministic output | Set temperature=0 |
+| All tests fail | API key issue | Check `$OPENAI_API_KEY` |
+| Timeouts | Network/large inputs | Increase timeout |
+
+## Common Patterns
+
+### Pattern: Deterministic Checks
+
+For format validation (no LLM call needed):
+
+```python
+@fe.contains()
+def test_includes_disclaimer():
+    """Verify response includes required text."""
+    response = my_agent("What are your terms?")
+    fe.score(response, "This is not legal advice")
+
+@fe.json_schema()
+def test_valid_json():
+    """Verify response is valid JSON."""
+    response = my_api("Get user data")
+    fe.score(response, {"type": "object", "required": ["id", "name"]})
+```
+
+### Pattern: Async Testing
+
+For async LLM functions:
+
+```python
+@fe.correctness(threshold=0.8)
+@fe.hallucination(threshold=0.9)
+async def test_async_agent():
+    """Evaluate async agent."""
+    response = await my_async_agent("Explain quantum computing")
+    fe.score(response, expected_output="Uses qubits and superposition")
+```
+
+### Pattern: Data-Driven Testing
+
+Test across many examples from a CSV:
+
+```python
+@fe.correctness(threshold=0.7)
+@fe.csv("test_cases.csv")  # Columns: input, expected_output
+def test_qa_dataset(input, expected_output):
+    """Evaluate across dataset."""
+    response = my_agent(input)
+    fe.score(response, expected_output, input=input)
+```
+
+### Pattern: Context-Aware Evaluation
+
+Provide input context for relevance assessment:
+
+```python
+@fe.relevance(threshold=0.8)
+def test_relevant_response():
+    """Test response relevance to the query."""
+    query = "What are your business hours?"
+    response = my_agent(query)
+    fe.score(
+        actual_output=response,
+        expected_output="Monday to Friday, 9 AM to 5 PM",
+        input=query  # Helps judge assess relevance
+    )
+```
+
+## What's Next?
+
+You've learned the fasteval fundamentals. Here's where to go deeper:
+
+| Goal | Resource |
+|------|----------|
+| Explore all metrics | [Metrics Overview](/docs/core-concepts/metrics) |
+| Configure LLM providers | [LLM Setup](/docs/core-concepts/llm-setup) |
+| Evaluate RAG pipelines | [RAG Metrics](/docs/rag-metrics/faithfulness) |
+| Build custom metrics | [Custom Metrics](/docs/advanced/custom-metrics) |
+| Set up CI/CD | [CI/CD Setup](/docs/cookbooks/ci-cd-setup) |
+| Monitor production | [fasteval-observe](/docs/plugins/observe/overview) |

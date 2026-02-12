@@ -1,0 +1,27 @@
+---
+title: Exact Match
+description: Check for exact string equality
+order: 2
+---
+
+# Exact Match Metric
+
+The exact match metric checks if the actual output exactly equals the expected output.
+
+## Usage
+
+```python
+import fasteval as fe
+
+@fe.exact_match()
+def test_exact():
+    response = my_function("input")
+    fe.score(response, "expected output")
+```
+
+## Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `normalize` | bool | False | Normalize whitespace before comparison |
+| `case_sensitive` | bool | True | Case-sensitive matching |

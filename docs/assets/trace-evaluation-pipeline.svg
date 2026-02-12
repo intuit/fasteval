@@ -1,0 +1,128 @@
+<svg viewBox="0 0 800 380" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="tepProdGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#10b981"/>
+      <stop offset="100%" style="stop-color:#059669"/>
+    </linearGradient>
+    <linearGradient id="tepDbGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6"/>
+      <stop offset="100%" style="stop-color:#1d4ed8"/>
+    </linearGradient>
+    <linearGradient id="tepSampleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8b5cf6"/>
+      <stop offset="100%" style="stop-color:#6d28d9"/>
+    </linearGradient>
+    <linearGradient id="tepEvalGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f59e0b"/>
+      <stop offset="100%" style="stop-color:#d97706"/>
+    </linearGradient>
+    <linearGradient id="tepInsightGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1"/>
+      <stop offset="100%" style="stop-color:#4f46e5"/>
+    </linearGradient>
+    <filter id="tepShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="5" flood-opacity="0.12"/>
+    </filter>
+    <marker id="tepArrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/>
+    </marker>
+    <marker id="tepArrowFeedback" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#10b981"/>
+    </marker>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="800" height="380" fill="#f8fafc"/>
+  
+  <!-- Title -->
+  <text x="400" y="32" text-anchor="middle" font-size="22" font-weight="700" fill="#1e293b">Trace Evaluation Pipeline</text>
+  <text x="400" y="52" text-anchor="middle" font-size="12" fill="#64748b">Continuous quality monitoring from production data</text>
+  
+  <!-- Step 1: Production -->
+  <g filter="url(#tepShadow)">
+    <rect x="30" y="85" width="130" height="80" rx="10" fill="url(#tepProdGrad)"/>
+    <text x="95" y="115" text-anchor="middle" font-size="12" font-weight="600" fill="white">🌐 Production</text>
+    <text x="95" y="135" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.85)">Real users</text>
+    <text x="95" y="150" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.7)">interacting</text>
+  </g>
+  
+  <!-- Arrow 1 -->
+  <line x1="160" y1="125" x2="195" y2="125" stroke="#64748b" stroke-width="2" marker-end="url(#tepArrow)"/>
+  
+  <!-- Step 2: Database/Logging -->
+  <g filter="url(#tepShadow)">
+    <rect x="205" y="85" width="130" height="80" rx="10" fill="url(#tepDbGrad)"/>
+    <text x="270" y="115" text-anchor="middle" font-size="12" font-weight="600" fill="white">🗄️ Store Traces</text>
+    <text x="270" y="135" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.85)">LangFuse/DB</text>
+    <text x="270" y="150" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.7)">Query + Response</text>
+  </g>
+  
+  <!-- Arrow 2 -->
+  <line x1="335" y1="125" x2="370" y2="125" stroke="#64748b" stroke-width="2" marker-end="url(#tepArrow)"/>
+  
+  <!-- Step 3: Sampling -->
+  <g filter="url(#tepShadow)">
+    <rect x="380" y="85" width="130" height="80" rx="10" fill="url(#tepSampleGrad)"/>
+    <text x="445" y="115" text-anchor="middle" font-size="12" font-weight="600" fill="white">🎯 Sample</text>
+    <text x="445" y="135" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.85)">Daily/weekly</text>
+    <text x="445" y="150" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.7)">100-1000 traces</text>
+  </g>
+  
+  <!-- Arrow 3 -->
+  <line x1="510" y1="125" x2="545" y2="125" stroke="#64748b" stroke-width="2" marker-end="url(#tepArrow)"/>
+  
+  <!-- Step 4: Evaluate -->
+  <g filter="url(#tepShadow)">
+    <rect x="555" y="85" width="130" height="80" rx="10" fill="url(#tepEvalGrad)"/>
+    <text x="620" y="115" text-anchor="middle" font-size="12" font-weight="600" fill="white">Evaluate</text>
+    <text x="620" y="135" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.85)">fasteval metrics</text>
+    <text x="620" y="150" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.7)">@fe.traces()</text>
+  </g>
+  
+  <!-- Arrow 4 down -->
+  <line x1="620" y1="165" x2="620" y2="195" stroke="#64748b" stroke-width="2" marker-end="url(#tepArrow)"/>
+  
+  <!-- Step 5: Insights -->
+  <g filter="url(#tepShadow)">
+    <rect x="430" y="205" width="340" height="100" rx="10" fill="white" stroke="#6366f1" stroke-width="2"/>
+    <rect x="430" y="205" width="340" height="35" rx="10" fill="url(#tepInsightGrad)"/>
+    <rect x="430" y="228" width="340" height="12" fill="url(#tepInsightGrad)"/>
+    <text x="600" y="228" text-anchor="middle" font-size="12" font-weight="600" fill="white">Insights and Actions</text>
+    
+    <text x="450" y="260" font-size="10" fill="#475569">- Detect quality drift early</text>
+    <text x="450" y="278" font-size="10" fill="#475569">- Find new edge cases</text>
+    <text x="450" y="296" font-size="10" fill="#475569">- Build regression test suite</text>
+    
+    <text x="630" y="260" font-size="10" fill="#475569">- Monitor safety metrics</text>
+    <text x="630" y="278" font-size="10" fill="#475569">- Identify hallucinations</text>
+    <text x="630" y="296" font-size="10" fill="#475569">- Track improvement trends</text>
+  </g>
+  
+  <!-- Feedback loop arrow -->
+  <path d="M 430 255 C 350 255, 350 150, 95 165" stroke="#10b981" stroke-width="2" fill="none" stroke-dasharray="6,3" marker-end="url(#tepArrowFeedback)"/>
+  <text x="250" y="210" font-size="10" font-weight="600" fill="#10b981">Feedback Loop</text>
+  <text x="250" y="225" font-size="9" fill="#059669">Fix issues - Deploy - Re-evaluate</text>
+  
+  <!-- Scheduling info -->
+  <g transform="translate(30, 205)">
+    <rect x="0" y="0" width="180" height="100" rx="8" fill="#f1f5f9" stroke="#e2e8f0"/>
+    <text x="90" y="20" text-anchor="middle" font-size="10" font-weight="600" fill="#475569">📅 Scheduling</text>
+    
+    <text x="15" y="42" font-size="9" fill="#475569">Nightly CI job:</text>
+    <text x="20" y="57" font-size="8" fill="#64748b" font-family="monospace">cron: '0 2 * * *'</text>
+    
+    <text x="15" y="77" font-size="9" fill="#475569">Slack/Alert on failures</text>
+    <text x="15" y="92" font-size="9" fill="#475569">Auto-ticket creation</text>
+  </g>
+  
+  <!-- Code snippet -->
+  <g transform="translate(220, 315)">
+    <rect x="0" y="0" width="350" height="45" rx="6" fill="#1e293b"/>
+    <text x="10" y="18" font-size="9" fill="#94a3b8" font-family="monospace">@fe.faithfulness(threshold=0.8)</text>
+    <text x="10" y="32" font-size="9" fill="#94a3b8" font-family="monospace">@fe.traces()</text>
+    <text x="10" y="42" font-size="9" fill="#60a5fa" font-family="monospace">def evaluate_production(): yield EvalInput(...)</text>
+  </g>
+  
+  <!-- Footer -->
+  <text x="400" y="375" text-anchor="middle" font-size="11" fill="#94a3b8">fasteval • Production Trace Evaluation</text>
+</svg>

@@ -1,0 +1,548 @@
+---
+title: Trace Evaluation
+description: Evaluate production traces from Langfuse with fasteval metrics
+order: 3
+sidebar:
+  - title: Understanding Trace Evaluation
+    anchor: understanding-trace-evaluation
+  - title: The langfuse_traces Decorator
+    anchor: the-langfuse_traces-decorator
+  - title: Filtering and Querying Traces
+    anchor: filtering-and-querying-traces
+  - title: Working with Trace Data
+    anchor: working-with-trace-data
+  - title: RAG Application Evaluation
+    anchor: rag-application-evaluation
+  - title: Production Monitoring Patterns
+    anchor: production-monitoring-patterns
+  - title: Best Practices
+    anchor: best-practices
+---
+
+# Trace Evaluation
+
+## Understanding Trace Evaluation
+
+Trace evaluation is the process of systematically assessing the quality of LLM responses captured in production. Unlike traditional testing where you define inputs and expected outputs upfront, trace evaluation works with real user interactions that have already occurred.
+
+### Why Evaluate Production Traces?
+
+**Real-World Coverage**
+
+Production users interact with your application in ways that test suites cannot anticipate. They use informal language, make typos, ask follow-up questions, and reference context from previous conversations. Evaluating production traces ensures your quality assessment reflects actual usage patterns.
+
+**Continuous Quality Monitoring**
+
+By running evaluations on a schedule, you create a continuous feedback loop. Quality issues surface within hours rather than waiting for user complaints or periodic manual reviews.
+
+**Data-Driven Improvement**
+
+Trace evaluation generates concrete metrics that inform prioritization. Instead of guessing which areas need improvement, you have evidence: "Faithfulness scores dropped 15% for RAG queries last week."
+
+### The Evaluation Workflow
+
+When you run a trace evaluation test:
+
+1. **Connection**: The plugin authenticates with Langfuse using your configured credentials
+2. **Query**: Traces matching your criteria (project, tags, time range) are fetched
+3. **Sampling**: If configured, a sampling strategy selects a subset of traces
+4. **Iteration**: Your test function runs once per trace, receiving trace data as parameters
+5. **Evaluation**: fasteval metrics assess each response using an LLM judge
+6. **Reporting**: Results appear in pytest output; scores are pushed to Langfuse
+
+## The langfuse_traces Decorator
+
+The `@langfuse_traces` decorator transforms a regular pytest function into a trace evaluation test. It handles all the mechanics of fetching traces and coordinating evaluation.
+
+### Basic Syntax
+
+```python
+from fasteval_langfuse import langfuse_traces
+import fasteval as fe
+
+@fe.correctness(threshold=0.8)
+@langfuse_traces(
+    project="production",
+    filter_tags=["customer-support"],
+    time_range="last_24h"
+)
+def test_customer_support(trace_id, input, output, context, metadata):
+    fe.score(output, input=input)
+```
+
+### Decorator Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `project` | `str` | Langfuse project name to query |
+| `filter_tags` | `list[str]` | Tags that traces must have |
+| `time_range` | `str` | Time window for trace selection |
+| `user_id` | `str` | Filter to specific user |
+| `session_id` | `str` | Filter to specific conversation session |
+| `limit` | `int` | Maximum traces to fetch (before sampling) |
+| `sampling` | `BaseSamplingStrategy` | Sampling strategy to apply |
+| `auto_push_scores` | `bool` | Override score pushing for this test |
+
+### Function Parameters
+
+Your test function receives these parameters for each trace:
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `trace_id` | `str` | Unique Langfuse trace identifier |
+| `input` | `str` | User's query or input |
+| `output` | `str` | LLM's response |
+| `context` | `list[str]` or `None` | Retrieved documents (for RAG applications) |
+| `metadata` | `dict` | All custom metadata stored with the trace |
+
+## Filtering and Querying Traces
+
+Effective trace evaluation requires selecting the right traces. Overly broad queries waste evaluation budget; overly narrow queries miss important patterns.
+
+### Filtering by Project
+
+Projects in Langfuse typically correspond to environments or applications:
+
+```python
+# Evaluate production environment
+@langfuse_traces(project="production")
+def test_production(trace_id, input, output, context, metadata):
+    fe.score(output, input=input)
+
+# Evaluate staging environment
+@langfuse_traces(project="staging")
+def test_staging(trace_id, input, output, context, metadata):
+    fe.score(output, input=input)
+```
+
+### Filtering by Tags
+
+Tags allow fine-grained trace selection. Tag traces during production instrumentation, then filter during evaluation:
+
+```python
+# Single tag filter
+@langfuse_traces(
+    project="production",
+    filter_tags=["customer-support"]
+)
+def test_support_traces(trace_id, input, output, context, metadata):
+    fe.score(output, input=input)
+
+# Multiple tags (traces must have ALL tags)
+@langfuse_traces(
+    project="production",
+    filter_tags=["customer-support", "high-priority"]
+)
+def test_high_priority_support(trace_id, input, output, context, metadata):
+    fe.score(output, input=input)
+```
+
+**Tagging Strategies:**
+
+| Tag Type | Examples | Use Case |
+|----------|----------|----------|
+| Feature area | `customer-support`, `sales-assistant`, `code-review` | Evaluate specific features |
+| User segment | `enterprise`, `free-tier`, `beta-user` | Quality by user type |
+| Query type | `factual`, `creative`, `multi-turn` | Different quality standards |
+| Risk level | `high-priority`, `sensitive`, `pii-present` | Focus on critical interactions |
+
+### Time Range Filtering
+
+Time ranges control how far back to search for traces.
+
+**Relative Time Ranges:**
+
+```python
+# Recent traces
+@langfuse_traces(time_range="last_1h")   # Last hour
+@langfuse_traces(time_range="last_24h")  # Last day
+@langfuse_traces(time_range="last_7d")   # Last week
+@langfuse_traces(time_range="last_30d")  # Last month
+```
+
+**Absolute Time Ranges:**
+
+```python
+# Specific date range
+@langfuse_traces(time_range="2026-02-01 to 2026-02-05")
+```
+
+**Choosing Time Ranges:**
+
+| Scenario | Recommended Range |
+|----------|-------------------|
+| Hourly monitoring | `last_1h` |
+| Daily quality check | `last_24h` |
+| Weekly trend analysis | `last_7d` |
+| Post-incident investigation | Specific dates |
+| Pre-deployment validation | `last_7d` or `last_30d` |
+
+### Filtering by User or Session
+
+For debugging or user-specific analysis:
+
+```python
+# Evaluate specific user's interactions
+@langfuse_traces(
+    project="production",
+    user_id="user-abc123"
+)
+def test_specific_user(trace_id, input, output, context, metadata):
+    fe.score(output, input=input)
+
+# Evaluate specific conversation session
+@langfuse_traces(
+    project="production",
+    session_id="session-xyz789"
+)
+def test_conversation_quality(trace_id, input, output, context, metadata):
+    fe.score(output, input=input)
+```
+
+### Limiting Results
+
+The `limit` parameter caps how many traces are fetched before sampling:
+
+```python
+@langfuse_traces(
+    project="production",
+    limit=1000  # Fetch at most 1000 traces
+)
+def test_traces(trace_id, input, output, context, metadata):
+    fe.score(output, input=input)
+```
+
+This is useful when:
+- You want to bound API calls to Langfuse
+- Sampling will reduce the count anyway
+- You're debugging and want quick iteration
+
+## Working with Trace Data
+
+### Understanding the Input Parameter
+
+The `input` parameter contains the user's query as a string. For complex input structures, the plugin extracts text from common keys:
+
+```python
+# If trace.input is a string, it's passed directly
+input = "How do I reset my password?"
+
+# If trace.input is a dict, the plugin looks for common keys:
+# - "query", "input", "prompt", "question", "message"
+trace.input = {"query": "How do I reset my password?", "user_id": "123"}
+# Results in: input = "How do I reset my password?"
+```
+
+### Understanding the Output Parameter
+
+Similarly, `output` contains the LLM's response:
+
+```python
+# String output passed directly
+output = "To reset your password, go to Settings > Security..."
+
+# Dict output extracted from common keys:
+# - "response", "output", "answer", "content", "message"
+trace.output = {"response": "To reset your password...", "tokens": 150}
+# Results in: output = "To reset your password..."
+```
+
+### Working with Metadata
+
+The `metadata` dictionary contains all custom fields you stored with the trace. This is where you access expected outputs, user context, and application-specific data:
+
+```python
+@langfuse_traces(project="production")
+def test_with_metadata(trace_id, input, output, context, metadata):
+    # Access custom fields
+    expected_answer = metadata.get("expected_answer")
+    user_type = metadata.get("user_type")
+    complexity = metadata.get("query_complexity")
+    
+    # Use in evaluation
+    if expected_answer:
+        fe.score(output, expected_answer, input=input)
+    else:
+        fe.score(output, input=input)
+    
+    # Conditional logging
+    if user_type == "enterprise":
+        print(f"Enterprise user trace: {trace_id}")
+```
+
+### Handling Missing Data
+
+Production traces may have incomplete data. Handle gracefully:
+
+```python
+@langfuse_traces(project="production")
+def test_robust_evaluation(trace_id, input, output, context, metadata):
+    # Skip traces with missing essential data
+    if not input or not output:
+        print(f"Skipping trace {trace_id}: missing input or output")
+        return
+    
+    # Use defaults for optional fields
+    expected = metadata.get("expected_answer")
+    
+    # Evaluate with or without expected output
+    if expected:
+        fe.score(output, expected, input=input)
+    else:
+        fe.score(output, input=input)
+```
+
+## RAG Application Evaluation
+
+Retrieval-Augmented Generation (RAG) applications require specialized evaluation that considers both the retrieved context and the generated response.
+
+### Automatic Context Extraction
+
+The plugin automatically extracts context from common metadata keys:
+
+- `context`
+- `retrieved_docs`
+- `documents`
+- `retrieval_context`
+- `docs`
+
+```python
+@fe.faithfulness(threshold=0.8)
+@langfuse_traces(project="production", filter_tags=["rag"])
+def test_rag_faithfulness(trace_id, input, output, context, metadata):
+    # context is automatically populated if metadata contains one of the above keys
+    fe.score(output, context=context, input=input)
+```
+
+### Manual Context Extraction
+
+If your metadata uses different keys, extract manually:
+
+```python
+@fe.faithfulness(threshold=0.8)
+@langfuse_traces(project="production", filter_tags=["rag"])
+def test_custom_context(trace_id, input, output, context, metadata):
+    # Use custom key from metadata
+    if not context:
+        context = metadata.get("retrieved_passages")
+    
+    # Handle different formats
+    if isinstance(context, str):
+        context = [context]  # Convert single string to list
+    
+    if context:
+        fe.score(output, context=context, input=input)
+    else:
+        print(f"Warning: No context for trace {trace_id}")
+```
+
+### RAG-Specific Metrics
+
+RAG applications benefit from metrics that assess retrieval and generation separately:
+
+```python
+from fasteval_langfuse import langfuse_traces
+import fasteval as fe
+
+@fe.faithfulness(threshold=0.85)        # Response grounded in context?
+@fe.contextual_precision(threshold=0.7) # Context relevant to query?
+@fe.contextual_recall(threshold=0.7)    # Context covers the answer?
+@fe.answer_correctness(threshold=0.8)   # Final answer correct?
+@langfuse_traces(
+    project="production",
+    filter_tags=["rag", "product-docs"]
+)
+def test_rag_pipeline(trace_id, input, output, context, metadata):
+    expected = metadata.get("expected_answer")
+    fe.score(output, expected, context=context, input=input)
+```
+
+**Interpreting RAG Metrics:**
+
+| Metric | Low Score Indicates |
+|--------|---------------------|
+| Faithfulness | Hallucination—response contains information not in context |
+| Contextual Precision | Retrieval problem—retrieved docs aren't relevant |
+| Contextual Recall | Coverage gap—context doesn't contain needed information |
+| Answer Correctness | Generation problem—answer is wrong despite good context |
+
+## Production Monitoring Patterns
+
+### Continuous Hourly Monitoring
+
+Run evaluations every hour to catch quality degradation quickly:
+
+```python
+# test_hourly_monitoring.py
+from fasteval_langfuse import langfuse_traces
+from fasteval_langfuse.sampling import RandomSamplingStrategy
+import fasteval as fe
+
+@fe.correctness(threshold=0.8)
+@fe.hallucination(threshold=0.9)
+@langfuse_traces(
+    project="production",
+    filter_tags=["customer-facing"],
+    time_range="last_1h",
+    sampling=RandomSamplingStrategy(sample_size=100)
+)
+def test_hourly_quality(trace_id, input, output, context, metadata):
+    fe.score(output, input=input)
+```
+
+Schedule with cron:
+
+```bash
+# Run every hour
+0 * * * * cd /app && pytest test_hourly_monitoring.py -v >> /var/log/eval.log 2>&1
+```
+
+### Daily Deep-Dive Analysis
+
+Once per day, run more comprehensive evaluation:
+
+```python
+# test_daily_analysis.py
+from fasteval_langfuse.sampling import ScoreBasedSamplingStrategy
+
+@fe.correctness(threshold=0.8)
+@fe.relevance(threshold=0.75)
+@fe.faithfulness(threshold=0.8)
+@langfuse_traces(
+    project="production",
+    time_range="last_24h",
+    sampling=ScoreBasedSamplingStrategy(
+        score_name="user_rating",
+        low_score_threshold=3.0,
+        low_score_rate=1.0,    # Evaluate all low ratings
+        high_score_rate=0.1    # Sample 10% of high ratings
+    )
+)
+def test_daily_quality(trace_id, input, output, context, metadata):
+    fe.score(output, input=input)
+```
+
+### Post-Incident Investigation
+
+After a reported issue, evaluate the specific time period:
+
+```python
+@fe.correctness(threshold=0.7)
+@langfuse_traces(
+    project="production",
+    time_range="2026-02-05 10:00 to 2026-02-05 14:00",
+    filter_tags=["checkout-assistant"]  # Affected feature
+)
+def test_incident_period(trace_id, input, output, context, metadata):
+    result = fe.score(output, input=input)
+    
+    if result.aggregate_score < 0.6:
+        print(f"Low quality trace: {trace_id}")
+        print(f"  Input: {input[:100]}...")
+        print(f"  Score: {result.aggregate_score}")
+```
+
+### Pre-Deployment Validation
+
+Before deploying a new agent version, validate against recent production inputs:
+
+```python
+@fe.correctness(threshold=0.85)
+@langfuse_traces(
+    project="production",
+    filter_tags=["validated", "golden-set"],
+    time_range="last_30d"
+)
+def test_new_version(trace_id, input, output, context, metadata):
+    # 'output' is the OLD agent's response (from production)
+    # Run the NEW agent to compare
+    new_response = new_agent_v2(input, context=context)
+    
+    expected = metadata.get("expected_answer") or output
+    fe.score(new_response, expected, input=input)
+```
+
+## Best Practices
+
+### Start Simple, Add Complexity
+
+Begin with a single metric and broad filters:
+
+```python
+# Week 1: Basic monitoring
+@fe.correctness(threshold=0.8)
+@langfuse_traces(project="production", time_range="last_24h")
+def test_basic(trace_id, input, output, context, metadata):
+    fe.score(output, input=input)
+```
+
+Gradually add metrics and filters as you learn:
+
+```python
+# Week 4: Comprehensive monitoring
+@fe.correctness(threshold=0.8)
+@fe.hallucination(threshold=0.9)
+@fe.relevance(threshold=0.75)
+@langfuse_traces(
+    project="production",
+    filter_tags=["customer-support"],
+    time_range="last_24h",
+    sampling=RandomSamplingStrategy(sample_size=200)
+)
+def test_comprehensive(trace_id, input, output, context, metadata):
+    fe.score(output, input=input)
+```
+
+### Use Appropriate Thresholds
+
+Thresholds should reflect your actual quality requirements, not aspirational goals:
+
+| Metric | Typical Starting Threshold | Notes |
+|--------|---------------------------|-------|
+| Correctness | 0.75–0.85 | Higher for factual domains |
+| Hallucination | 0.85–0.95 | Critical for high-stakes applications |
+| Relevance | 0.70–0.80 | Can be lower for exploratory queries |
+| Faithfulness | 0.80–0.90 | Essential for RAG applications |
+
+### Instrument Traces for Evaluability
+
+When instrumenting your application with Langfuse, include data that makes evaluation easier:
+
+```python
+# Good: Include expected answer when known
+langfuse.trace(
+    name="customer_query",
+    input=query,
+    output=response,
+    metadata={
+        "expected_answer": golden_answer if golden_answer else None,
+        "query_type": classify_query(query),
+        "user_segment": user.segment,
+        "context": retrieved_docs
+    },
+    tags=["customer-support", user.segment]
+)
+```
+
+### Monitor Trends, Not Just Thresholds
+
+A test passing doesn't mean everything is fine. Track scores over time:
+
+```python
+@langfuse_traces(project="production", time_range="last_24h")
+def test_with_trending(trace_id, input, output, context, metadata):
+    result = fe.score(output, input=input)
+    
+    # Log for trend analysis
+    log_metric("daily_correctness", result.metric_scores.get("correctness"))
+    log_metric("daily_aggregate", result.aggregate_score)
+```
+
+A gradual decline from 0.85 to 0.78 over two weeks signals a problem even if the threshold is 0.75.
+
+## Next Steps
+
+- **[Sampling Strategies](/docs/plugins/langfuse/sampling-strategies)** — Reduce evaluation costs intelligently
+- **[Score Reporting](/docs/plugins/langfuse/score-reporting)** — Understand how scores sync to Langfuse
+- **[Datasets](/docs/plugins/langfuse/datasets)** — Regression testing with curated datasets
+- **[Examples](/docs/plugins/langfuse/examples)** — Complete production-ready workflows

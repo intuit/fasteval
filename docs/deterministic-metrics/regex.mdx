@@ -1,0 +1,210 @@
+---
+title: Regex
+description: Pattern matching for structured outputs using regular expressions
+order: 5
+sidebar:
+  - title: Quick Example
+    anchor: quick-example
+  - title: Parameters
+    anchor: parameters
+  - title: Practical Examples
+    anchor: practical-examples
+  - title: Common Patterns
+    anchor: common-patterns
+---
+
+# Regex Metric
+
+The regex metric validates that output matches a regular expression pattern. This is ideal for structured outputs like phone numbers, emails, IDs, dates, or any format that can be expressed as a pattern.
+
+## Quick Example
+
+```python
+import fasteval as fe
+
+@fe.regex(pattern=r"^\d{3}-\d{3}-\d{4}$")
+def test_phone_format():
+    response = my_llm("Generate a US phone number")
+    fe.score(response)
+```
+
+## Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `pattern` | str | Required | Regular expression pattern to match |
+| `flags` | int | 0 | Regex flags (e.g., `re.IGNORECASE`, `re.MULTILINE`) |
+| `full_match` | bool | True | If True, pattern must match entire output. If False, pattern can match anywhere. |
+| `threshold` | float | 1.0 | Score threshold (typically 1.0 for pass/fail) |
+
+## How It Works
+
+- Returns **1.0** if the pattern matches
+- Returns **0.0** if the pattern doesn't match
+
+By default (`full_match=True`), the entire output must match the pattern. Set `full_match=False` to search for the pattern anywhere in the output.
+
+## Practical Examples
+
+### Full Match (Default)
+
+The entire output must match the pattern:
+
+```python
+# Match exact email format
+@fe.regex(pattern=r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
+def test_email_format():
+    response = my_llm("Generate an email address")
+    fe.score(response)  # "user@example.com" ✓
+                        # "Contact: user@example.com" ✗
+```
+
+### Partial Match (Search)
+
+Find pattern anywhere in the output:
+
+```python
+# Check if response contains a year
+@fe.regex(pattern=r"\b(19|20)\d{2}\b", full_match=False)
+def test_contains_year():
+    response = my_llm("When was Python created?")
+    fe.score(response)  # "Python was created in 1991" ✓
+```
+
+### Case-Insensitive Matching
+
+```python
+import re
+
+@fe.regex(pattern=r"^(yes|no|maybe)$", flags=re.IGNORECASE)
+def test_yes_no_response():
+    response = my_llm("Is the sky blue? Answer yes, no, or maybe.")
+    fe.score(response)  # "Yes" ✓, "YES" ✓, "yes" ✓
+```
+
+### Multiline Patterns
+
+```python
+import re
+
+@fe.regex(
+    pattern=r"^Step \d+:",
+    flags=re.MULTILINE,
+    full_match=False
+)
+def test_numbered_steps():
+    response = my_llm("List steps to make coffee")
+    fe.score(response)  # Passes if any line starts with "Step N:"
+```
+
+## Common Patterns
+
+### Data Formats
+
+```python
+# US Phone Number
+@fe.regex(pattern=r"^\d{3}-\d{3}-\d{4}$")
+
+# International Phone
+@fe.regex(pattern=r"^\+\d{1,3}[-.\s]?\d{1,14}$")
+
+# Email Address
+@fe.regex(pattern=r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
+
+# Date (YYYY-MM-DD)
+@fe.regex(pattern=r"^\d{4}-\d{2}-\d{2}$")
+
+# Time (HH:MM)
+@fe.regex(pattern=r"^\d{2}:\d{2}$")
+
+# UUID
+@fe.regex(pattern=r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", flags=re.IGNORECASE)
+```
+
+### Code Formats
+
+```python
+# Hex Color
+@fe.regex(pattern=r"^#[0-9A-Fa-f]{6}$")
+
+# Version Number (semver)
+@fe.regex(pattern=r"^\d+\.\d+\.\d+$")
+
+# Python Variable Name
+@fe.regex(pattern=r"^[a-zA-Z_][a-zA-Z0-9_]*$")
+```
+
+### Response Formats
+
+```python
+# Yes/No Answer
+@fe.regex(pattern=r"^(yes|no)$", flags=re.IGNORECASE)
+
+# Single Word
+@fe.regex(pattern=r"^\w+$")
+
+# Number
+@fe.regex(pattern=r"^-?\d+(\.\d+)?$")
+
+# JSON-like (starts and ends with braces)
+@fe.regex(pattern=r"^\{.*\}$", flags=re.DOTALL)
+```
+
+## Example Output
+
+**Passing test:**
+
+```
+test_phone_format PASSED
+
+Evaluation Results:
+  ✓ regex: 1.00 (threshold: 1.00)
+    Reasoning: Pattern matched: '555-123-4567'
+```
+
+**Failing test:**
+
+```
+test_phone_format FAILED
+
+Evaluation Results:
+  ✗ regex: 0.00 (threshold: 1.00)
+    Reasoning: Pattern '^\d{3}-\d{3}-\d{4}$' did not match
+```
+
+## When to Use Regex
+
+**Good for:**
+- Structured data formats (phone, email, date)
+- Simple yes/no or keyword responses
+- ID or code format validation
+- Checking for presence of specific patterns
+
+**Consider alternatives for:**
+- Complex JSON validation — use `@fe.json()` with Pydantic
+- Semantic content validation — use LLM metrics
+- Substring containment — use `@fe.contains()` for simplicity
+
+## Combining with Other Metrics
+
+Validate both format and content:
+
+```python
+@fe.regex(pattern=r"^\d{4}-\d{2}-\d{2}$")  # Must be date format
+@fe.correctness(threshold=0.8)              # Must be correct date
+def test_date_response():
+    response = my_llm("What is today's date? Format: YYYY-MM-DD")
+    fe.score(response, "2024-01-15")
+```
+
+Check format and helpfulness:
+
+```python
+import re
+
+@fe.regex(pattern=r"^Step \d+:", flags=re.MULTILINE, full_match=False)
+@fe.helpfulness(threshold=0.8)
+def test_instructions():
+    response = my_llm("How do I install Python? Use numbered steps.")
+    fe.score(response)
+```

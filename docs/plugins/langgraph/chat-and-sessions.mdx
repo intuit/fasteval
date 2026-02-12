@@ -1,0 +1,150 @@
+---
+title: Chat and Sessions
+description: Single message and multi-turn conversation testing with GraphHarness
+order: 3
+sidebar:
+  - title: Single Message
+    anchor: single-message-chat
+  - title: Multi-Turn Sessions
+    anchor: multi-turn-sessions
+  - title: Interrupt and Resume
+    anchor: interrupt-and-resume
+  - title: State Seeding
+    anchor: state-seeding
+  - title: Session History
+    anchor: session-history
+---
+
+# Chat and Sessions
+
+## Single Message (.chat)
+
+Each `.chat()` call creates a new thread and returns a `ChatResult`:
+
+```python
+from fasteval_langgraph import harness
+
+graph = harness(compiled_graph)
+result = await graph.chat("What is OAuth?")
+```
+
+### ChatResult Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `response` | `str` | Last AI message content |
+| `state` | `dict` | Filtered state snapshot (messages excluded by default) |
+| `trace` | `list[NodeStep]` | Per-node execution trace in order |
+| `nodes_ran` | `list[str]` | Node names in execution order |
+
+### Per-Call Config and Context
+
+Override config or context for a single call:
+
+```python
+result = await graph.chat(
+    "Hello",
+    config={"configurable": {"model": "gpt-3.5-turbo"}},
+    context={"user_id": "test-user-42"},
+)
+```
+
+These deep-merge with the factory defaults set in the constructor.
+
+## Multi-Turn Sessions
+
+`.session()` creates a `Session` that reuses the same `thread_id` across calls:
+
+```python
+async with graph.session() as s:
+    r1 = await s.chat("My API returns 401")
+    r2 = await s.chat("I already checked my credentials")
+    r3 = await s.chat("The token is valid")
+
+    # State accumulates across turns
+    assert r1.state["needs_more_info"] is True
+    assert r3.state["needs_more_info"] is False
+```
+
+### Session-Level Overrides
+
+Set config/context for all turns in a session:
+
+```python
+async with graph.session(
+    config={"configurable": {"env": "staging"}},
+    context={"user_id": "session-user"},
+) as s:
+    r1 = await s.chat("Hello")          # uses session config+context
+    r2 = await s.chat(
+        "Follow up",
+        context={"user_id": "different"},  # per-turn override
+    )
+```
+
+### Three-Level Override Semantics
+
+```
+effective_config  = deep_merge(factory_config, session_config, per_turn_config)
+effective_context = deep_merge(factory_context, session_context, per_turn_context)
+```
+
+Each layer deep-merges with the previous. More specific wins on conflicts.
+
+## Interrupt and Resume
+
+Sessions auto-detect interrupts and handle resume automatically:
+
+```python
+async with graph.session() as s:
+    # First turn: graph runs until interrupt()
+    r1 = await s.chat("Deploy my service")
+    assert "approve" in r1.response.lower()
+
+    # Second turn: auto-detects interrupt, uses resume_fn
+    r2 = await s.chat("yes")
+    assert "deployed" in r2.response.lower()
+```
+
+The session checks `aget_state().next` before each call. If the graph is paused at an interrupt, it uses `resume_fn` (default: `Command(resume=message)`) instead of `input_fn`.
+
+### Custom Resume Logic
+
+```python
+graph = harness(
+    compiled_graph,
+    resume_fn=lambda msg: Command(resume={"approved": msg == "yes"}),
+)
+```
+
+## State Seeding
+
+Seed state mid-session with `update_state()`:
+
+```python
+async with graph.session() as s:
+    await s.update_state(
+        {"docs": ["pre-loaded doc"], "intent": "FAQ"},
+        as_node="rag",
+    )
+    # Next chat continues from the seeded state
+    result = await s.chat("")
+    assert result.state["plan"] is not None
+```
+
+This calls `compiled_graph.update_state()` under the hood, writing to the checkpoint.
+
+## Session History
+
+Access all results from a session:
+
+```python
+async with graph.session() as s:
+    await s.chat("First message")
+    await s.chat("Second message")
+    await s.chat("Third message")
+
+    assert len(s.history) == 3
+    for i, result in enumerate(s.history):
+        print(f"Turn {i+1}: {result.response}")
+```

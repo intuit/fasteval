@@ -1,0 +1,38 @@
+# Mac
+.DS_Store
+
+# Environment variables
+.env
+.env.*
+
+# Code coverage
+.coverage
+.coverage_db_*
+coverage*.xml
+junit_results.xml
+htmlcov*/
+
+# Python
+*.pyc
+__pycache__/
+/venv/
+/.venv/
+
+# Poetry (lock managed by uv)
+poetry.lock
+
+# Tests
+.tox/
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Builds
+dist/
+*.egg-info/
+
+# Project memory (local dev context)
+.memory/*

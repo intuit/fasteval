@@ -1,0 +1,234 @@
+---
+title: Data Sources
+description: Loading test data from various sources
+order: 3
+sidebar:
+  - title: CSV Files
+    anchor: csv-files
+  - title: Conversations
+    anchor: conversations
+  - title: Production Traces
+    anchor: production-traces
+  - title: Choosing a Data Source
+    anchor: choosing-a-data-source
+---
+
+# Data Sources
+
+Single test cases are great for specific scenarios, but real-world evaluation requires testing across many examples. fasteval provides three ways to scale your tests.
+
+## CSV Files
+
+Run the same test across hundreds of examples from a CSV file.
+
+### Basic Usage
+
+```python
+@fe.correctness(threshold=0.7)
+@fe.csv("test_cases.csv")
+def test_from_csv(input, expected_output):
+    response = my_llm(input)
+    fe.score(response, expected_output, input=input)
+```
+
+Your `test_cases.csv`:
+
+```csv
+input,expected_output
+"What is 2+2?","4"
+"Capital of France?","Paris"
+"Who wrote Romeo and Juliet?","Shakespeare"
+```
+
+fasteval runs the test **once per row**, reporting individual results.
+
+### CSV Column Mapping
+
+Column names become function parameters. You can use any columns you need:
+
+```csv
+input,expected_output,context,difficulty
+"What is our refund policy?","30 days","See policy doc section 3","easy"
+"How do I cancel?","Contact support","Account settings page","medium"
+```
+
+```python
+@fe.correctness(threshold=0.7)
+@fe.csv("test_cases.csv")
+def test_with_context(input, expected_output, context, difficulty):
+    response = my_rag_agent(input, context=context)
+    fe.score(response, expected_output, input=input, context=context)
+```
+
+### Best Practices for CSV Testing
+
+- **Start small:** Begin with 10-20 high-quality test cases
+- **Cover edge cases:** Include tricky inputs that have caused issues
+- **Version control:** Keep CSV files in git alongside your code
+- **Separate concerns:** Use different CSVs for different test categories
+
+## Conversations
+
+Test multi-turn dialogues where context matters.
+
+### Basic Usage
+
+```python
+@fe.correctness(threshold=0.7)
+@fe.conversation([
+    {"query": "Hi, I need help with order #12345", "expected": "order"},
+    {"query": "When will it arrive?", "expected": "delivery"},
+    {"query": "Can I change the address?", "expected": "address"},
+])
+def test_support_conversation(query, expected, history):
+    response = my_agent(query, history=history)
+    fe.score(response, expected, input=query)
+```
+
+fasteval:
+
+1. Runs the first turn with empty history
+2. Appends each turn to the history
+3. Evaluates each response against its expected output
+
+### Testing Context Retention
+
+Combine with conversation metrics to test memory:
+
+```python
+@fe.context_retention(threshold=0.8)
+@fe.consistency(threshold=0.9)
+@fe.conversation([
+    {"query": "My name is Alice", "expected": "Alice"},
+    {"query": "What's my name?", "expected": "Alice"},  # Should remember
+])
+def test_memory(query, expected, history):
+    response = my_agent(query, history=history)
+    fe.score(response, expected, input=query)
+```
+
+### Conversation Data Structure
+
+The `history` parameter contains all previous turns:
+
+```python
+# On turn 3, history looks like:
+[
+    {"role": "user", "content": "Hi, I need help with order #12345"},
+    {"role": "assistant", "content": "I'd be happy to help with order #12345..."},
+    {"role": "user", "content": "When will it arrive?"},
+    {"role": "assistant", "content": "Your order is scheduled for..."},
+]
+```
+
+## Production Traces
+
+The most powerful pattern: evaluate your LLM on real user interactions.
+
+### Basic Usage
+
+```python
+@fe.correctness(threshold=0.8)
+@fe.traces()
+def get_production_traces():
+    for trace in fetch_traces_from_database():
+        yield EvalInput(
+            actual_output=trace.response,
+            expected_output=trace.expected,
+            input=trace.query
+        )
+```
+
+### With Filtering
+
+Process only recent or specific traces:
+
+```python
+@fe.faithfulness(threshold=0.8)
+@fe.traces()
+def get_recent_traces():
+    traces = db.query(
+        "SELECT * FROM traces WHERE created_at > NOW() - INTERVAL '1 day'"
+    )
+    for trace in traces:
+        yield EvalInput(
+            actual_output=trace.response,
+            expected_output=trace.expected,
+            input=trace.query,
+            context=trace.retrieved_docs
+        )
+```
+
+### With RAG Context
+
+Include retrieval context for faithfulness evaluation:
+
+```python
+@fe.faithfulness(threshold=0.8)
+@fe.hallucination(threshold=0.9)
+@fe.traces()
+def get_rag_traces():
+    for trace in fetch_rag_traces():
+        yield EvalInput(
+            actual_output=trace.response,
+            input=trace.query,
+            context=trace.retrieved_documents  # What docs were retrieved?
+        )
+```
+
+### Integration with Observability Platforms
+
+Pull traces from LangFuse, LangSmith, or your own logging:
+
+```python
+from langfuse import Langfuse
+
+@fe.correctness(threshold=0.8)
+@fe.traces()
+def get_langfuse_traces():
+    langfuse = Langfuse()
+    traces = langfuse.get_traces(limit=100)
+    
+    for trace in traces:
+        yield EvalInput(
+            actual_output=trace.output,
+            expected_output=trace.metadata.get("expected"),
+            input=trace.input
+        )
+```
+
+## Choosing a Data Source
+
+![Data Sources Comparison](docs/assets/data-sources-comparison.svg)
+
+| Scenario | Recommended |
+|----------|-------------|
+| **Known test cases** | CSV with curated examples |
+| **Multi-turn testing** | Conversation decorator |
+| **Production monitoring** | Traces from your observability platform |
+| **Regression testing** | CSV updated when bugs are found |
+| **CI/CD pipeline** | Small CSV for fast feedback |
+
+## Combining Sources
+
+Different sources for different purposes:
+
+```python
+# test_curated.py - Fast, reliable, runs in CI
+@fe.correctness(threshold=0.8)
+@fe.csv("golden_test_cases.csv")
+def test_golden_set(input, expected_output):
+    ...
+
+# test_conversations.py - Multi-turn behavior
+@fe.context_retention(threshold=0.8)
+@fe.conversation(SUPPORT_FLOWS)
+def test_support_flow(query, expected, history):
+    ...
+
+# test_production.py - Nightly evaluation of real data
+@fe.faithfulness(threshold=0.8)
+@fe.traces()
+def get_production_traces():
+    ...
+```

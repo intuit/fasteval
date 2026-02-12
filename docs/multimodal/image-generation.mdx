@@ -1,0 +1,211 @@
+---
+title: Image Generation Metrics
+description: Evaluate DALL-E, Midjourney, Stable Diffusion and other image generation models
+order: 4
+---
+
+# Image Generation Metrics
+
+Evaluate image generation models like DALL-E, Midjourney, and Stable Diffusion.
+
+## Installation
+
+```bash
+# Basic vision support (LLM-based evaluation)
+pip install fasteval[vision]
+
+# Full image generation support (CLIP scores, etc.)
+pip install fasteval[image-gen]
+```
+
+## Available Metrics
+
+### `@fe.image_quality`
+
+Evaluate the visual quality of generated images.
+
+```python
+import fasteval as fe
+
+@fe.image_quality(threshold=0.7)
+def test_generated_image():
+    image = dalle.generate("A sunset over mountains")
+    fe.score(
+        generated_image=image,
+        input="A sunset over mountains"
+    )
+```
+
+**Checks:**
+- Visual clarity and sharpness
+- Freedom from artifacts
+- Appropriate composition
+- Technical quality (lighting, perspective)
+
+**Parameters:**
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `threshold` | float | 0.7 | Minimum quality score to pass |
+| `weight` | float | 1.0 | Weight for aggregate scoring |
+
+### `@fe.prompt_adherence`
+
+Evaluate if the generated image matches the prompt description.
+
+```python
+@fe.prompt_adherence(threshold=0.8)
+def test_prompt_match():
+    image = dalle.generate("A red sports car on a mountain road")
+    fe.score(
+        generated_image=image,
+        input="A red sports car on a mountain road"
+    )
+```
+
+**Checks:**
+- All prompt elements present
+- Attributes correct (colors, sizes, positions)
+- Style matches description
+
+### `@fe.safety_check`
+
+Check generated images for NSFW or harmful content.
+
+```python
+@fe.safety_check(threshold=0.95)
+def test_safe_generation():
+    image = model.generate(prompt)
+    fe.score(
+        generated_image=image,
+        input=prompt
+    )
+```
+
+**Checks:**
+- NSFW content
+- Violence or gore
+- Hate symbols
+- Dangerous activities
+- Content harmful to minors
+
+### `@fe.aesthetic_score`
+
+Evaluate visual appeal, composition, and artistic merit.
+
+```python
+@fe.aesthetic_score(threshold=0.7)
+def test_image_aesthetics():
+    image = model.generate("A beautiful sunset")
+    fe.score(
+        generated_image=image,
+        input="A beautiful sunset"
+    )
+```
+
+**Evaluates:**
+- Composition (balance, rule of thirds)
+- Color harmony and contrast
+- Lighting quality
+- Artistic merit and creativity
+
+### `@fe.clip_score`
+
+Evaluate image-text alignment (CLIP-style semantic similarity).
+
+```python
+@fe.clip_score(threshold=0.7)
+def test_image_alignment():
+    image = dalle.generate("A red sports car on a mountain road")
+    fe.score(
+        generated_image=image,
+        input="A red sports car on a mountain road"
+    )
+```
+
+**Note:** For actual CLIP embedding scores, install `fasteval[image-gen]` with PyTorch. The default uses LLM-based alignment evaluation.
+
+## Combining Metrics
+
+Stack multiple metrics for comprehensive evaluation:
+
+```python
+@fe.image_quality(threshold=0.7)
+@fe.prompt_adherence(threshold=0.8)
+@fe.safety_check(threshold=0.95)
+@fe.aesthetic_score(threshold=0.6)
+def test_complete_generation():
+    image = dalle.generate("A professional headshot photo")
+    fe.score(
+        generated_image=image,
+        input="A professional headshot photo"
+    )
+```
+
+## Working with Generated Images
+
+### Using GeneratedImage Model
+
+```python
+from fasteval import GeneratedImage, ImageInput
+
+# Track generation parameters
+generated = GeneratedImage(
+    image=ImageInput(source="output.png"),
+    prompt="A red sports car on a mountain road",
+    model="dall-e-3",
+    seed=12345,
+    generation_params={
+        "quality": "hd",
+        "style": "vivid"
+    }
+)
+
+fe.score(generated_image=generated, input=prompt)
+```
+
+### Direct Image Path
+
+```python
+# Simple path-based usage
+image_path = dalle.generate(prompt)  # Returns path
+fe.score(generated_image=image_path, input=prompt)
+```
+
+## Example: A/B Testing Image Generation
+
+```python
+import fasteval as fe
+from datetime import datetime
+
+@fe.prompt_adherence(threshold=0.8)
+@fe.aesthetic_score(threshold=0.7)
+def test_model_comparison():
+    prompt = "A cozy coffee shop interior with warm lighting"
+    
+    # Generate with model A
+    image_a = model_a.generate(prompt)
+    result_a = fe.score(
+        generated_image=image_a,
+        input=prompt,
+        metadata={"model": "A"}
+    )
+    
+    # Generate with model B  
+    image_b = model_b.generate(prompt)
+    result_b = fe.score(
+        generated_image=image_b,
+        input=prompt,
+        metadata={"model": "B"}
+    )
+    
+    print(f"Model A: {result_a.aggregate_score:.2f}")
+    print(f"Model B: {result_b.aggregate_score:.2f}")
+```
+
+## Best Practices
+
+1. **Use safety checks in production** - Always include `@fe.safety_check` for user-facing applications
+2. **Balance quality vs adherence** - High aesthetic score doesn't mean good prompt following
+3. **Test edge cases** - Include complex prompts with multiple elements
+4. **Track generation parameters** - Use `GeneratedImage` model to track seeds and settings
+5. **Use appropriate thresholds** - Image generation is inherently variable; set realistic expectations

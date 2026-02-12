@@ -1,0 +1,159 @@
+---
+title: Relevance
+description: Evaluate how relevant responses are to the input
+order: 2
+sidebar:
+  - title: Quick Example
+    anchor: quick-example
+  - title: Practical Examples
+    anchor: practical-examples
+  - title: Relevance vs Correctness
+    anchor: relevance-vs-correctness
+  - title: Best Practices
+    anchor: best-practices
+---
+
+# Relevance Metric
+
+A correct answer is useless if it doesn't address the question. The relevance metric ensures your LLM actually responds to what the user asked, not something tangentially related.
+
+## Quick Example
+
+```python
+import fasteval as fe
+
+@fe.relevance(threshold=0.7)
+def test_stays_on_topic():
+    query = "How do I reset my password?"
+    response = my_agent(query)
+    fe.score(response, input=query)
+```
+
+Notice: no `expected_output` needed. Relevance only cares about the relationship between the input and the actual output.
+
+## Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `threshold` | float | 0.7 | Minimum score to pass (0.0 - 1.0) |
+| `model` | str | None | Override the default LLM model |
+
+## How Scoring Works
+
+The LLM judge evaluates how well the response addresses the input:
+
+| Score | Interpretation |
+|-------|---------------|
+| **0.9-1.0** | Directly and fully addresses the question |
+| **0.7-0.9** | Addresses the question with some tangents |
+| **0.5-0.7** | Partially relevant, missing key aspects |
+| **0.0-0.5** | Off-topic or doesn't address the question |
+
+## Practical Examples
+
+### Customer Support Bot
+
+Ensure the bot answers what customers actually ask:
+
+```python
+@fe.relevance(threshold=0.8)
+def test_support_relevance():
+    query = "What are your business hours?"
+    response = my_support_bot(query)
+    fe.score(response, input=query)
+```
+
+A response like "We're open 9-5 Monday through Friday" → high score.
+A response about return policies → low score.
+
+### With Correctness
+
+Often you want both relevance AND correctness:
+
+```python
+@fe.relevance(threshold=0.7)      # Does it address the question?
+@fe.correctness(threshold=0.8)    # Is the answer right?
+def test_qa_quality():
+    query = "What is the capital of Australia?"
+    response = my_llm(query)
+    fe.score(response, expected_output="Canberra", input=query)
+```
+
+A response like "Australia is a continent and country" is relevant (talks about Australia) but not correct (doesn't mention Canberra).
+
+### Chatbot Conversation Testing
+
+In conversations, relevance catches when the bot goes off on tangents:
+
+```python
+@fe.relevance(threshold=0.75)
+@fe.conversation([
+    {"query": "I need to cancel my subscription", "expected": "cancel"},
+    {"query": "How long until it takes effect?", "expected": "timing"},
+])
+def test_conversation_relevance(query, expected, history):
+    response = my_bot(query, history=history)
+    fe.score(response, expected, input=query)
+```
+
+## Example Output
+
+**Passing test:**
+
+```
+test_support_relevance PASSED
+
+Evaluation Results:
+  ✓ relevance: 0.88 (threshold: 0.70)
+    Reasoning: The response directly addresses the business hours 
+    question with specific times and days of operation.
+```
+
+**Failing test:**
+
+```
+test_support_relevance FAILED
+
+Evaluation Results:
+  ✗ relevance: 0.42 (threshold: 0.70)
+    Reasoning: The user asked about business hours but the response 
+    discusses the company's history and mission statement without 
+    mentioning operating hours.
+```
+
+## When to Use Relevance
+
+**Essential for:**
+- All chatbots and conversational AI
+- Customer support systems
+- Search and Q&A applications
+- Any user-facing LLM interaction
+
+**Commonly paired with:**
+- `@fe.correctness()` — relevant AND accurate
+- `@fe.toxicity()` — relevant AND safe
+- `@fe.hallucination()` — relevant AND grounded
+
+## Relevance vs Correctness
+
+These are complementary, not interchangeable:
+
+| Scenario | Relevance | Correctness |
+|----------|-----------|-------------|
+| Right answer to the question | High | High |
+| Wrong answer to the question | High | Low |
+| Right answer to a different question | Low | Varies |
+| Off-topic rambling | Low | N/A |
+
+**Example:** User asks "What's the capital of France?"
+
+- "The capital of France is Paris" → Relevance: High, Correctness: High
+- "The capital of France is Lyon" → Relevance: High, Correctness: Low  
+- "France has beautiful beaches" → Relevance: Low, Correctness: N/A
+
+## Best Practices
+
+1. **Always include the input**: Relevance requires the original query
+2. **Pair with correctness**: Relevant doesn't mean correct
+3. **Test edge cases**: Try ambiguous or multi-part questions
+4. **Consider context length**: Very long contexts may dilute relevance

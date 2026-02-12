@@ -1,0 +1,158 @@
+<svg viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="mscStackGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1"/>
+      <stop offset="100%" style="stop-color:#4f46e5"/>
+    </linearGradient>
+    <linearGradient id="mscMetricGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6"/>
+      <stop offset="100%" style="stop-color:#1d4ed8"/>
+    </linearGradient>
+    <linearGradient id="mscMetricGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8b5cf6"/>
+      <stop offset="100%" style="stop-color:#6d28d9"/>
+    </linearGradient>
+    <linearGradient id="mscMetricGrad3" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#10b981"/>
+      <stop offset="100%" style="stop-color:#059669"/>
+    </linearGradient>
+    <linearGradient id="mscTestGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f59e0b"/>
+      <stop offset="100%" style="stop-color:#d97706"/>
+    </linearGradient>
+    <filter id="mscShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-opacity="0.12"/>
+    </filter>
+    <marker id="mscArrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/>
+    </marker>
+    <marker id="mscArrowPurple" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#6366f1"/>
+    </marker>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="800" height="450" fill="#f8fafc"/>
+  
+  <!-- Title -->
+  <text x="400" y="35" text-anchor="middle" font-size="22" font-weight="700" fill="#1e293b">Metric Stack Composition</text>
+  <text x="400" y="55" text-anchor="middle" font-size="12" fill="#64748b">Define once, reuse across tests with @fe.stack()</text>
+  
+  <!-- Left side: Define Stack -->
+  <text x="150" y="90" text-anchor="middle" font-size="14" font-weight="600" fill="#475569">Define Stack</text>
+  
+  <!-- Stack definition box -->
+  <g filter="url(#mscShadow)">
+    <rect x="40" y="105" width="220" height="200" rx="12" fill="white" stroke="#6366f1" stroke-width="2"/>
+    
+    <!-- @fe.stack() header -->
+    <rect x="40" y="105" width="220" height="40" rx="12" fill="url(#mscStackGrad)"/>
+    <rect x="40" y="133" width="220" height="12" fill="url(#mscStackGrad)"/>
+    <text x="150" y="130" text-anchor="middle" font-size="12" font-weight="600" fill="white">@fe.stack()</text>
+    
+    <!-- Stacked metrics inside -->
+    <rect x="55" y="155" width="190" height="32" rx="6" fill="url(#mscMetricGrad1)"/>
+    <text x="150" y="176" text-anchor="middle" font-size="11" font-weight="500" fill="white">@fe.correctness(threshold=0.8)</text>
+    
+    <rect x="55" y="195" width="190" height="32" rx="6" fill="url(#mscMetricGrad2)"/>
+    <text x="150" y="216" text-anchor="middle" font-size="11" font-weight="500" fill="white">@fe.relevance(threshold=0.7)</text>
+    
+    <rect x="55" y="235" width="190" height="32" rx="6" fill="url(#mscMetricGrad3)"/>
+    <text x="150" y="256" text-anchor="middle" font-size="11" font-weight="500" fill="white">@fe.toxicity(threshold=0.95)</text>
+    
+    <!-- Function name -->
+    <text x="150" y="290" text-anchor="middle" font-size="11" fill="#64748b" font-style="italic">def quality_metrics(): pass</text>
+  </g>
+  
+  <!-- Arrow from stack to tests -->
+  <line x1="260" y1="205" x2="320" y2="130" stroke="#6366f1" stroke-width="2" stroke-dasharray="6,3" marker-end="url(#mscArrowPurple)"/>
+  <line x1="260" y1="205" x2="320" y2="205" stroke="#6366f1" stroke-width="2" stroke-dasharray="6,3" marker-end="url(#mscArrowPurple)"/>
+  <line x1="260" y1="205" x2="320" y2="280" stroke="#6366f1" stroke-width="2" stroke-dasharray="6,3" marker-end="url(#mscArrowPurple)"/>
+  
+  <!-- Reuse label -->
+  <text x="290" y="190" font-size="10" font-weight="600" fill="#6366f1" transform="rotate(-90 290,190)">REUSE</text>
+  
+  <!-- Right side: Use in Tests -->
+  <text x="450" y="90" text-anchor="middle" font-size="14" font-weight="600" fill="#475569">Apply to Tests</text>
+  
+  <!-- Test 1 -->
+  <g filter="url(#mscShadow)">
+    <rect x="330" y="105" width="170" height="70" rx="10" fill="url(#mscTestGrad)"/>
+    <text x="415" y="130" text-anchor="middle" font-size="11" font-weight="600" fill="white">@quality_metrics</text>
+    <text x="415" y="148" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.9)">def test_greeting():</text>
+    <text x="415" y="163" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.7)">All 3 metrics apply</text>
+  </g>
+  
+  <!-- Test 2 -->
+  <g filter="url(#mscShadow)">
+    <rect x="330" y="185" width="170" height="70" rx="10" fill="url(#mscTestGrad)"/>
+    <text x="415" y="210" text-anchor="middle" font-size="11" font-weight="600" fill="white">@quality_metrics</text>
+    <text x="415" y="228" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.9)">def test_farewell():</text>
+    <text x="415" y="243" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.7)">All 3 metrics apply</text>
+  </g>
+  
+  <!-- Test 3 -->
+  <g filter="url(#mscShadow)">
+    <rect x="330" y="265" width="170" height="70" rx="10" fill="url(#mscTestGrad)"/>
+    <text x="415" y="290" text-anchor="middle" font-size="11" font-weight="600" fill="white">@quality_metrics</text>
+    <text x="415" y="308" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.9)">def test_help():</text>
+    <text x="415" y="323" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.7)">All 3 metrics apply</text>
+  </g>
+  
+  <!-- Plus section - combining stacks -->
+  <text x="620" y="90" text-anchor="middle" font-size="14" font-weight="600" fill="#475569">Combine Stacks</text>
+  
+  <g filter="url(#mscShadow)">
+    <rect x="540" y="105" width="220" height="175" rx="12" fill="white" stroke="#10b981" stroke-width="2"/>
+    
+    <!-- Combined test header -->
+    <rect x="540" y="105" width="220" height="35" rx="12" fill="#10b981"/>
+    <rect x="540" y="128" width="220" height="12" fill="#10b981"/>
+    <text x="650" y="128" text-anchor="middle" font-size="11" font-weight="600" fill="white">Stack Combination</text>
+    
+    <!-- Stacks combined -->
+    <rect x="555" y="150" width="90" height="28" rx="6" fill="url(#mscStackGrad)"/>
+    <text x="600" y="169" text-anchor="middle" font-size="9" font-weight="500" fill="white">@rag_metrics</text>
+    
+    <text x="650" y="168" text-anchor="middle" font-size="14" fill="#64748b">+</text>
+    
+    <rect x="655" y="150" width="90" height="28" rx="6" fill="url(#mscStackGrad)"/>
+    <text x="700" y="169" text-anchor="middle" font-size="9" font-weight="500" fill="white">@quality_metrics</text>
+    
+    <!-- Equals -->
+    <text x="650" y="200" text-anchor="middle" font-size="16" font-weight="600" fill="#64748b">=</text>
+    
+    <!-- All metrics -->
+    <rect x="555" y="210" width="190" height="55" rx="6" fill="#f1f5f9" stroke="#e2e8f0"/>
+    <text x="650" y="230" text-anchor="middle" font-size="10" font-weight="600" fill="#475569">All Metrics Applied:</text>
+    <text x="650" y="248" text-anchor="middle" font-size="9" fill="#64748b">faithfulness + contextual_precision +</text>
+    <text x="650" y="260" text-anchor="middle" font-size="9" fill="#64748b">correctness + relevance + toxicity</text>
+  </g>
+  
+  <!-- Benefits section at bottom -->
+  <g transform="translate(40, 350)">
+    <rect x="0" y="0" width="720" height="80" rx="10" fill="#f1f5f9" stroke="#e2e8f0"/>
+    <text x="360" y="25" text-anchor="middle" font-size="13" font-weight="600" fill="#1e293b">Benefits of Metric Stacks</text>
+    
+    <g transform="translate(50, 45)">
+      <circle cx="0" cy="0" r="15" fill="#3b82f6"/>
+      <text x="0" y="5" text-anchor="middle" font-size="12" fill="white">1</text>
+      <text x="25" y="5" font-size="11" fill="#475569">DRY: Define once, use everywhere</text>
+    </g>
+    
+    <g transform="translate(280, 45)">
+      <circle cx="0" cy="0" r="15" fill="#8b5cf6"/>
+      <text x="0" y="5" text-anchor="middle" font-size="12" fill="white">2</text>
+      <text x="25" y="5" font-size="11" fill="#475569">Consistent evaluation standards</text>
+    </g>
+    
+    <g transform="translate(510, 45)">
+      <circle cx="0" cy="0" r="15" fill="#10b981"/>
+      <text x="0" y="5" text-anchor="middle" font-size="12" fill="white">3</text>
+      <text x="25" y="5" font-size="11" fill="#475569">Composable combinations</text>
+    </g>
+  </g>
+  
+  <!-- Footer -->
+  <text x="400" y="445" text-anchor="middle" font-size="11" fill="#94a3b8">fasteval • Reusable Metric Stacks</text>
+</svg>

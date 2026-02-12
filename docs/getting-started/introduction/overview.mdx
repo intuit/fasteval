@@ -1,0 +1,116 @@
+---
+title: Overview
+description: Systematic LLM evaluation for Python - Test your AI applications with confidence
+order: 1
+sidebar:
+  - title: What is fasteval?
+    anchor: what-is-fasteval
+  - title: Key Features
+    anchor: key-features
+  - title: See It In Action
+    anchor: see-it-in-action
+  - title: Quick Navigation
+    anchor: quick-navigation
+---
+
+# Overview
+
+![Evaluation Journey](docs/assets/hero-evaluation-journey.svg)
+
+## What is fasteval?
+
+**fasteval** is a decorator-first LLM evaluation framework that brings systematic quality assurance to your AI applications. Instead of treating evaluation as an afterthought, fasteval makes it a seamless part of your development workflow—as natural as writing unit tests.
+
+```python
+import fasteval as fe
+
+@fe.correctness(threshold=0.8)
+@fe.toxicity(threshold=0.95)
+def test_my_agent():
+    response = my_agent("How do I reset my password?")
+    fe.score(response, "Navigate to Settings > Security > Reset Password")
+```
+
+Run `pytest` and fasteval handles everything: calling an LLM judge to assess quality, computing semantic scores, and failing tests when thresholds aren't met.
+
+## Key Features
+
+![Feature Cards](docs/assets/feature-cards.svg)
+
+| Feature | Description |
+|---------|-------------|
+| **Decorator-First API** | Define evaluation criteria directly on test functions—no configuration files, no boilerplate |
+| **Pytest Native** | Works with the test runner you already know. Full IDE integration, parallel execution, CI/CD ready |
+| **LLM-as-Judge** | Semantic evaluation that understands meaning, not just text matching |
+| **20+ Built-in Metrics** | Correctness, toxicity, hallucination, faithfulness, and more |
+| **Production Monitoring** | Evaluate live systems with configurable sampling via `fasteval-observe` |
+| **Extensible** | Build custom metrics tailored to your domain |
+
+### Who Is This For?
+
+- **ML Engineers** building LLM-powered features who need automated quality gates
+- **Platform Teams** establishing evaluation standards across multiple AI applications
+- **Researchers** running systematic experiments on prompt variations or model comparisons
+- **QA Engineers** extending test coverage to non-deterministic AI outputs
+
+## See It In Action
+
+### Basic Quality Check
+
+```python
+@fe.correctness(threshold=0.7)
+def test_qa_accuracy():
+    """Verify our QA bot gives accurate answers."""
+    response = qa_bot("What year was Python released?")
+    fe.score(response, expected_output="1991")
+```
+
+### Multi-Metric Evaluation
+
+```python
+@fe.correctness(threshold=0.8)
+@fe.relevance(threshold=0.7)
+@fe.toxicity(threshold=0.95)
+def test_customer_support():
+    """Evaluate support agent across multiple quality dimensions."""
+    response = support_agent("I want a refund!")
+    fe.score(response, expected_output="I understand your concern...")
+```
+
+### RAG Pipeline Evaluation
+
+```python
+@fe.faithfulness(threshold=0.85)
+@fe.contextual_precision(threshold=0.7)
+def test_rag_grounding():
+    """Ensure answers are grounded in retrieved context."""
+    docs = retriever.search("company policy")
+    response = rag_agent("What is the return policy?", context=docs)
+    fe.score(response, context=docs)
+```
+
+### Production Monitoring
+
+```python
+from fasteval_observe import observe
+from fasteval_observe.sampling import FixedRateSamplingStrategy
+
+@observe(sampling=FixedRateSamplingStrategy(rate=0.05))
+@fe.toxicity(threshold=0.95)
+async def production_chatbot(query: str) -> str:
+    """Monitor 5% of production traffic for safety."""
+    return await llm.invoke(query)
+```
+
+## Quick Navigation
+
+Ready to get started? Here's your path:
+
+| Step | Page | Time |
+|------|------|------|
+| 1 | [Why fasteval?](/docs/getting-started/introduction/why-fasteval) | 3 min |
+| 2 | [How It Works](/docs/getting-started/introduction/how-it-works) | 5 min |
+| 3 | [Installation](/docs/getting-started/installation) | 2 min |
+| 4 | [Quick Start](/docs/getting-started/quickstart) | 5 min |
+
+Or jump directly to [Installation](/docs/getting-started/installation) if you're ready to code.

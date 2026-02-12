@@ -1,0 +1,255 @@
+---
+title: Production Traces
+description: Evaluate production data with traces
+order: 3
+sidebar:
+  - title: Why Evaluate Production Traces?
+    anchor: why-evaluate-production-traces
+  - title: Basic Usage
+    anchor: basic-usage
+  - title: Practical Examples
+    anchor: practical-examples
+  - title: Scheduling Trace Evaluation
+    anchor: scheduling-trace-evaluation
+---
+
+# Production Traces
+
+The ultimate test of your LLM system is how it performs on real user interactions. The `@fe.traces()` decorator lets you evaluate production data, catching issues that don't show up in test scenarios.
+
+![Trace Evaluation Pipeline](docs/assets/trace-evaluation-pipeline.svg)
+
+## Why Evaluate Production Traces?
+
+- **Discover edge cases**: Real users ask things you never imagined
+- **Monitor quality drift**: Catch degradation early
+- **Validate fixes**: Confirm improvements work on actual data
+- **Build regression tests**: Turn production failures into test cases
+
+## Basic Usage
+
+```python
+import fasteval as fe
+from fasteval import EvalInput
+
+@fe.correctness(threshold=0.8)
+@fe.hallucination(threshold=0.85)
+@fe.traces()
+def evaluate_production_traces():
+    """Evaluate yesterday's production traces."""
+    traces = fetch_traces_from_database(
+        start_date="yesterday",
+        limit=100
+    )
+    
+    for trace in traces:
+        yield EvalInput(
+            actual_output=trace.response,
+            expected_output=trace.expected_response,  # If available
+            input=trace.user_query,
+            context=trace.retrieved_documents  # For RAG systems
+        )
+```
+
+Run it:
+
+```bash
+pytest test_traces.py -v
+```
+
+## The EvalInput Object
+
+`EvalInput` tells fasteval what to evaluate:
+
+```python
+EvalInput(
+    actual_output: str,           # Required: The LLM's response
+    expected_output: str = None,  # Optional: Ground truth answer
+    input: str = None,            # Optional: User's query
+    context: list[str] = None,    # Optional: Retrieved documents (RAG)
+)
+```
+
+## Practical Examples
+
+### Evaluating RAG Traces
+
+For retrieval-augmented systems, include the retrieved context:
+
+```python
+@fe.faithfulness(threshold=0.85)
+@fe.contextual_precision(threshold=0.7)
+@fe.traces()
+def evaluate_rag_traces():
+    for trace in get_rag_traces():
+        yield EvalInput(
+            actual_output=trace.response,
+            input=trace.query,
+            context=trace.retrieved_docs  # What docs were retrieved?
+        )
+```
+
+### Traces Without Ground Truth
+
+When you don't have expected outputs, use metrics that don't require them:
+
+```python
+@fe.toxicity(threshold=0.95)
+@fe.hallucination(threshold=0.85)
+@fe.relevance(threshold=0.7)
+@fe.traces()
+def evaluate_safety_and_relevance():
+    for trace in get_traces():
+        yield EvalInput(
+            actual_output=trace.response,
+            input=trace.query
+            # No expected_output needed
+        )
+```
+
+### Sampling Strategies
+
+For high-volume systems, sample intelligently:
+
+```python
+@fe.correctness(threshold=0.8)
+@fe.traces()
+def evaluate_sampled_traces():
+    # Random sample
+    traces = db.query("""
+        SELECT * FROM traces 
+        WHERE created_at > NOW() - INTERVAL '1 day'
+        ORDER BY RANDOM()
+        LIMIT 100
+    """)
+    
+    for trace in traces:
+        yield EvalInput(
+            actual_output=trace.response,
+            expected_output=trace.expected,
+            input=trace.query
+        )
+
+@fe.correctness(threshold=0.8)
+@fe.traces()
+def evaluate_edge_cases():
+    """Focus on potentially problematic traces."""
+    traces = db.query("""
+        SELECT * FROM traces 
+        WHERE response_time > 5000  -- Slow responses
+           OR user_rating < 3        -- Poor ratings
+           OR confidence_score < 0.5 -- Low confidence
+        LIMIT 50
+    """)
+    
+    for trace in traces:
+        yield EvalInput(
+            actual_output=trace.response,
+            expected_output=trace.expected,
+            input=trace.query
+        )
+```
+
+### Integration with Observability Platforms
+
+#### LangFuse
+
+```python
+from langfuse import Langfuse
+
+@fe.faithfulness(threshold=0.8)
+@fe.traces()
+def evaluate_langfuse_traces():
+    langfuse = Langfuse()
+    traces = langfuse.get_traces(limit=100)
+    
+    for trace in traces:
+        yield EvalInput(
+            actual_output=trace.output,
+            input=trace.input,
+            context=trace.metadata.get("retrieved_docs")
+        )
+```
+
+#### Custom Logging System
+
+```python
+@fe.correctness(threshold=0.8)
+@fe.traces()
+def evaluate_from_s3():
+    """Load traces from S3 log files."""
+    import boto3
+    import json
+    
+    s3 = boto3.client('s3')
+    response = s3.get_object(Bucket='my-logs', Key='traces/2024-01-15.json')
+    traces = json.loads(response['Body'].read())
+    
+    for trace in traces:
+        yield EvalInput(
+            actual_output=trace['response'],
+            expected_output=trace.get('expected'),
+            input=trace['query']
+        )
+```
+
+## Scheduling Trace Evaluation
+
+### Nightly CI Job
+
+```yaml
+# .github/workflows/nightly-eval.yml
+name: Nightly Trace Evaluation
+
+on:
+  schedule:
+    - cron: '0 2 * * *'  # 2 AM daily
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: pip install -e ".[test]"
+      
+      - name: Run trace evaluation
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: pytest tests/test_traces.py -v --tb=short
+      
+      - name: Alert on failures
+        if: failure()
+        run: |
+          # Send Slack notification, create ticket, etc.
+```
+
+### Creating Regression Tests from Failures
+
+When you find a problematic trace, convert it to a permanent test:
+
+```python
+# test_regressions.py
+
+@fe.correctness(threshold=0.8)
+def test_regression_order_cancellation():
+    """Regression test from trace #12345 - incorrect cancellation info."""
+    query = "How do I cancel my order?"
+    expected = "You can cancel within 24 hours of placing the order."
+    
+    response = my_agent(query)
+    fe.score(response, expected, input=query)
+```
+
+## Best Practices
+
+1. **Sample strategically**: Focus on edge cases and user-flagged issues
+2. **Run regularly**: Nightly or weekly evaluation catches drift early
+3. **Track over time**: Plot scores to visualize quality trends
+4. **Turn failures into tests**: Build a regression suite from production issues
+5. **Use appropriate metrics**: Not all traces have ground truth—choose metrics accordingly

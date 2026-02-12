@@ -1,0 +1,21 @@
+---
+title: Topic Drift
+description: Detect when conversations drift off-topic
+order: 3
+---
+
+# Topic Drift Metric
+
+Detects when the conversation drifts away from the original topic.
+
+## Usage
+
+```python
+import fasteval as fe
+
+@fe.topic_drift(threshold=0.8)
+@fe.conversation([...])
+def test_stays_on_topic(query, expected, history):
+    response = my_agent(query, history=history)
+    fe.score(response, expected, input=query, history=history)
+```

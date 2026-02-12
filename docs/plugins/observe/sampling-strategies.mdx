@@ -1,0 +1,282 @@
+---
+title: Sampling Strategies
+description: Choose the right sampling strategy for your monitoring needs
+order: 4
+sidebar:
+  - title: Overview
+    anchor: overview
+  - title: NoSamplingStrategy
+    anchor: nosamplingstategy
+  - title: FixedRateSamplingStrategy
+    anchor: fixedratesamplingstategy
+  - title: ProbabilisticSamplingStrategy
+    anchor: probabilisticsamplingstategy
+  - title: AdaptiveSamplingStrategy
+    anchor: adaptivesamplingstategy
+  - title: TokenBudgetSamplingStrategy
+    anchor: tokenbudgetsamplingstategy
+  - title: ComposableSamplingStrategy
+    anchor: composablesamplingstategy
+  - title: Choosing a Strategy
+    anchor: choosing-a-strategy
+---
+
+# Sampling Strategies
+
+Sampling strategies determine which agent calls get observed. Choose based on your monitoring goals, latency requirements, and resource constraints.
+
+## Overview
+
+| Strategy | Use Case | Overhead | Deterministic |
+|----------|----------|----------|---------------|
+| NoSampling | Development | High | Yes |
+| FixedRate | Production steady-state | Low | Yes |
+| Probabilistic | Statistical profiling | Low | No |
+| Adaptive | Incident response | Medium | No |
+| TokenBudget | Cost monitoring | Low | No |
+| Composable | Complex scenarios | Varies | Depends |
+
+## NoSamplingStrategy
+
+Sample every call. Use for development, debugging, or critical paths.
+
+```python
+from fasteval_observe import observe
+from fasteval_observe.sampling import NoSamplingStrategy
+
+@observe(sampling=NoSamplingStrategy())
+async def debug_agent(query: str) -> str:
+    return await llm.invoke(query)
+```
+
+**When to use:**
+- Local development
+- Debugging issues
+- Critical paths that must always be monitored
+- Low-traffic functions
+
+**When NOT to use:**
+- High-traffic production endpoints
+- When latency is critical
+
+## FixedRateSamplingStrategy
+
+Sample at a fixed rate using a counter (deterministic).
+
+```python
+from fasteval_observe.sampling import FixedRateSamplingStrategy
+
+# Sample 1 in 100 calls (1%)
+@observe(sampling=FixedRateSamplingStrategy(rate=0.01))
+async def my_agent(query: str) -> str:
+    return await llm.invoke(query)
+
+# Sample 1 in 20 calls (5%)
+@observe(sampling=FixedRateSamplingStrategy(rate=0.05))
+async def higher_rate_agent(query: str) -> str:
+    return await llm.invoke(query)
+```
+
+**Parameters:**
+- `rate` (float): Sampling rate between 0.0 and 1.0
+
+**How it works:**
+- Uses internal counter
+- Samples every Nth call where N = 1/rate
+- Deterministic: same calls are always sampled
+
+**When to use:**
+- Production monitoring
+- Consistent sampling rate needed
+- Predictable resource usage
+
+## ProbabilisticSamplingStrategy
+
+Random probability-based sampling (non-deterministic).
+
+```python
+from fasteval_observe.sampling import ProbabilisticSamplingStrategy
+
+# 5% probability each call
+@observe(sampling=ProbabilisticSamplingStrategy(probability=0.05))
+async def my_agent(query: str) -> str:
+    return await llm.invoke(query)
+
+# Reproducible with seed
+@observe(sampling=ProbabilisticSamplingStrategy(probability=0.1, seed=42))
+async def reproducible_agent(query: str) -> str:
+    return await llm.invoke(query)
+```
+
+**Parameters:**
+- `probability` (float): Probability of sampling each call (0.0-1.0)
+- `seed` (int, optional): Random seed for reproducibility
+
+**When to use:**
+- Statistical profiling
+- A/B testing observability
+- When exact sampling rate doesn't matter
+
+## AdaptiveSamplingStrategy
+
+Dynamically adjust sampling rate based on latency and errors.
+
+```python
+from fasteval_observe.sampling import AdaptiveSamplingStrategy
+
+@observe(sampling=AdaptiveSamplingStrategy(
+    base_rate=0.01,           # 1% baseline
+    error_rate=1.0,           # 100% on errors
+    slow_threshold_ms=2000,   # What counts as "slow"
+    slow_rate=0.5,            # 50% of slow calls
+    window_size=100,          # Look at last 100 calls
+    cooldown_seconds=60.0,    # Stay elevated for 60s after incident
+))
+async def my_agent(query: str) -> str:
+    return await llm.invoke(query)
+```
+
+**Parameters:**
+- `base_rate` (float): Normal operation sampling rate
+- `error_rate` (float): Rate when errors detected (default: 1.0)
+- `slow_threshold_ms` (float): Latency threshold for "slow" calls
+- `slow_rate` (float): Rate for slow calls
+- `window_size` (int): Recent calls to consider
+- `cooldown_seconds` (float): Time before returning to base rate
+
+**How it works:**
+1. Tracks recent latencies and errors
+2. If >10% errors in window → use `error_rate`
+3. If >10% slow calls in window → use `slow_rate`
+4. After incident, stays elevated for `cooldown_seconds`
+5. Otherwise uses `base_rate`
+
+**When to use:**
+- Production with variable load
+- Automatic incident response
+- When you want more data during problems
+
+## TokenBudgetSamplingStrategy
+
+Sample based on token usage and cost.
+
+```python
+from fasteval_observe.sampling import TokenBudgetSamplingStrategy
+
+@observe(sampling=TokenBudgetSamplingStrategy(
+    budget_tokens_per_hour=100000,  # Token budget
+    high_cost_threshold=1000,       # "High cost" = >1000 tokens
+    high_cost_rate=0.5,             # Sample 50% of high-cost
+    base_rate=0.05,                 # Otherwise 5%
+))
+async def my_agent(query: str) -> str:
+    return await llm.invoke(query)
+```
+
+**Parameters:**
+- `budget_tokens_per_hour` (int): Token budget per hour
+- `high_cost_threshold` (int): Token count for "high cost" classification
+- `high_cost_rate` (float): Sampling rate for high-cost calls
+- `base_rate` (float): Base sampling rate
+
+**How it works:**
+1. Tracks hourly token usage from completion callbacks
+2. If call looks high-cost (via context) → use `high_cost_rate`
+3. If approaching budget (>70% used) → increase rate
+4. If critical (>90% used) → 5x base rate
+5. Otherwise use `base_rate`
+
+**When to use:**
+- Cost monitoring and alerting
+- LLM budget tracking
+- Identifying expensive queries
+
+## ComposableSamplingStrategy
+
+Combine multiple strategies with AND/OR logic.
+
+```python
+from fasteval_observe.sampling import (
+    ComposableSamplingStrategy,
+    ProbabilisticSamplingStrategy,
+    AdaptiveSamplingStrategy,
+)
+
+# OR logic: sample if ANY strategy says yes
+@observe(sampling=ComposableSamplingStrategy(
+    strategies=[
+        ProbabilisticSamplingStrategy(probability=0.01),  # 1% random
+        AdaptiveSamplingStrategy(base_rate=0.0, error_rate=1.0),  # All errors
+    ],
+    mode="any"  # OR logic
+))
+async def my_agent(query: str) -> str:
+    return await llm.invoke(query)
+
+# AND logic: sample only if ALL strategies agree
+@observe(sampling=ComposableSamplingStrategy(
+    strategies=[
+        FixedRateSamplingStrategy(rate=0.1),
+        TokenBudgetSamplingStrategy(budget_tokens_per_hour=50000),
+    ],
+    mode="all"  # AND logic
+))
+async def conservative_agent(query: str) -> str:
+    return await llm.invoke(query)
+```
+
+**Parameters:**
+- `strategies` (List[BaseSamplingStrategy]): Strategies to combine
+- `mode` (str): "any" for OR logic, "all" for AND logic
+
+**When to use:**
+- Complex sampling requirements
+- Combining multiple conditions
+- Custom sampling logic without writing code
+
+## Choosing a Strategy
+
+```
+                    ┌─────────────────────────┐
+                    │  What's your use case?  │
+                    └────────────┬────────────┘
+                                 │
+            ┌────────────────────┼────────────────────┐
+            │                    │                    │
+            ▼                    ▼                    ▼
+    ┌───────────────┐    ┌───────────────┐    ┌───────────────┐
+    │  Development  │    │  Production   │    │   Incidents   │
+    │   /Debug      │    │  Monitoring   │    │   /Alerts     │
+    └───────┬───────┘    └───────┬───────┘    └───────┬───────┘
+            │                    │                    │
+            ▼                    │                    ▼
+    ┌───────────────┐            │            ┌───────────────┐
+    │ NoSampling    │            │            │   Adaptive    │
+    │  Strategy     │            │            │   Strategy    │
+    └───────────────┘            │            └───────────────┘
+                                 │
+                    ┌────────────┼────────────┐
+                    │            │            │
+                    ▼            ▼            ▼
+            ┌───────────┐ ┌───────────┐ ┌───────────┐
+            │  Fixed    │ │  Budget   │ │ Multiple  │
+            │  Rate     │ │  Aware    │ │ Conditions│
+            └───────────┘ └───────────┘ └───────────┘
+                    │            │            │
+                    ▼            ▼            ▼
+            ┌───────────┐ ┌───────────┐ ┌───────────┐
+            │ FixedRate │ │TokenBudget│ │Composable │
+            │ Strategy  │ │ Strategy  │ │ Strategy  │
+            └───────────┘ └───────────┘ └───────────┘
+```
+
+### Quick Reference
+
+| Scenario | Recommended Strategy |
+|----------|---------------------|
+| Local development | NoSamplingStrategy |
+| Production monitoring | FixedRateSamplingStrategy(rate=0.01) |
+| Statistical profiling | ProbabilisticSamplingStrategy |
+| Auto-scale on incidents | AdaptiveSamplingStrategy |
+| Cost tracking | TokenBudgetSamplingStrategy |
+| Sample errors + 1% random | ComposableSamplingStrategy(mode="any") |

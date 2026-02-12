@@ -1,0 +1,148 @@
+---
+title: Coherence
+description: Evaluate readability, logical flow, and language quality
+order: 8
+sidebar:
+  - title: Quick Example
+    anchor: quick-example
+  - title: How Scoring Works
+    anchor: how-scoring-works
+  - title: Practical Examples
+    anchor: practical-examples
+  - title: Combining with Other Metrics
+    anchor: combining-with-other-metrics
+---
+
+# Coherence Metric
+
+The coherence metric evaluates the readability and logical flow of responses. It checks whether ideas connect naturally, the structure is well-organized, and the language is clear and grammatically correct.
+
+## Quick Example
+
+```python
+import fasteval as fe
+
+@fe.coherence(threshold=0.8)
+def test_explanation():
+    response = my_llm("Explain how photosynthesis works")
+    fe.score(response)
+```
+
+## Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `threshold` | float | 0.8 | Minimum score to pass (0.0 - 1.0) |
+| `model` | str | None | Override the default LLM model |
+
+## How Scoring Works
+
+The LLM judge evaluates multiple aspects of coherence:
+
+| Score | Interpretation | Example |
+|-------|---------------|---------|
+| **0.9-1.0** | Perfectly coherent | Flawless flow, structure, and clarity |
+| **0.7-0.9** | Very coherent | Well-organized with minor issues |
+| **0.5-0.7** | Moderately coherent | Some flow or clarity problems |
+| **0.0-0.5** | Incoherent | Disjointed, confusing, or unreadable |
+
+### What Gets Evaluated
+
+1. **Logical Flow**: Do ideas connect naturally from one to the next?
+2. **Structure**: Is the response well-organized with clear progression?
+3. **Clarity**: Is the language clear and easy to understand?
+4. **Grammar**: Is the writing grammatically correct?
+5. **Consistency**: Does the response maintain a consistent tone?
+
+## Practical Examples
+
+### Technical Explanations
+
+```python
+@fe.coherence(threshold=0.85)
+def test_technical_clarity():
+    response = my_llm("Explain the difference between REST and GraphQL APIs")
+    fe.score(response)
+```
+
+### Multi-Step Instructions
+
+```python
+@fe.coherence(threshold=0.8)
+def test_instructions():
+    response = my_llm("How do I set up a Python virtual environment?")
+    fe.score(response)
+```
+
+### Long-Form Content
+
+```python
+@fe.coherence(threshold=0.75)
+def test_blog_post():
+    response = my_llm("Write a blog post introduction about AI in healthcare")
+    fe.score(response)
+```
+
+## Example Output
+
+**Passing test:**
+
+```
+test_explanation PASSED
+
+Evaluation Results:
+  ✓ coherence: 0.88 (threshold: 0.80)
+    Reasoning: The response flows logically from introduction to
+    explanation to conclusion. Ideas are well-connected with appropriate
+    transitions. Language is clear and grammatically correct.
+```
+
+**Failing test:**
+
+```
+test_explanation FAILED
+
+Evaluation Results:
+  ✗ coherence: 0.52 (threshold: 0.80)
+    Reasoning: The response jumps between topics without clear transitions.
+    The third paragraph introduces concepts that should have been explained
+    earlier. Some sentences are grammatically awkward.
+```
+
+## Choosing Your Threshold
+
+| Use Case | Suggested Threshold |
+|----------|---------------------|
+| Quick answers | 0.7 - 0.75 |
+| General explanations | 0.75 - 0.8 |
+| Technical documentation | 0.8 - 0.85 |
+| Published content | 0.85+ |
+
+## When to Use Coherence
+
+**Good for:**
+- Educational content
+- Technical explanations
+- Multi-step instructions
+- Any content where readability matters
+
+**Consider alternatives for:**
+- Factual accuracy — use `@fe.correctness()`
+- Completeness of coverage — use `@fe.completeness()`
+- Specific format requirements — use `@fe.instruction_following()`
+
+## Combining with Other Metrics
+
+For comprehensive quality evaluation:
+
+```python
+@fe.coherence(threshold=0.8)      # Is it well-written?
+@fe.correctness(threshold=0.8)    # Is it accurate?
+@fe.completeness(threshold=0.7)   # Does it cover the topic?
+def test_educational_content():
+    question = "Explain machine learning to a beginner"
+    response = my_llm(question)
+    fe.score(response, input=question)
+```
+
+This ensures the response is readable, accurate, and comprehensive.

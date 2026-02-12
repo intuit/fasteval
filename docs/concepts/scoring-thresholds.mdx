@@ -1,0 +1,388 @@
+---
+title: Scoring & Thresholds
+description: Comprehensive guide to understanding scores and setting effective evaluation thresholds
+order: 3
+sidebar:
+  - title: Understanding Scores
+    anchor: understanding-scores
+  - title: Score Distribution
+    anchor: score-distribution-patterns
+  - title: Setting Thresholds
+    anchor: setting-thresholds
+  - title: Calibrating Thresholds
+    anchor: calibrating-thresholds
+  - title: Threshold Strategies
+    anchor: threshold-strategies
+  - title: Common Pitfalls
+    anchor: common-pitfalls
+---
+
+# Scoring & Thresholds
+
+Understanding how evaluation scores work and setting appropriate thresholds is crucial for effective LLM evaluation. Poorly calibrated thresholds lead to either flaky tests that fail unpredictably or permissive tests that miss real quality issues. This guide covers the theory and practice of scoring and threshold selection.
+
+## Understanding Scores
+
+All fasteval metrics return a score between **0.0 and 1.0**, representing a continuous confidence scale for how well the output satisfies the evaluation criteria.
+
+![Scoring Thresholds](docs/assets/scoring-thresholds.svg)
+
+### Score Semantics by Metric
+
+Different metrics interpret the 0.0-1.0 scale according to their evaluation criteria:
+
+| Metric | 0.0-0.3 (Low) | 0.4-0.6 (Mid) | 0.7-1.0 (High) |
+|--------|---------------|---------------|----------------|
+| **correctness** | Factually wrong | Partially correct | Semantically correct |
+| **relevance** | Off-topic, unrelated | Somewhat related | Directly addresses input |
+| **toxicity** | Highly toxic content | Some concerns present | Safe and appropriate |
+| **faithfulness** | Hallucinated content | Partially grounded | Fully grounded in context |
+| **bias** | Clear unfair bias | Some bias detected | Fair and balanced |
+| **coherence** | Incoherent, contradictory | Some logical issues | Logically consistent |
+
+### Interpreting Score Results
+
+fasteval provides detailed score information including reasoning:
+
+```python
+@fe.correctness(threshold=0.8)
+def test_example():
+    response = agent(query)
+    result = fe.score(response, expected)
+    
+    # Access detailed results
+    print(f"Aggregate Score: {result.aggregate_score}")
+    
+    for mr in result.metric_results:
+        print(f"{mr.metric_name}: {mr.score}")
+        print(f"  Threshold: {mr.threshold}")
+        print(f"  Passed: {mr.passed}")
+        print(f"  Reasoning: {mr.reasoning}")
+```
+
+The reasoning field is particularly valuable—it explains why the judge assigned a particular score, helping you understand evaluation failures and improve your system.
+
+### Score Confidence Interpretation
+
+| Score Range | Interpretation | Typical Implication |
+|-------------|----------------|---------------------|
+| **0.95-1.0** | Excellent, near-perfect | Output fully satisfies criteria |
+| **0.85-0.94** | Good, minor issues | Output is acceptable with small improvements possible |
+| **0.70-0.84** | Acceptable | Output meets basic requirements |
+| **0.50-0.69** | Borderline | Significant issues, may not be acceptable |
+| **0.30-0.49** | Poor | Substantial problems, likely unacceptable |
+| **0.00-0.29** | Failure | Does not meet criteria |
+
+## Score Distribution Patterns
+
+In practice, LLM evaluation scores tend to exhibit bimodal distributions rather than uniform spreads. Understanding these patterns helps with threshold selection.
+
+### Typical Distribution
+
+Good outputs and bad outputs tend to cluster at opposite ends of the scale:
+
+- **Good responses**: Typically cluster between 0.80-0.95
+- **Bad responses**: Typically cluster between 0.20-0.50
+- **Gap in the middle**: Makes threshold selection more straightforward
+
+This bimodal pattern occurs because semantic correctness tends to be relatively binary—outputs are either substantially correct or they are not. Minor variations in phrasing affect scores less than fundamental correctness.
+
+### Why This Matters
+
+The gap between good and bad score clusters determines how robust your thresholds can be:
+
+- **Large gap (>0.2)**: Easy to set thresholds that reliably separate good from bad
+- **Small gap (<0.1)**: Thresholds may be fragile; consider improving evaluation criteria or using more capable judge models
+- **Overlapping distributions**: Indicates ambiguous evaluation criteria; refine your prompts or split into multiple metrics
+
+## Setting Thresholds
+
+The threshold determines pass/fail status for a metric. When the score equals or exceeds the threshold, the evaluation passes.
+
+```python
+@fe.correctness(threshold=0.8)  # Pass if score >= 0.8
+def test_qa():
+    ...
+```
+
+### Threshold Guidelines by Use Case
+
+| Use Case | Recommended Threshold | Rationale |
+|----------|----------------------|-----------|
+| **Safety-critical (toxicity, bias)** | 0.95+ | Very low tolerance for harmful content |
+| **Factual accuracy (correctness)** | 0.80 | Must be substantially correct |
+| **RAG grounding (faithfulness)** | 0.85 | Strong fidelity to source material |
+| **General quality (relevance)** | 0.70 | Some flexibility acceptable |
+| **Creative tasks (criteria)** | 0.60 | Subjective, more lenient |
+| **Regression testing** | 0.85 | Catch quality degradation |
+| **Smoke tests** | 0.70 | Quick sanity check |
+
+### Context-Dependent Thresholds
+
+Different parts of your system may warrant different threshold levels:
+
+```python
+# Strict for production-critical paths
+@fe.correctness(threshold=0.9)
+def test_payment_processing():
+    ...
+
+# Lenient for experimental features
+@fe.correctness(threshold=0.7)
+def test_new_feature_prototype():
+    ...
+
+# Very strict for safety
+@fe.toxicity(threshold=0.98)
+def test_user_facing_response():
+    ...
+```
+
+## Calibrating Thresholds
+
+Effective threshold calibration requires empirical measurement rather than guessing. The goal is to find thresholds that maximize separation between acceptable and unacceptable outputs.
+
+### Step 1: Collect Calibration Examples
+
+Create a representative set of known-good and known-bad responses:
+
+```python
+CALIBRATION_SET = [
+    # (response, is_good, rationale)
+    ("Paris is the capital of France.", True, "Correct answer"),
+    ("The capital of France is Paris, located on the Seine.", True, "Correct with context"),
+    ("France is a country in Europe.", False, "Doesn't answer the question"),
+    ("I don't know.", False, "Non-answer"),
+    ("The capital is Lyon.", False, "Incorrect answer"),
+]
+```
+
+Include edge cases and borderline examples that represent the boundary between acceptable and unacceptable.
+
+### Step 2: Score All Examples
+
+Run evaluation without thresholds to collect raw scores:
+
+```python
+import fasteval as fe
+
+def calibrate_threshold():
+    good_scores = []
+    bad_scores = []
+    
+    for response, is_good, rationale in CALIBRATION_SET:
+        # Evaluate without threshold to get raw score
+        result = evaluate_without_threshold(response, "Paris is the capital of France")
+        
+        if is_good:
+            good_scores.append(result.score)
+        else:
+            bad_scores.append(result.score)
+    
+    print(f"Good responses: min={min(good_scores):.2f}, max={max(good_scores):.2f}, avg={sum(good_scores)/len(good_scores):.2f}")
+    print(f"Bad responses: min={min(bad_scores):.2f}, max={max(bad_scores):.2f}, avg={sum(bad_scores)/len(bad_scores):.2f}")
+    
+    # Calculate separation
+    gap = min(good_scores) - max(bad_scores)
+    print(f"Separation gap: {gap:.2f}")
+    
+    # Suggest threshold
+    if gap > 0:
+        suggested = (min(good_scores) + max(bad_scores)) / 2
+        print(f"Suggested threshold: {suggested:.2f}")
+    else:
+        print("WARNING: Score distributions overlap - refine evaluation criteria")
+```
+
+### Step 3: Select Optimal Threshold
+
+Choose a threshold that:
+
+1. **Falls within the gap** between good and bad score distributions
+2. **Includes a safety margin** to account for score variance
+3. **Aligns with your risk tolerance** (stricter = fewer false passes, more false failures)
+
+Example calibration result:
+
+| Good Responses | Scores |
+|----------------|--------|
+| Correct answer | 0.92 |
+| Correct with context | 0.88 |
+
+| Bad Responses | Scores |
+|---------------|--------|
+| Doesn't answer | 0.45 |
+| Non-answer | 0.38 |
+| Incorrect | 0.32 |
+
+- Min good score: 0.88
+- Max bad score: 0.45
+- Gap: 0.43 (excellent separation)
+- Suggested threshold: 0.66 (midpoint)
+- With safety margin: 0.75
+
+### When Thresholds Don't Separate Well
+
+If good and bad scores overlap significantly, consider:
+
+1. **Improve the evaluation prompt**: Add more specific criteria or examples
+2. **Use a more capable judge model**: GPT-4o vs GPT-4o-mini often improves separation
+3. **Add reference context**: More information helps the judge make accurate assessments
+4. **Split into multiple metrics**: Evaluate different aspects separately rather than combining
+
+## Threshold Strategies
+
+### Conservative Strategy (Minimize False Positives)
+
+Use strict thresholds to catch more issues, accepting that some good responses may fail:
+
+```python
+@fe.correctness(threshold=0.9)   # High bar for accuracy
+@fe.toxicity(threshold=0.98)     # Very strict on safety
+```
+
+**Appropriate when:**
+- Safety-critical applications
+- High cost of releasing low-quality outputs
+- Regulatory compliance requirements
+- Production quality gates
+
+### Balanced Strategy (Typical Production)
+
+Trade-off between catching issues and test stability:
+
+```python
+@fe.correctness(threshold=0.8)
+@fe.relevance(threshold=0.7)
+@fe.toxicity(threshold=0.95)
+```
+
+**Appropriate when:**
+- Standard production testing
+- CI/CD integration
+- General quality assurance
+
+### Lenient Strategy (Minimize False Negatives)
+
+Lower thresholds for exploratory testing or when false alarms are costly:
+
+```python
+@fe.correctness(threshold=0.6)   # Allow more variation
+@fe.criteria(threshold=0.5)      # Subjective/creative tasks
+```
+
+**Appropriate when:**
+- Prototyping and exploration
+- Creative generation tasks
+- Early development stages
+- Smoke testing
+
+### Environment-Specific Thresholds
+
+Adjust thresholds based on environment:
+
+```python
+import os
+
+# Stricter in CI, more lenient locally
+THRESHOLD = 0.85 if os.getenv("CI") else 0.75
+
+@fe.correctness(threshold=THRESHOLD)
+def test_qa():
+    ...
+```
+
+This allows faster local iteration while maintaining strict quality gates in CI/CD.
+
+## Common Pitfalls
+
+### Threshold Too High
+
+**Symptom:** Tests fail even for obviously good responses.
+
+```python
+# Problematic: 0.95 is very strict
+@fe.correctness(threshold=0.95)
+def test_qa():
+    response = "The capital of France is Paris."  # Score: 0.88
+    fe.score(response, expected="Paris")  # FAILS despite being correct!
+```
+
+**Causes:**
+- Threshold set without calibration
+- Not accounting for paraphrasing that scores slightly lower
+- Judge model conservatively scores even correct answers
+
+**Solutions:**
+- Lower threshold based on calibration data
+- Review why correct responses score lower than expected
+- Consider if evaluation criteria are too strict
+
+### Threshold Too Low
+
+**Symptom:** Bad responses pass the test.
+
+```python
+# Problematic: 0.5 is too lenient
+@fe.correctness(threshold=0.5)
+def test_qa():
+    response = "France is in Europe."  # Score: 0.55 (wrong answer!)
+    fe.score(response, expected="Paris")  # PASSES despite being wrong!
+```
+
+**Causes:**
+- Threshold set without calibration
+- Attempting to avoid test flakiness by lowering threshold
+- Not understanding the score distribution
+
+**Solutions:**
+- Raise threshold based on calibration with known-bad examples
+- Address test flakiness at the source rather than lowering threshold
+
+### Not Accounting for Variance
+
+LLM judges have inherent score variance. Build in a margin:
+
+```python
+# If good responses typically score 0.82-0.90:
+# - Don't set threshold at 0.82 (minimum good score)
+# - Use 0.78-0.80 to account for variance
+
+@fe.correctness(threshold=0.78)
+```
+
+### Same Threshold for All Metrics
+
+Different metrics have different score distributions:
+
+```python
+# Bad: same threshold for very different metrics
+@fe.correctness(threshold=0.8)
+@fe.toxicity(threshold=0.8)  # Toxicity should be stricter!
+
+# Better: metric-appropriate thresholds
+@fe.correctness(threshold=0.8)
+@fe.toxicity(threshold=0.95)
+```
+
+Safety metrics typically require higher thresholds than accuracy metrics because the cost of false passes (letting harmful content through) is much higher.
+
+### Ignoring the Reasoning
+
+When a test fails, always check the judge's reasoning:
+
+```python
+result = fe.score(response, expected)
+
+if not result.passed:
+    for mr in result.metric_results:
+        if not mr.passed:
+            print(f"Failed: {mr.metric_name}")
+            print(f"Score: {mr.score}, Threshold: {mr.threshold}")
+            print(f"Why: {mr.reasoning}")  # This explains the score!
+```
+
+The reasoning often reveals whether the issue is with:
+- Your agent (needs improvement)
+- Your expected output (too specific or incorrect)
+- Your evaluation criteria (needs refinement)

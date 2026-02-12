@@ -1,0 +1,188 @@
+---
+title: Overview
+description: Production runtime monitoring for LLM applications with fasteval-observe
+order: 1
+sidebar:
+  - title: What is fasteval-observe?
+    anchor: what-is-fasteval-observe
+  - title: The Problem It Solves
+    anchor: the-problem-it-solves
+  - title: Key Features
+    anchor: key-features
+  - title: Architecture
+    anchor: architecture
+  - title: When to Use
+    anchor: when-to-use
+---
+
+# fasteval-observe
+
+Production runtime monitoring for LLM applications with async sampling, structured logging, and seamless integration with fasteval's evaluation metrics.
+
+## What is fasteval-observe?
+
+**fasteval-observe** is an optional plugin that extends fasteval from test-time evaluation into production monitoring. While fasteval excels at CI/CD and development testing, fasteval-observe enables continuous quality monitoring of live LLM applications by sampling production traffic and running evaluations asynchronously.
+
+```bash
+# Install separately from fasteval
+pip install fasteval
+pip install fasteval-observe
+```
+
+```python
+import fasteval as fe
+from fasteval_observe import observe
+from fasteval_observe.sampling import FixedRateSamplingStrategy
+
+# Monitor 5% of production agent calls
+@observe(sampling=FixedRateSamplingStrategy(rate=0.05), run_evaluations=True)
+@fe.correctness(threshold=0.8)
+@fe.toxicity(threshold=0.95)
+async def my_agent(query: str) -> str:
+    response = await llm.invoke(query)
+    return response
+```
+
+## The Problem It Solves
+
+Traditional LLM testing has a fundamental gap: **synthetic test cases cannot anticipate every production scenario**. Real users ask questions, phrase requests, and encounter edge cases that test suites miss.
+
+### The Testing Gap
+
+| Testing Phase | Coverage | Limitations |
+|--------------|----------|-------------|
+| **Unit Tests** | Known scenarios | Cannot anticipate all user inputs |
+| **Integration Tests** | System behavior | Limited to synthetic data |
+| **Staging** | Pre-production validation | Different traffic patterns than production |
+| **Production** | Real user interactions | **No systematic quality evaluation** |
+
+### How fasteval-observe Bridges the Gap
+
+fasteval-observe samples real production traffic and runs the same fasteval metrics you use in testing:
+
+- **Detect regressions** that synthetic tests miss
+- **Discover edge cases** from real user behavior
+- **Track quality trends** over time
+- **Alert on degradation** before users notice
+
+## Key Features
+
+| Feature | Description |
+|---------|-------------|
+| **Async Evaluation** | Non-blocking processing adds less than 1ms to request latency |
+| **Pluggable Sampling** | 6 built-in strategies + custom strategy support |
+| **Structured Logging** | JSON format for Kubernetes sidecars, Fluentd, Datadog, etc. |
+| **Circuit Breaker** | Automatic protection against queue overflow under load |
+| **fasteval Integration** | Run any fasteval metric on sampled production calls |
+| **Context Extraction** | Extract RAG context for faithfulness evaluation |
+
+### Sampling Strategies
+
+Choose the right strategy for your use case:
+
+| Strategy | Description | Best For |
+|----------|-------------|----------|
+| **FixedRateSamplingStrategy** | Sample X% of all calls | Steady-state monitoring |
+| **AdaptiveSamplingStrategy** | Increase sampling on errors/slow calls | Incident detection |
+| **TokenBudgetSamplingStrategy** | Limit evaluation cost per time period | Cost control |
+| **TimeWindowSamplingStrategy** | N samples per time window | Rate-limited APIs |
+| **PrioritySamplingStrategy** | Weight sampling by input characteristics | Critical path focus |
+| **CompositeStrategy** | Combine multiple strategies | Complex requirements |
+
+## Architecture
+
+fasteval-observe uses a fire-and-forget architecture to minimize latency impact on production requests:
+
+### Request Flow
+
+1. **Agent receives request** — Normal function execution begins
+2. **Sampling decision** — Sub-millisecond check determines if this call should be sampled
+3. **Function executes** — Response generated normally, no blocking
+4. **Async enqueue** — If sampled, observation is queued (non-blocking)
+5. **Response returns** — User receives response with minimal added latency
+6. **Background processing** — Worker thread batches and logs observations
+
+### Performance Characteristics
+
+| Operation | Latency Impact |
+|-----------|---------------|
+| Sampling decision | < 0.01ms |
+| Async queue enqueue | < 0.1ms |
+| Total request overhead | < 1ms |
+| Background evaluation | Zero (async) |
+
+### Data Flow
+
+```
+Request → Agent Function → Response
+              ↓ (if sampled)
+        Async Queue (non-blocking)
+              ↓
+     Background Worker Thread
+              ↓
+    Structured JSON Logs
+              ↓
+    External Collectors
+    (Prometheus, Datadog, etc.)
+```
+
+## When to Use
+
+### Use fasteval-observe for
+
+- **Production Monitoring**: Sample real user interactions without impacting latency
+- **Quality Trending**: Track evaluation scores over time to detect degradation
+- **Incident Investigation**: Increase sampling during debugging
+- **Cost Tracking**: Monitor token usage and estimated evaluation costs
+- **Compliance**: Systematic quality assessment for regulatory requirements
+
+### Keep using core fasteval for
+
+- **Test Suites**: pytest-based evaluation in CI/CD
+- **Development**: Local testing with immediate feedback
+- **Batch Evaluation**: Evaluating datasets offline
+- **Human Review**: Interactive evaluation workflows
+
+### Complementary Usage
+
+Most teams use both:
+
+```python
+# Development and CI/CD: Core fasteval
+@fe.correctness(threshold=0.8)
+@fe.toxicity(threshold=0.95)
+def test_my_agent():
+    response = my_agent("test query")
+    fe.score(response, expected)
+
+# Production: fasteval-observe wrapping the same metrics
+@observe(sampling=AdaptiveSamplingStrategy(...), run_evaluations=True)
+@fe.correctness(threshold=0.8)
+@fe.toxicity(threshold=0.95)
+async def production_agent(query: str) -> str:
+    return await llm.invoke(query)
+```
+
+## Package Separation
+
+fasteval-observe is architecturally separate from core fasteval:
+
+| Aspect | Design |
+|--------|--------|
+| **Coupling** | fasteval has zero knowledge of fasteval-observe |
+| **Dependency** | One-way: fasteval-observe imports from fasteval |
+| **Installation** | Optional: Only install if you need runtime monitoring |
+| **Versioning** | Independent: Packages can be updated separately |
+
+This separation ensures:
+
+- Core fasteval remains lightweight for testing
+- Production dependencies do not affect test environments
+- Teams can adopt monitoring incrementally
+- Breaking changes in one package do not affect the other
+
+## Next Steps
+
+- [Quick Start](/docs/plugins/observe/quickstart) — Your first monitored agent
+- [Sampling Strategies](/docs/plugins/observe/sampling-strategies) — Choose the right strategy
+- [Custom Strategies](/docs/plugins/observe/custom-strategies) — Build your own sampling logic

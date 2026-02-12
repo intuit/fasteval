@@ -1,0 +1,516 @@
+---
+title: Sampling Strategies
+description: Reduce evaluation costs with intelligent sampling
+order: 5
+sidebar:
+  - title: The Economics of Evaluation
+    anchor: the-economics-of-evaluation
+  - title: Sampling Fundamentals
+    anchor: sampling-fundamentals
+  - title: Built-in Strategies
+    anchor: built-in-strategies
+  - title: Choosing a Strategy
+    anchor: choosing-a-strategy
+  - title: Custom Strategies
+    anchor: custom-strategies
+  - title: Statistical Considerations
+    anchor: statistical-considerations
+---
+
+# Sampling Strategies
+
+## The Economics of Evaluation
+
+LLM evaluation at scale presents a significant cost challenge. Each evaluation requires calling a judge LLM to assess quality, and these calls accumulate quickly.
+
+### Understanding Evaluation Costs
+
+Consider a typical production scenario:
+
+- **Production volume**: 10,000 traces per day
+- **Metrics per trace**: 3 (correctness, relevance, hallucination)
+- **LLM calls per trace**: 3 judge calls
+- **Daily LLM calls**: 30,000
+- **Cost per call**: ~$0.001 (GPT-4 mini) to ~$0.01 (GPT-4)
+
+At $0.003 per call (a mid-range estimate):
+- **Daily cost**: $90
+- **Monthly cost**: $2,700
+- **Annual cost**: $32,400
+
+This cost makes exhaustive evaluation impractical for most teams.
+
+### The Sampling Solution
+
+Statistical sampling provides a path forward. By evaluating a carefully selected subset of traces, you can achieve reliable quality estimates at a fraction of the cost.
+
+**With 2% random sampling (200 traces/day):**
+- **Daily LLM calls**: 600
+- **Daily cost**: $1.80
+- **Monthly cost**: $54
+- **Annual cost**: $648
+
+**Cost reduction: 98%** while maintaining statistically valid quality measurements.
+
+### When Sampling Makes Sense
+
+Sampling is appropriate when:
+
+- You need ongoing quality monitoring (not one-time evaluation)
+- Production volume exceeds hundreds of traces per day
+- Evaluation budget is constrained
+- You can tolerate some statistical uncertainty
+
+Sampling may not be appropriate when:
+
+- Every trace must be evaluated (regulatory requirements)
+- Volume is already low (< 100 traces/day)
+- You're investigating a specific incident (evaluate all relevant traces)
+
+## Sampling Fundamentals
+
+### How Sampling Works
+
+When you specify a sampling strategy, the evaluation workflow changes:
+
+1. **Fetch**: All traces matching your criteria are retrieved from Langfuse
+2. **Sample**: The sampling strategy selects a subset based on its algorithm
+3. **Evaluate**: Only sampled traces are evaluated with LLM judges
+4. **Report**: Results represent the sampled population
+
+```python
+from fasteval_langfuse import langfuse_traces
+from fasteval_langfuse.sampling import RandomSamplingStrategy
+
+@langfuse_traces(
+    project="production",
+    time_range="last_24h",
+    sampling=RandomSamplingStrategy(sample_size=200)  # Evaluate 200 traces
+)
+def test_sampled(trace_id, input, output, context, metadata):
+    fe.score(output, input=input)
+```
+
+### Sample Size vs. Confidence
+
+Larger samples provide more confidence but cost more. The relationship follows statistical principles:
+
+| Sample Size | Margin of Error (95% confidence) | Relative Cost |
+|-------------|----------------------------------|---------------|
+| 50 | ±14% | Low |
+| 100 | ±10% | Low |
+| 200 | ±7% | Medium |
+| 400 | ±5% | Medium |
+| 1000 | ±3% | High |
+
+For most monitoring purposes, 100–400 samples provide a good balance between confidence and cost.
+
+### Sampling Bias
+
+Not all sampling approaches are created equal. The goal is to select samples that represent the full population. Biased samples lead to misleading quality estimates.
+
+**Example of Bias:**
+
+If you only sample traces from peak hours, you miss overnight interactions that may have different characteristics (international users, automated systems, etc.).
+
+The built-in strategies address common bias concerns, but understanding potential biases helps you choose and configure appropriately.
+
+## Built-in Strategies
+
+The plugin provides five sampling strategies for different use cases.
+
+### RandomSamplingStrategy
+
+Selects traces uniformly at random—every trace has an equal probability of selection.
+
+```python
+from fasteval_langfuse.sampling import RandomSamplingStrategy
+
+@langfuse_traces(
+    project="production",
+    sampling=RandomSamplingStrategy(
+        sample_size=200,    # Number of traces to select
+        seed=42             # Optional: for reproducible sampling
+    )
+)
+def test_random_sample(trace_id, input, output, context, metadata):
+    fe.score(output, input=input)
+```
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `sample_size` | `int` | Number of traces to sample |
+| `seed` | `int` (optional) | Random seed for reproducibility |
+
+**When to Use:**
+
+- General quality monitoring
+- Unbiased quality estimates
+- Baseline measurements
+- When you have no prior information about trace quality
+
+**Characteristics:**
+
+- Unbiased: every trace has equal selection probability
+- Simple to understand and explain
+- No assumptions about trace distribution
+- May under-represent rare categories
+
+### StratifiedSamplingStrategy
+
+Ensures proportional representation across categories by sampling equally from each group.
+
+```python
+from fasteval_langfuse.sampling import StratifiedSamplingStrategy
+
+@langfuse_traces(
+    project="production",
+    sampling=StratifiedSamplingStrategy(
+        strata_key="metadata.user_type",  # Group by user type
+        samples_per_stratum=50,           # 50 samples from each group
+        seed=42
+    )
+)
+def test_stratified(trace_id, input, output, context, metadata):
+    fe.score(output, input=input)
+```
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `strata_key` | `str` | Key to group by (supports dot notation) |
+| `samples_per_stratum` | `int` | Samples from each group |
+| `seed` | `int` (optional) | Random seed |
+
+**When to Use:**
+
+- Ensuring fair quality measurement across user segments
+- Comparing quality between categories
+- When some categories are rare but important
+- Detecting disparate quality by group
+
+**Example Use Cases:**
+
+```python
+# By user segment
+StratifiedSamplingStrategy(strata_key="metadata.user_type", samples_per_stratum=50)
+# Groups: "enterprise", "pro", "free" → 150 total samples
+
+# By query complexity
+StratifiedSamplingStrategy(strata_key="metadata.complexity", samples_per_stratum=30)
+# Groups: "simple", "moderate", "complex" → 90 total samples
+
+# By region
+StratifiedSamplingStrategy(strata_key="metadata.region", samples_per_stratum=40)
+# Groups: "us-east", "us-west", "eu", "asia" → 160 total samples
+```
+
+### ScoreBasedSamplingStrategy
+
+Samples based on existing scores, allowing oversampling of low-quality traces for debugging.
+
+```python
+from fasteval_langfuse.sampling import ScoreBasedSamplingStrategy
+
+@langfuse_traces(
+    project="production",
+    sampling=ScoreBasedSamplingStrategy(
+        score_name="user_rating",      # Existing score in Langfuse
+        low_score_threshold=3.0,       # Scores ≤ 3.0 are "low"
+        low_score_rate=1.0,            # Sample 100% of low scores
+        high_score_rate=0.05,          # Sample 5% of high scores
+        seed=42
+    )
+)
+def test_score_based(trace_id, input, output, context, metadata):
+    fe.score(output, input=input)
+```
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `score_name` | `str` | Name of existing score to filter on |
+| `low_score_threshold` | `float` | Threshold below which scores are "low" |
+| `low_score_rate` | `float` | Sampling rate for low scores (0.0–1.0) |
+| `high_score_rate` | `float` | Sampling rate for high scores (0.0–1.0) |
+| `seed` | `int` (optional) | Random seed |
+
+**When to Use:**
+
+- Debugging quality issues
+- Root cause analysis of failures
+- When user ratings or prior evaluations exist
+- Focusing evaluation budget on problematic traces
+
+**Example Scenarios:**
+
+```python
+# Debug mode: evaluate all failures, sample successes
+ScoreBasedSamplingStrategy(
+    score_name="user_thumbs_up",
+    low_score_threshold=0,       # 0 = thumbs down
+    low_score_rate=1.0,          # All thumbs-down traces
+    high_score_rate=0.1          # 10% of thumbs-up traces
+)
+
+# Quality investigation: focus on borderline cases
+ScoreBasedSamplingStrategy(
+    score_name="fasteval_correctness",
+    low_score_threshold=0.7,
+    low_score_rate=0.8,          # 80% of low scores
+    high_score_rate=0.2          # 20% of high scores
+)
+```
+
+### RecentFirstSamplingStrategy
+
+Prioritizes recent traces using exponential decay weighting.
+
+```python
+from fasteval_langfuse.sampling import RecentFirstSamplingStrategy
+
+@langfuse_traces(
+    project="production",
+    time_range="last_30d",
+    sampling=RecentFirstSamplingStrategy(
+        sample_size=500,
+        decay_factor=0.8,    # Higher = more recent bias
+        seed=42
+    )
+)
+def test_recent_bias(trace_id, input, output, context, metadata):
+    fe.score(output, input=input)
+```
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `sample_size` | `int` | Number of traces to sample |
+| `decay_factor` | `float` | Decay rate (0.0–1.0); higher = more recent bias |
+| `seed` | `int` (optional) | Random seed |
+
+**When to Use:**
+
+- Post-deployment validation (focus on new behavior)
+- Detecting recent quality changes
+- When recent traces are more representative than old ones
+- Combining historical context with current focus
+
+**Understanding Decay Factor:**
+
+The decay factor controls how quickly selection probability decreases for older traces:
+
+| Decay Factor | Behavior |
+|--------------|----------|
+| 0.5 | Strong recent bias; probability halves with each position |
+| 0.8 | Moderate recent bias; good balance |
+| 0.95 | Weak recent bias; nearly uniform |
+
+### NoSamplingStrategy
+
+Evaluates all traces without sampling.
+
+```python
+from fasteval_langfuse.sampling import NoSamplingStrategy
+
+@langfuse_traces(
+    project="production",
+    sampling=NoSamplingStrategy()  # Evaluate everything
+)
+def test_all_traces(trace_id, input, output, context, metadata):
+    fe.score(output, input=input)
+```
+
+**When to Use:**
+
+- Low volume (< 100 traces)
+- Incident investigation (need complete picture)
+- Regulatory requirements (must evaluate all)
+- One-time audits
+
+## Choosing a Strategy
+
+### Decision Framework
+
+| Your Situation | Recommended Strategy |
+|----------------|---------------------|
+| General monitoring, no special requirements | RandomSamplingStrategy |
+| Need quality by user segment | StratifiedSamplingStrategy |
+| Debugging failures, have user ratings | ScoreBasedSamplingStrategy |
+| Focus on recent behavior | RecentFirstSamplingStrategy |
+| Low volume or audit requirement | NoSamplingStrategy |
+
+### Combining Strategies with Filters
+
+Strategies work alongside trace filters. Narrow your population first, then sample:
+
+```python
+@langfuse_traces(
+    project="production",
+    filter_tags=["customer-support"],  # Filter first
+    time_range="last_7d",              # Narrow time window
+    sampling=RandomSamplingStrategy(sample_size=200)  # Then sample
+)
+def test_support_quality(trace_id, input, output, context, metadata):
+    fe.score(output, input=input)
+```
+
+### Multiple Evaluations with Different Strategies
+
+Run parallel evaluations for different purposes:
+
+```python
+# General monitoring: random sample
+@langfuse_traces(
+    project="production",
+    time_range="last_24h",
+    sampling=RandomSamplingStrategy(sample_size=200)
+)
+def test_daily_quality(trace_id, input, output, context, metadata):
+    fe.score(output, input=input)
+
+
+# Failure analysis: oversample low quality
+@langfuse_traces(
+    project="production",
+    time_range="last_24h",
+    sampling=ScoreBasedSamplingStrategy(
+        score_name="user_rating",
+        low_score_threshold=3.0,
+        low_score_rate=1.0,
+        high_score_rate=0.0
+    )
+)
+def test_failures_only(trace_id, input, output, context, metadata):
+    fe.score(output, input=input)
+
+
+# Segment analysis: stratified by user type
+@langfuse_traces(
+    project="production",
+    time_range="last_24h",
+    sampling=StratifiedSamplingStrategy(
+        strata_key="metadata.user_type",
+        samples_per_stratum=50
+    )
+)
+def test_by_segment(trace_id, input, output, context, metadata):
+    fe.score(output, input=input)
+```
+
+## Custom Strategies
+
+For specialized requirements, implement custom sampling logic by extending `BaseSamplingStrategy`.
+
+### Creating a Custom Strategy
+
+```python
+from typing import Any, Dict, List
+from fasteval_langfuse.sampling.base import BaseSamplingStrategy
+
+class TimeOfDaySamplingStrategy(BaseSamplingStrategy):
+    """
+    Sample traces proportionally across hours of the day.
+    
+    Ensures evaluation coverage across all operating hours,
+    catching issues that may only occur at specific times.
+    """
+    
+    def __init__(self, samples_per_hour: int = 10, seed: int = None):
+        self.samples_per_hour = samples_per_hour
+        self.seed = seed
+        self._rng = random.Random(seed)
+    
+    def sample(self, traces: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        # Group traces by hour
+        by_hour: Dict[int, List[Dict[str, Any]]] = {}
+        
+        for trace in traces:
+            timestamp = trace.get("timestamp")
+            if timestamp:
+                hour = parse_hour(timestamp)
+                by_hour.setdefault(hour, []).append(trace)
+        
+        # Sample from each hour
+        sampled = []
+        for hour, hour_traces in by_hour.items():
+            sample_size = min(self.samples_per_hour, len(hour_traces))
+            sampled.extend(self._rng.sample(hour_traces, sample_size))
+        
+        return sampled
+```
+
+### Using Custom Strategies
+
+```python
+@langfuse_traces(
+    project="production",
+    time_range="last_24h",
+    sampling=TimeOfDaySamplingStrategy(samples_per_hour=15)
+)
+def test_hourly_coverage(trace_id, input, output, context, metadata):
+    fe.score(output, input=input)
+```
+
+## Statistical Considerations
+
+### Sample Size Selection
+
+The appropriate sample size depends on:
+
+1. **Population size**: Larger populations need proportionally smaller samples
+2. **Desired confidence**: Higher confidence requires larger samples
+3. **Expected variability**: More variable populations need larger samples
+4. **Acceptable margin of error**: Tighter bounds require larger samples
+
+**Rule of Thumb:**
+
+For monitoring purposes where ±10% margin of error is acceptable:
+- **100–200 samples** for populations up to 10,000
+- **200–400 samples** for larger populations
+
+### Interpreting Sampled Results
+
+When reviewing evaluation results from sampled data:
+
+**Aggregate scores represent estimates**, not exact values. A reported correctness score of 0.85 means the true population score is likely between 0.78–0.92 (with 100 samples at 95% confidence).
+
+**Watch for trends over time**, not single measurements. A score dropping from 0.85 to 0.82 in one run may be sampling noise. A consistent decline over five runs indicates a real problem.
+
+**Consider segment-level results carefully.** If you sample 200 traces but only 20 are from a specific segment, that segment's estimate has high uncertainty.
+
+### Handling Low-Volume Periods
+
+During low-traffic periods, your sample size may exceed available traces:
+
+```python
+# If only 50 traces exist but you request 200, all 50 are evaluated
+sampling=RandomSamplingStrategy(sample_size=200)
+```
+
+The plugin handles this gracefully—it returns all available traces when fewer exist than requested.
+
+### Reproducibility
+
+For reproducible sampling (useful for debugging or comparison):
+
+```python
+# Same seed produces same sample
+sampling=RandomSamplingStrategy(sample_size=200, seed=42)
+```
+
+Note that reproducibility requires:
+- Same seed value
+- Same underlying trace population
+- Same sampling strategy configuration
+
+## Next Steps
+
+- **[Score Reporting](/docs/plugins/langfuse/score-reporting)** — How evaluation scores sync to Langfuse
+- **[Trace Evaluation](/docs/plugins/langfuse/trace-evaluation)** — Combining filters with sampling
+- **[Examples](/docs/plugins/langfuse/examples)** — Production monitoring with sampling
