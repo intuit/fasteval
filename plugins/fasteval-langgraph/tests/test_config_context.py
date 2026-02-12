@@ -22,9 +22,7 @@ class TestDeepMerge:
             {"configurable": {"thread_id": "t1", "model": "gpt-4"}},
             {"configurable": {"model": "gpt-3.5"}},
         )
-        assert result == {
-            "configurable": {"thread_id": "t1", "model": "gpt-3.5"}
-        }
+        assert result == {"configurable": {"thread_id": "t1", "model": "gpt-3.5"}}
 
     def test_none_skipped(self):
         assert deep_merge(None, {"a": 1}, None) == {"a": 1}
@@ -61,9 +59,7 @@ class TestConfigFactory:
         captured_configs = []
 
         def my_config_factory(tid):
-            config = {
-                "configurable": {"thread_id": tid, "custom_key": "factory_val"}
-            }
+            config = {"configurable": {"thread_id": tid, "custom_key": "factory_val"}}
             captured_configs.append(config)
             return config
 

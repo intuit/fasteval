@@ -97,16 +97,18 @@ try:
         VisualGroundingMetric,
     )
 
-    METRIC_REGISTRY.update({
-        "image_understanding": ImageUnderstandingMetric,
-        "ocr_accuracy": OCRAccuracyMetric,
-        "chart_interpretation": ChartInterpretationMetric,
-        "visual_grounding": VisualGroundingMetric,
-        "image_faithfulness": ImageFaithfulnessMetric,
-        "image_quality": ImageQualityMetric,
-        "prompt_adherence": PromptAdherenceMetric,
-        "safety_check": SafetyCheckMetric,
-    })
+    METRIC_REGISTRY.update(
+        {
+            "image_understanding": ImageUnderstandingMetric,
+            "ocr_accuracy": OCRAccuracyMetric,
+            "chart_interpretation": ChartInterpretationMetric,
+            "visual_grounding": VisualGroundingMetric,
+            "image_faithfulness": ImageFaithfulnessMetric,
+            "image_quality": ImageQualityMetric,
+            "prompt_adherence": PromptAdherenceMetric,
+            "safety_check": SafetyCheckMetric,
+        }
+    )
 except ImportError:
     pass  # Vision metrics not available
 
@@ -121,14 +123,16 @@ try:
         WordErrorRateMetric,
     )
 
-    METRIC_REGISTRY.update({
-        "word_error_rate": WordErrorRateMetric,
-        "character_error_rate": CharacterErrorRateMetric,
-        "match_error_rate": MatchErrorRateMetric,
-        "transcription_accuracy": TranscriptionAccuracyMetric,
-        "speaker_diarization": SpeakerDiarizationMetric,
-        "audio_sentiment": AudioSentimentMetric,
-    })
+    METRIC_REGISTRY.update(
+        {
+            "word_error_rate": WordErrorRateMetric,
+            "character_error_rate": CharacterErrorRateMetric,
+            "match_error_rate": MatchErrorRateMetric,
+            "transcription_accuracy": TranscriptionAccuracyMetric,
+            "speaker_diarization": SpeakerDiarizationMetric,
+            "audio_sentiment": AudioSentimentMetric,
+        }
+    )
 except ImportError:
     pass  # Audio metrics not available
 
@@ -144,15 +148,17 @@ try:
         TableExtractionMetric,
     )
 
-    METRIC_REGISTRY.update({
-        "multimodal_faithfulness": MultiModalFaithfulnessMetric,
-        "table_extraction": TableExtractionMetric,
-        "figure_reference": FigureReferenceMetric,
-        "cross_modal_coherence": CrossModalCoherenceMetric,
-        "document_understanding": DocumentUnderstandingMetric,
-        "clip_score": CLIPScoreMetric,
-        "aesthetic_score": AestheticScoreMetric,
-    })
+    METRIC_REGISTRY.update(
+        {
+            "multimodal_faithfulness": MultiModalFaithfulnessMetric,
+            "table_extraction": TableExtractionMetric,
+            "figure_reference": FigureReferenceMetric,
+            "cross_modal_coherence": CrossModalCoherenceMetric,
+            "document_understanding": DocumentUnderstandingMetric,
+            "clip_score": CLIPScoreMetric,
+            "aesthetic_score": AestheticScoreMetric,
+        }
+    )
 except ImportError:
     pass  # Multi-modal metrics not available
 

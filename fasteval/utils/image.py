@@ -102,8 +102,7 @@ def _load_image_from_url(url: str) -> str:
     """Load image from URL and return base64."""
     if not HTTPX_AVAILABLE:
         raise ImportError(
-            "URL image loading requires httpx. "
-            "Install with: pip install httpx"
+            "URL image loading requires httpx. " "Install with: pip install httpx"
         )
 
     response = httpx.get(url, follow_redirects=True, timeout=30.0)

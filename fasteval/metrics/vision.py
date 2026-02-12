@@ -102,10 +102,12 @@ class BaseVisionMetric(BaseLLMMetric):
         # Build message content with images
         content: List[Any] = []
         for img_url in image_urls:
-            content.append({
-                "type": "image_url",
-                "image_url": {"url": img_url},
-            })
+            content.append(
+                {
+                    "type": "image_url",
+                    "image_url": {"url": img_url},
+                }
+            )
         content.append({"type": "text", "text": prompt})
 
         messages = [{"role": "user", "content": content}]
@@ -172,7 +174,9 @@ class ImageUnderstandingMetric(BaseVisionMetric):
     def get_evaluation_prompt(self, eval_input: EvalInput) -> str:
         expected_str = ""
         if eval_input.expected_output:
-            expected_str = f"\n**Expected Response** (reference): {eval_input.expected_output}"
+            expected_str = (
+                f"\n**Expected Response** (reference): {eval_input.expected_output}"
+            )
 
         return f"""You are an expert evaluator assessing vision-language model understanding.
 
@@ -319,7 +323,9 @@ class ChartInterpretationMetric(BaseVisionMetric):
     def get_evaluation_prompt(self, eval_input: EvalInput) -> str:
         expected_str = ""
         if eval_input.expected_output:
-            expected_str = f"\n**Expected Answer** (ground truth): {eval_input.expected_output}"
+            expected_str = (
+                f"\n**Expected Answer** (ground truth): {eval_input.expected_output}"
+            )
 
         return f"""You are an expert evaluator assessing chart and data visualization interpretation.
 

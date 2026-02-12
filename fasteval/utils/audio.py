@@ -119,8 +119,7 @@ def _load_audio_from_url(url: str) -> str:
     """Load audio from URL and return base64."""
     if not HTTPX_AVAILABLE:
         raise ImportError(
-            "URL audio loading requires httpx. "
-            "Install with: pip install httpx"
+            "URL audio loading requires httpx. " "Install with: pip install httpx"
         )
 
     response = httpx.get(url, follow_redirects=True, timeout=60.0)
@@ -235,12 +234,14 @@ def calculate_wer(
     _check_jiwer_deps()
 
     if normalize:
-        transforms = jiwer.Compose([
-            jiwer.ToLowerCase(),
-            jiwer.RemoveMultipleSpaces(),
-            jiwer.RemovePunctuation(),
-            jiwer.Strip(),
-        ])
+        transforms = jiwer.Compose(
+            [
+                jiwer.ToLowerCase(),
+                jiwer.RemoveMultipleSpaces(),
+                jiwer.RemovePunctuation(),
+                jiwer.Strip(),
+            ]
+        )
         return jiwer.wer(
             reference,
             hypothesis,
@@ -280,11 +281,13 @@ def calculate_cer(
     _check_jiwer_deps()
 
     if normalize:
-        transforms = jiwer.Compose([
-            jiwer.ToLowerCase(),
-            jiwer.RemoveMultipleSpaces(),
-            jiwer.Strip(),
-        ])
+        transforms = jiwer.Compose(
+            [
+                jiwer.ToLowerCase(),
+                jiwer.RemoveMultipleSpaces(),
+                jiwer.Strip(),
+            ]
+        )
         return jiwer.cer(
             reference,
             hypothesis,
@@ -317,12 +320,14 @@ def calculate_mer(
     _check_jiwer_deps()
 
     if normalize:
-        transforms = jiwer.Compose([
-            jiwer.ToLowerCase(),
-            jiwer.RemoveMultipleSpaces(),
-            jiwer.RemovePunctuation(),
-            jiwer.Strip(),
-        ])
+        transforms = jiwer.Compose(
+            [
+                jiwer.ToLowerCase(),
+                jiwer.RemoveMultipleSpaces(),
+                jiwer.RemovePunctuation(),
+                jiwer.Strip(),
+            ]
+        )
         return jiwer.mer(
             reference,
             hypothesis,

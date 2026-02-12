@@ -48,7 +48,9 @@ class ContextRetentionMetric(BaseLLMMetric):
 
         expected_str = ""
         if eval_input.expected_output:
-            expected_str = f"\n**Expected Response** (reference): {eval_input.expected_output}"
+            expected_str = (
+                f"\n**Expected Response** (reference): {eval_input.expected_output}"
+            )
 
         return f"""You are an expert evaluator assessing context retention in multi-turn conversations.
 

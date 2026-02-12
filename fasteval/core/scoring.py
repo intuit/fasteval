@@ -61,6 +61,7 @@ def _normalize_generated_image(
         return str(image)
     return image
 
+
 # Context-local storage for the last score result
 # Using ContextVar ensures thread-safety and async-safety
 _last_score_result: ContextVar[Optional[EvalResult]] = ContextVar(

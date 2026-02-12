@@ -223,7 +223,9 @@ class ScoreBasedSamplingStrategy(BaseSamplingStrategy):
 
         # High scores - undersample
         if high_score_traces:
-            high_sample_size = max(1, int(len(high_score_traces) * self.high_score_rate))
+            high_sample_size = max(
+                1, int(len(high_score_traces) * self.high_score_rate)
+            )
             high_sample_size = min(high_sample_size, len(high_score_traces))
             sampled.extend(self._rng.sample(high_score_traces, high_sample_size))
 

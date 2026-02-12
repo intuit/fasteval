@@ -29,9 +29,7 @@ class LangfuseConfig(BaseModel):
         default_factory=lambda: os.getenv("LANGFUSE_SECRET_KEY")
     )
     host: str = Field(
-        default_factory=lambda: os.getenv(
-            "LANGFUSE_HOST", "https://cloud.langfuse.com"
-        )
+        default_factory=lambda: os.getenv("LANGFUSE_HOST", "https://cloud.langfuse.com")
     )
     default_project: Optional[str] = None
     auto_push_scores: bool = True

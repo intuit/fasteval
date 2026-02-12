@@ -1604,9 +1604,7 @@ def clip_score(
             image = dalle.generate("A red sports car")
             fe.score(generated_image=image, input="A red sports car")
     """
-    return _metric_decorator_factory(
-        "clip_score", "clip_score", default_threshold=0.7
-    )(
+    return _metric_decorator_factory("clip_score", "clip_score", default_threshold=0.7)(
         threshold=threshold,
         weight=weight,
         name=name,

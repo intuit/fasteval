@@ -59,9 +59,7 @@ class TestFixedRateSamplingStrategy:
         strategy = FixedRateSamplingStrategy(rate=0.1)  # 1 in 10
 
         # With rate=0.1, every 10th call should be sampled
-        samples = [
-            strategy.should_sample("test_func", (), {}, {}) for _ in range(100)
-        ]
+        samples = [strategy.should_sample("test_func", (), {}, {}) for _ in range(100)]
 
         # Should have sampled exactly 10 times (deterministic)
         assert sum(samples) == 10
@@ -120,9 +118,7 @@ class TestProbabilisticSamplingStrategy:
         """Should sample approximately at the specified probability."""
         strategy = ProbabilisticSamplingStrategy(probability=0.3, seed=42)
 
-        samples = [
-            strategy.should_sample("test_func", (), {}, {}) for _ in range(1000)
-        ]
+        samples = [strategy.should_sample("test_func", (), {}, {}) for _ in range(1000)]
 
         # Should be approximately 30% (with some variance)
         rate = sum(samples) / len(samples)
@@ -141,9 +137,7 @@ class TestAdaptiveSamplingStrategy:
         )
 
         # Sample at base rate
-        samples = [
-            strategy.should_sample("test_func", (), {}, {}) for _ in range(100)
-        ]
+        samples = [strategy.should_sample("test_func", (), {}, {}) for _ in range(100)]
 
         # Should be approximately 50%
         rate = sum(samples) / len(samples)
@@ -162,9 +156,7 @@ class TestAdaptiveSamplingStrategy:
             strategy.on_completion("test", 100, Exception("error"), None)
 
         # After errors, should sample more frequently
-        samples = [
-            strategy.should_sample("test_func", (), {}, {}) for _ in range(10)
-        ]
+        samples = [strategy.should_sample("test_func", (), {}, {}) for _ in range(10)]
 
         # With >10% error rate, should use error_rate (1.0)
         assert sum(samples) >= 5  # Much higher than base rate
@@ -183,9 +175,7 @@ class TestAdaptiveSamplingStrategy:
             strategy.on_completion("test", 200, None, "result")
 
         # After slow calls, should sample more frequently
-        samples = [
-            strategy.should_sample("test_func", (), {}, {}) for _ in range(10)
-        ]
+        samples = [strategy.should_sample("test_func", (), {}, {}) for _ in range(10)]
 
         assert sum(samples) >= 3  # Higher than base rate
 
@@ -213,9 +203,7 @@ class TestTokenBudgetSamplingStrategy:
             base_rate=0.1,
         )
 
-        samples = [
-            strategy.should_sample("test_func", (), {}, {}) for _ in range(100)
-        ]
+        samples = [strategy.should_sample("test_func", (), {}, {}) for _ in range(100)]
 
         # Should be approximately 10%
         rate = sum(samples) / len(samples)
@@ -336,9 +324,18 @@ class TestCustomStrategy:
 
         strategy = MyCustomStrategy(sample_even_only=True)
 
-        results = [
-            strategy.should_sample("test_func", (), {}, {}) for _ in range(10)
-        ]
+        results = [strategy.should_sample("test_func", (), {}, {}) for _ in range(10)]
 
         # Should sample every other call
-        assert results == [False, True, False, True, False, True, False, True, False, True]
+        assert results == [
+            False,
+            True,
+            False,
+            True,
+            False,
+            True,
+            False,
+            True,
+            False,
+            True,
+        ]

@@ -246,9 +246,13 @@ class HallucinationMetric(BaseLLMMetric):
     def get_evaluation_prompt(self, eval_input: EvalInput) -> str:
         context_str = ""
         if eval_input.context:
-            context_str = "\n".join(f"[{i+1}] {c}" for i, c in enumerate(eval_input.context))
+            context_str = "\n".join(
+                f"[{i+1}] {c}" for i, c in enumerate(eval_input.context)
+            )
         elif eval_input.retrieval_context:
-            context_str = "\n".join(f"[{i+1}] {c}" for i, c in enumerate(eval_input.retrieval_context))
+            context_str = "\n".join(
+                f"[{i+1}] {c}" for i, c in enumerate(eval_input.retrieval_context)
+            )
 
         return f"""You are an expert fact-checker specialized in detecting hallucinations in AI-generated text.
 
@@ -409,7 +413,9 @@ Step 5: Weigh the evidence and determine an appropriate score"""
 
         expected_str = ""
         if eval_input.expected_output:
-            expected_str = f"\n**Expected Output** (reference): {eval_input.expected_output}"
+            expected_str = (
+                f"\n**Expected Output** (reference): {eval_input.expected_output}"
+            )
 
         return f"""You are an expert evaluator using the G-Eval methodology for custom criteria assessment.
 
@@ -941,9 +947,12 @@ class AnswerCorrectnessMetric(BaseLLMMetric):
         context_str = ""
         context = eval_input.context or eval_input.retrieval_context
         if context:
-            context_str = f"\n**Reference Context** (optional verification source):\n" + "\n".join(
-                f"- {doc[:300]}..." if len(doc) > 300 else f"- {doc}"
-                for doc in context[:3]
+            context_str = (
+                f"\n**Reference Context** (optional verification source):\n"
+                + "\n".join(
+                    f"- {doc[:300]}..." if len(doc) > 300 else f"- {doc}"
+                    for doc in context[:3]
+                )
             )
 
         return f"""You are an expert evaluator assessing answer correctness against ground truth.
@@ -1383,7 +1392,8 @@ Response: {eval_input.actual_output}
 Provide: {{"score": 1.0, "reasoning": "No instructions to evaluate against"}}"""
 
         instructions_str = "\n".join(
-            f"**Instruction {i+1}**: {instruction}" for i, instruction in enumerate(self.instructions)
+            f"**Instruction {i+1}**: {instruction}"
+            for i, instruction in enumerate(self.instructions)
         )
 
         return f"""You are an expert evaluator assessing instruction-following compliance.

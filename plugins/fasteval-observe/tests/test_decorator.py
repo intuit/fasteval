@@ -226,6 +226,7 @@ class TestFastevalIntegration:
     @pytest.mark.asyncio
     async def test_preserves_fasteval_attributes(self):
         """Should preserve _fasteval_metrics attribute."""
+
         # Simulate fasteval decorator by adding attribute
         def mock_fasteval_decorator(func):
             func._fasteval_metrics = [{"type": "correctness", "threshold": 0.8}]
@@ -377,9 +378,7 @@ class TestContextFnExtraction:
         async def func(query: str, results: list[dict]):
             return "result"
 
-        result = await func(
-            "query", results=[{"text": "doc1"}, {"text": "doc2"}]
-        )
+        result = await func("query", results=[{"text": "doc1"}, {"text": "doc2"}])
         assert result == "result"
 
     @pytest.mark.asyncio

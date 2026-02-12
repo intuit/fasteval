@@ -240,9 +240,7 @@ class GraphHarness:
         if input_fn is not None:
             self._input_fn = input_fn
         elif self._has_messages:
-            self._input_fn = lambda msg: {
-                "messages": [HumanMessage(content=msg)]
-            }
+            self._input_fn = lambda msg: {"messages": [HumanMessage(content=msg)]}
         else:
             self._input_fn = lambda msg: {"input": msg}
 
@@ -443,9 +441,7 @@ class GraphHarness:
         call_context: dict[str, Any] | None = None,
     ) -> dict[str, Any] | None:
         """Build effective context by deep-merging layers."""
-        factory_context = (
-            self._context_factory() if self._context_factory else None
-        )
+        factory_context = self._context_factory() if self._context_factory else None
         # If all layers are None, return None
         if factory_context is None and session_context is None and call_context is None:
             return None
@@ -510,7 +506,9 @@ class GraphHarness:
 
         # Get final state
         final_state = await self._graph.aget_state(config)
-        raw_state = dict(final_state.values) if final_state and final_state.values else {}
+        raw_state = (
+            dict(final_state.values) if final_state and final_state.values else {}
+        )
 
         # Extract response and filtered state
         response = self._output_fn(raw_state)

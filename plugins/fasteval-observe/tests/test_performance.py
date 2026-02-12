@@ -56,6 +56,7 @@ class TestDecoratorOverhead:
 
         This is the critical path - most calls won't be sampled.
         """
+
         # Use 0% sampling rate - never samples
         @observe(sampling=FixedRateSamplingStrategy(rate=0.0))
         async def fast_func():
@@ -101,6 +102,7 @@ class TestDecoratorOverhead:
 
         The actual observation is enqueued asynchronously.
         """
+
         # Use 100% sampling rate
         @observe(sampling=NoSamplingStrategy())
         async def observed_func():

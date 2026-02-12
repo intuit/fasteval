@@ -23,7 +23,7 @@ def test_new_agent_version(input, expected_output):
 def test_with_metadata(input, expected_output, difficulty, category):
     """
     Test using custom metadata fields from dataset.
-    
+
     Dataset items have metadata like:
     {
         "difficulty": "hard",
@@ -31,10 +31,10 @@ def test_with_metadata(input, expected_output, difficulty, category):
     }
     """
     response = my_new_agent_v2(input)
-    
+
     # Can use metadata in evaluation logic
     print(f"Testing {category} question with difficulty: {difficulty}")
-    
+
     fe.score(response, expected_output, input=input)
 
 
@@ -44,7 +44,7 @@ def test_with_metadata(input, expected_output, difficulty, category):
 def test_minimal(input):
     """Test when dataset only has inputs, no expected outputs."""
     response = my_new_agent_v2(input)
-    
+
     # Evaluate without expected output (judge-only metrics)
     fe.score(response, input=input)
 

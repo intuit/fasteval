@@ -100,11 +100,7 @@ def mock(node_name: str) -> NodeMock:
 
 def _user_node_names(compiled_graph: Any) -> set[str]:
     """Return the set of user-defined node names (excluding internal nodes)."""
-    return {
-        k
-        for k in compiled_graph.nodes.keys()
-        if not k.startswith("__")
-    }
+    return {k for k in compiled_graph.nodes.keys() if not k.startswith("__")}
 
 
 def apply_mocks(
@@ -134,8 +130,7 @@ def apply_mocks(
         original_bound = pregel_node.bound
         original_step0 = (
             pregel_node.node.steps[0]
-            if hasattr(pregel_node, "node")
-            and hasattr(pregel_node.node, "steps")
+            if hasattr(pregel_node, "node") and hasattr(pregel_node.node, "steps")
             else None
         )
         originals[m.node_name] = (original_bound, original_step0)

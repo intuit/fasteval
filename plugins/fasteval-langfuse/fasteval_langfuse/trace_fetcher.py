@@ -76,9 +76,7 @@ class TraceFetcher:
 
         return sampled_traces, total_count
 
-    def map_trace_to_params(
-        self, trace: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def map_trace_to_params(self, trace: Dict[str, Any]) -> Dict[str, Any]:
         """
         Map Langfuse trace to test function parameters.
 

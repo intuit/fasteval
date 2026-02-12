@@ -42,7 +42,6 @@ from fasteval.metrics.conversation import (
 )
 from fasteval.models.evaluation import EvalInput
 
-
 # =============================================================================
 # PROMPT STRUCTURE TESTS
 # =============================================================================
@@ -95,9 +94,9 @@ class TestPromptStructure:
         """Verify all prompts have a clear TASK section."""
         for metric in all_metrics:
             prompt = metric.get_evaluation_prompt(sample_eval_input)
-            assert "## TASK" in prompt or "TASK" in prompt.upper(), (
-                f"{metric.name} prompt missing TASK section"
-            )
+            assert (
+                "## TASK" in prompt or "TASK" in prompt.upper()
+            ), f"{metric.name} prompt missing TASK section"
 
     def test_prompts_have_scoring_rubric(
         self, all_metrics: List[Any], sample_eval_input: EvalInput
@@ -130,7 +129,7 @@ class TestPromptStructure:
                 "JSON" in prompt
                 or "json" in prompt.lower()
                 or '{"score"' in prompt
-                or "{\"score\"" in prompt
+                or '{"score"' in prompt
             )
             assert has_json_spec, f"{metric.name} prompt missing JSON output format"
 
@@ -153,9 +152,7 @@ class TestPromptStructure:
                 or "Instructions:" in prompt
                 or "Relevance Criteria" in prompt  # Specific to precision
             )
-            assert has_dimensions, (
-                f"{metric.name} prompt missing evaluation dimensions"
-            )
+            assert has_dimensions, f"{metric.name} prompt missing evaluation dimensions"
 
     def test_prompts_have_evaluation_steps(
         self, all_metrics: List[Any], sample_eval_input: EvalInput
@@ -179,9 +176,9 @@ class TestPromptStructure:
                     or "## EVALUATION STEPS" in prompt
                     or "EVALUATION METHOD" in prompt
                 )
-                assert has_steps, (
-                    f"{metric.name} prompt missing chain-of-thought evaluation steps"
-                )
+                assert (
+                    has_steps
+                ), f"{metric.name} prompt missing chain-of-thought evaluation steps"
 
 
 # =============================================================================
@@ -238,9 +235,7 @@ class TestHallucinationMetric:
     def test_prompt_includes_nli_verification(self) -> None:
         """Verify prompt includes NLI-style verification."""
         metric = HallucinationMetric()
-        eval_input = EvalInput(
-            input="Test", actual_output="Test", context=["Context"]
-        )
+        eval_input = EvalInput(input="Test", actual_output="Test", context=["Context"])
         prompt = metric.get_evaluation_prompt(eval_input)
 
         # Should have entailment-style verdicts
@@ -286,9 +281,7 @@ class TestToxicityMetric:
     def test_prompt_includes_all_toxicity_categories(self) -> None:
         """Verify prompt checks all major toxicity categories."""
         metric = ToxicityMetric()
-        eval_input = EvalInput(
-            input="Test", actual_output="Test response"
-        )
+        eval_input = EvalInput(input="Test", actual_output="Test response")
         prompt = metric.get_evaluation_prompt(eval_input)
 
         categories = [
@@ -300,9 +293,9 @@ class TestToxicityMetric:
         ]
 
         for category in categories:
-            assert category in prompt or category.lower() in prompt.lower(), (
-                f"Toxicity prompt missing category: {category}"
-            )
+            assert (
+                category in prompt or category.lower() in prompt.lower()
+            ), f"Toxicity prompt missing category: {category}"
 
     def test_prompt_includes_severity_levels(self) -> None:
         """Verify prompt includes severity assessment."""
@@ -332,9 +325,9 @@ class TestBiasMetric:
         ]
 
         for category in categories:
-            assert category in prompt or category.lower() in prompt.lower(), (
-                f"Bias prompt missing category: {category}"
-            )
+            assert (
+                category in prompt or category.lower() in prompt.lower()
+            ), f"Bias prompt missing category: {category}"
 
     def test_prompt_distinguishes_explicit_implicit_bias(self) -> None:
         """Verify prompt distinguishes between explicit and implicit bias."""
@@ -544,9 +537,9 @@ def test_all_prompts_under_token_limit() -> None:
         # Rough estimate: 1 token ≈ 4 characters
         estimated_tokens = len(prompt) / 4
         # Prompts should be under 2000 tokens to leave room for response
-        assert estimated_tokens < 2000, (
-            f"{metric.name} prompt too long: ~{estimated_tokens:.0f} tokens"
-        )
+        assert (
+            estimated_tokens < 2000
+        ), f"{metric.name} prompt too long: ~{estimated_tokens:.0f} tokens"
 
 
 def test_no_deprecated_score_descriptions() -> None:
@@ -571,9 +564,9 @@ def test_no_deprecated_score_descriptions() -> None:
         prompt = metric.get_evaluation_prompt(sample_input).lower()
         for phrase in deprecated_phrases:
             # These vague phrases should be replaced with detailed rubrics
-            assert phrase not in prompt or "rubric" in prompt, (
-                f"{metric.name} uses deprecated phrase: '{phrase}'"
-            )
+            assert (
+                phrase not in prompt or "rubric" in prompt
+            ), f"{metric.name} uses deprecated phrase: '{phrase}'"
 
 
 if __name__ == "__main__":

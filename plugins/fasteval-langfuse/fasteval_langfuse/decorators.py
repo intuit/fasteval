@@ -103,7 +103,9 @@ def langfuse_traces(
 
         # Preserve fasteval metrics
         if hasattr(func, FASTEVAL_METRICS_ATTR):
-            setattr(wrapper, FASTEVAL_METRICS_ATTR, getattr(func, FASTEVAL_METRICS_ATTR))
+            setattr(
+                wrapper, FASTEVAL_METRICS_ATTR, getattr(func, FASTEVAL_METRICS_ATTR)
+            )
 
         # Mark as data-decorated
         setattr(
@@ -222,7 +224,7 @@ def langfuse_dataset(
             # user_type and complexity come from item.metadata
             response = my_agent(input)
             fe.score(response, expected_output, input=input)
-            
+
         # Only what you need
         @fe.correctness(threshold=0.8)
         @langfuse_dataset(name="qa-golden-set")
@@ -261,7 +263,9 @@ def langfuse_dataset(
 
         # Preserve fasteval metrics
         if hasattr(func, FASTEVAL_METRICS_ATTR):
-            setattr(wrapper, FASTEVAL_METRICS_ATTR, getattr(func, FASTEVAL_METRICS_ATTR))
+            setattr(
+                wrapper, FASTEVAL_METRICS_ATTR, getattr(func, FASTEVAL_METRICS_ATTR)
+            )
 
         # Mark as data-decorated
         setattr(
@@ -297,7 +301,7 @@ def _execute_dataset_evaluation(
         # Extract all available fields from dataset item
         # Pass all columns as kwargs - user declares what they need
         params = {}
-        
+
         # Add standard Langfuse dataset fields if present
         if "input" in item:
             params["input"] = item["input"]
@@ -305,7 +309,7 @@ def _execute_dataset_evaluation(
             params["expected_output"] = item["expected_output"]
         if "id" in item:
             params["item_id"] = item["id"]
-        
+
         # Flatten metadata into top-level kwargs
         metadata = item.get("metadata", {})
         if metadata:

@@ -105,9 +105,9 @@ class TestMockWithDynamicFn:
     async def test_fn_handler(self, router_graph):
         graph = harness(router_graph)
         with graph.mocked(
-            mock("rag").fn(
-                lambda state: {"docs": [f"dynamic for {state.get('intent', '?')}"]}
-            ).goto("responder"),
+            mock("rag")
+            .fn(lambda state: {"docs": [f"dynamic for {state.get('intent', '?')}"]})
+            .goto("responder"),
         ):
             result = await graph.chat("What is OAuth?")
             docs = result.state.get("docs", [])

@@ -19,9 +19,9 @@ def reset_all():
     """Reset config and logger before each test."""
     import sys
     from fasteval_observe import logger as logger_module
-    
+
     reset_config()
-    
+
     # Reset logger to default
     logger_module._logger = logging.getLogger("fasteval_observe")
     logger_module._logger.handlers.clear()
@@ -30,9 +30,9 @@ def reset_all():
     logger_module._logger.addHandler(_handler)
     logger_module._logger.setLevel(logging.INFO)
     logger_module._logger.propagate = True  # Allow caplog to capture
-    
+
     yield
-    
+
     reset_config()
 
 
@@ -215,7 +215,7 @@ class TestCustomLoggerIntegration:
         # File should have the log
         file_content = log_file.read_text()
         assert "multi_func" in file_content
-        
+
         # Verify it's valid JSON
         data = json.loads(file_content.strip())
         assert data["function_name"] == "multi_func"

@@ -125,7 +125,9 @@ async def _run_fasteval_evaluations(
     result: Any,
     args: tuple,
     kwargs: dict,
-    context_fn: Optional[Callable[[tuple, dict], Optional[Union[str, List[str]]]]] = None,
+    context_fn: Optional[
+        Callable[[tuple, dict], Optional[Union[str, List[str]]]]
+    ] = None,
 ) -> Optional[EvaluationMetrics]:
     """
     Run fasteval evaluations if the function has @fe.* decorators.
@@ -222,7 +224,9 @@ def observe(
     metadata: Optional[Dict[str, Any]] = None,
     log_inputs: Optional[bool] = None,
     log_outputs: Optional[bool] = None,
-    context_fn: Optional[Callable[[tuple, dict], Optional[Union[str, List[str]]]]] = None,
+    context_fn: Optional[
+        Callable[[tuple, dict], Optional[Union[str, List[str]]]]
+    ] = None,
 ) -> Callable[[F], F]:
     """
     Decorator for runtime monitoring of agent functions.
@@ -321,7 +325,9 @@ def observe(
 
         # Preserve fasteval decorators
         if hasattr(func, FASTEVAL_METRICS_ATTR):
-            setattr(wrapper, FASTEVAL_METRICS_ATTR, getattr(func, FASTEVAL_METRICS_ATTR))
+            setattr(
+                wrapper, FASTEVAL_METRICS_ATTR, getattr(func, FASTEVAL_METRICS_ATTR)
+            )
 
         return wrapper  # type: ignore
 
@@ -338,7 +344,9 @@ async def _execute_with_observation(
     log_inputs: Optional[bool],
     log_outputs: Optional[bool],
     is_async: bool,
-    context_fn: Optional[Callable[[tuple, dict], Optional[Union[str, List[str]]]]] = None,
+    context_fn: Optional[
+        Callable[[tuple, dict], Optional[Union[str, List[str]]]]
+    ] = None,
 ) -> Any:
     """Execute function with observation tracking."""
     config = get_config()

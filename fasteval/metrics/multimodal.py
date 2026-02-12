@@ -398,7 +398,9 @@ class DocumentUnderstandingMetric(BaseVisionMetric):
     def get_evaluation_prompt(self, eval_input: EvalInput) -> str:
         expected_str = ""
         if eval_input.expected_output:
-            expected_str = f"\n**Expected Answer** (ground truth): {eval_input.expected_output}"
+            expected_str = (
+                f"\n**Expected Answer** (ground truth): {eval_input.expected_output}"
+            )
 
         return f"""You are an expert evaluator assessing document AI understanding capabilities.
 
