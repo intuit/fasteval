@@ -55,9 +55,7 @@ BUMP_TYPES = ("major", "minor", "patch", "alpha", "beta", "rc", "dev", "stable")
 # Version parsing / formatting
 # ---------------------------------------------------------------------------
 
-_VERSION_RE = re.compile(
-    r"^(\d+)\.(\d+)\.(\d+)(?:(a|b|rc)(\d+))?(?:\.dev(\d+))?$"
-)
+_VERSION_RE = re.compile(r"^(\d+)\.(\d+)\.(\d+)(?:(a|b|rc)(\d+))?(?:\.dev(\d+))?$")
 
 
 @dataclass
