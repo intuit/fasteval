@@ -4,7 +4,7 @@
 Usage:
     python scripts/bump_version.py --package core --bump alpha
     python scripts/bump_version.py --package langfuse --bump minor
-    python scripts/bump_version.py --package core --bump dev --pr-number 42
+    python scripts/bump_version.py --package core --bump dev --dev-number 137
 
 Outputs GitHub Actions step outputs to stdout (append to $GITHUB_OUTPUT):
     version=1.0.0a2
@@ -99,7 +99,7 @@ class Version:
 # ---------------------------------------------------------------------------
 
 
-def bump(current: Version, bump_type: str, *, pr_number: int | None = None) -> Version:
+def bump(current: Version, bump_type: str, *, dev_number: int | None = None) -> Version:
     """Return the next version after applying *bump_type* to *current*."""
     maj, min_, pat = current.major, current.minor, current.patch
 
@@ -144,12 +144,12 @@ def bump(current: Version, bump_type: str, *, pr_number: int | None = None) -> V
         return Version(maj, min_ + 1, 0, "rc", 1)
 
     if bump_type == "dev":
-        if pr_number is None:
-            raise ValueError("--pr-number is required for dev bumps")
-        # Dev version: next minor with .devN where N = PR number
+        if dev_number is None:
+            raise ValueError("--dev-number is required for dev bumps")
+        # Dev version: next minor with .devN where N is the provided number
         if current.is_prerelease:
-            return Version(maj, min_ + 1, 0, dev_num=pr_number)
-        return Version(maj, min_ + 1, 0, dev_num=pr_number)
+            return Version(maj, min_ + 1, 0, dev_num=dev_number)
+        return Version(maj, min_ + 1, 0, dev_num=dev_number)
 
     if bump_type == "stable":
         if not current.is_prerelease:
@@ -212,10 +212,10 @@ def main() -> None:
         help="Bump type to apply.",
     )
     parser.add_argument(
-        "--pr-number",
+        "--dev-number",
         type=int,
         default=None,
-        help="PR number (required for dev bumps).",
+        help="Integer for .devN suffix (required for dev bumps). Typically github.run_number.",
     )
     args = parser.parse_args()
 
@@ -232,7 +232,7 @@ def main() -> None:
         source = pkg["pyproject_path"]
 
     current = Version.parse(current_str)
-    next_ver = bump(current, args.bump, pr_number=args.pr_number)
+    next_ver = bump(current, args.bump, dev_number=args.dev_number)
     tag_name = f"{prefix}{next_ver}"
 
     # Log to stderr (visible in CI logs but not in $GITHUB_OUTPUT)

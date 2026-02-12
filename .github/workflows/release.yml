@@ -57,10 +57,65 @@ jobs:
             if (!coreBump && plugins.length === 0) core.info('No release labels found.');
 
   # -----------------------------------------------------------------------
-  # Job 2: Release core (runs before plugins)
+  # Job 2: Lint core
+  # -----------------------------------------------------------------------
+  lint-core:
+    needs: detect
+    if: needs.detect.outputs.has_core == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Set up Python
+        run: uv python install 3.13
+
+      - name: Install dependencies
+        run: uv sync --all-extras --group dev --group test
+
+      - name: Check formatting (black)
+        run: uv run black --check --diff .
+
+      - name: Check import sorting (isort)
+        run: uv run isort --check-only --diff .
+
+      - name: Type checking (mypy)
+        run: uv run mypy .
+
+  # -----------------------------------------------------------------------
+  # Job 3: Test core
+  # -----------------------------------------------------------------------
+  test-core:
+    needs: detect
+    if: needs.detect.outputs.has_core == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Set up Python
+        run: uv python install 3.13
+
+      - name: Install dependencies
+        run: uv sync --all-extras --group test
+
+      - name: Run tests
+        run: |
+          uv run pytest tests/ \
+            --color=yes \
+            --cov=fasteval \
+            --cov-report=term \
+            -v
+
+  # -----------------------------------------------------------------------
+  # Job 4: Release core (after lint + test pass)
   # -----------------------------------------------------------------------
   release-core:
-    needs: detect
+    needs: [detect, lint-core, test-core]
     if: needs.detect.outputs.has_core == 'true'
     runs-on: ubuntu-latest
     environment: pypi
@@ -105,14 +160,49 @@ jobs:
           git push origin "${{ steps.version.outputs.tag }}"
 
   # -----------------------------------------------------------------------
-  # Job 3: Release plugins (after core, matrix over detected plugins)
+  # Job 5: Test plugins (after core is released, so deps resolve)
   # -----------------------------------------------------------------------
-  release-plugins:
+  test-plugins:
     needs: [detect, release-core]
     if: |
       always() &&
       needs.detect.result == 'success' &&
       (needs.release-core.result == 'success' || needs.release-core.result == 'skipped') &&
+      needs.detect.outputs.has_plugins == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix: ${{ fromJson(needs.detect.outputs.plugin_matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Set up Python
+        run: uv python install 3.13
+
+      - name: Install core package
+        run: uv sync --all-extras
+
+      - name: Install plugin dependencies
+        working-directory: plugins/fasteval-${{ matrix.package }}
+        run: uv sync --all-extras --group dev
+
+      - name: Run plugin tests
+        working-directory: plugins/fasteval-${{ matrix.package }}
+        run: uv run pytest tests/ -v --color=yes
+
+  # -----------------------------------------------------------------------
+  # Job 6: Release plugins (after plugin tests pass)
+  # -----------------------------------------------------------------------
+  release-plugins:
+    needs: [detect, release-core, test-plugins]
+    if: |
+      always() &&
+      needs.detect.result == 'success' &&
+      (needs.release-core.result == 'success' || needs.release-core.result == 'skipped') &&
+      needs.test-plugins.result == 'success' &&
       needs.detect.outputs.has_plugins == 'true'
     runs-on: ubuntu-latest
     environment: pypi
