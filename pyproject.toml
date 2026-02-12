@@ -20,14 +20,6 @@ classifiers = [
     "Topic :: Software Development :: Testing",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
-
-[project.urls]
-Homepage = "https://github.com/intuit/fasteval"
-Repository = "https://github.com/intuit/fasteval"
-Documentation = "https://github.com/intuit/fasteval/tree/main/docs"
-Issues = "https://github.com/intuit/fasteval/issues"
-Changelog = "https://github.com/intuit/fasteval/blob/main/CHANGELOG.md"
-
 # https://docs.astral.sh/uv/concepts/projects/dependencies/
 dependencies = [
     "openai>=1.0",
@@ -35,6 +27,13 @@ dependencies = [
     "rouge-score>=0.1",
     "pytest>=8.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/intuit/fasteval"
+Repository = "https://github.com/intuit/fasteval"
+Documentation = "https://github.com/intuit/fasteval/tree/main/docs"
+Issues = "https://github.com/intuit/fasteval/issues"
+Changelog = "https://github.com/intuit/fasteval/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 anthropic = ["anthropic>=0.30"]
@@ -92,7 +91,7 @@ test = [
 [tool.uv.build-backend]
 module-name = "fasteval"
 module-root = ""
-exclude = [
+source-exclude = [
     "plugins/**",
     "docs/**"
 ]  # Exclude plugin packages from fasteval build
@@ -114,5 +113,5 @@ addopts = "-p no:warnings -o log_cli=true --log-cli-level=INFO"
 asyncio_mode = "auto"
 
 [build-system]
-requires = ["uv_build>=0.9.3,<0.10.0"]
+requires = ["uv_build>=0.10.0,<0.11.0"]
 build-backend = "uv_build"
