@@ -141,7 +141,9 @@ class TestObservationQueue:
 
     def test_worker_flushes_batch(self):
         """Worker should flush batches to callback."""
-        callback = MagicMock()
+        flush_event = threading.Event()
+        callback = MagicMock(side_effect=lambda batch: flush_event.set())
+
         queue = get_observation_queue()
         queue.set_flush_callback(callback)
         queue.start_worker()
@@ -150,8 +152,9 @@ class TestObservationQueue:
         for _ in range(5):
             queue.enqueue(self.create_observation())
 
-        # Wait for flush
-        time.sleep(0.5)
+        # Wait for flush event (up to 10s to cover default flush interval)
+        flushed = flush_event.wait(timeout=10.0)
+        assert flushed, "Flush callback was not called within timeout"
 
         # Should have been flushed
         assert callback.called

@@ -149,6 +149,7 @@ class TestAdaptiveSamplingStrategy:
             base_rate=0.01,
             error_rate=1.0,
             window_size=10,
+            cooldown_seconds=0,  # Disable cooldown so error rate logic is reached
         )
 
         # Simulate errors
@@ -158,8 +159,8 @@ class TestAdaptiveSamplingStrategy:
         # After errors, should sample more frequently
         samples = [strategy.should_sample("test_func", (), {}, {}) for _ in range(10)]
 
-        # With >10% error rate, should use error_rate (1.0)
-        assert sum(samples) >= 5  # Much higher than base rate
+        # With >10% error rate and cooldown disabled, should use error_rate (1.0)
+        assert sum(samples) == 10  # error_rate=1.0 means always sample
 
     def test_increases_rate_on_slow_calls(self):
         """Should increase sampling rate for slow calls."""
