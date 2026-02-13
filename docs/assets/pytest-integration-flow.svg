@@ -146,7 +146,7 @@
   <g transform="translate(30, 205)">
     <rect x="0" y="0" width="150" height="55" rx="8" fill="#f1f5f9" stroke="#e2e8f0"/>
     <text x="75" y="18" text-anchor="middle" font-size="9" font-weight="600" fill="#475569">Auto-Registered</text>
-    <text x="75" y="33" text-anchor="middle" font-size="8" fill="#64748b">pip install fasteval</text>
+    <text x="75" y="33" text-anchor="middle" font-size="8" fill="#64748b">pip install fasteval-core</text>
     <text x="75" y="47" text-anchor="middle" font-size="8" fill="#64748b">No extra setup needed</text>
   </g>
 </svg>

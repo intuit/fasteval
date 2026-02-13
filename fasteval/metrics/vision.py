@@ -3,7 +3,7 @@
 This module provides metrics for evaluating vision-language models (VLMs)
 including GPT-4V, Claude Vision, Gemini Pro Vision, etc.
 
-Requires: pip install fasteval[vision]
+Requires: pip install fasteval-core[vision]
 """
 
 import logging
@@ -33,7 +33,7 @@ def _check_vision_available() -> None:
     if not VISION_AVAILABLE:
         raise ImportError(
             "Vision metrics require the 'vision' extra. "
-            "Install with: pip install fasteval[vision]"
+            "Install with: pip install fasteval-core[vision]"
         )
 
 

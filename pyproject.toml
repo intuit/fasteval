@@ -1,5 +1,5 @@
 [project]
-name = "fasteval"
+name = "fasteval-core"
 version = "1.0.0a1"
 description = "A decorator-first LLM evaluation library for testing AI agents"
 authors = [{name = "Intuit"}]
@@ -61,8 +61,8 @@ image-gen = [
 
 # All multi-modal features
 multimodal = [
-    "fasteval[vision]",
-    "fasteval[audio]",
+    "fasteval-core[vision]",
+    "fasteval-core[audio]",
 ]
 
 # Advanced OCR (optional add-on)

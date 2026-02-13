@@ -216,13 +216,13 @@ class ScoreBasedSamplingStrategy(BaseSamplingStrategy):
         sampled = []
 
         # Low scores - oversample
-        if low_score_traces:
+        if low_score_traces and self.low_score_rate > 0:
             low_sample_size = max(1, int(len(low_score_traces) * self.low_score_rate))
             low_sample_size = min(low_sample_size, len(low_score_traces))
             sampled.extend(self._rng.sample(low_score_traces, low_sample_size))
 
         # High scores - undersample
-        if high_score_traces:
+        if high_score_traces and self.high_score_rate > 0:
             high_sample_size = max(
                 1, int(len(high_score_traces) * self.high_score_rate)
             )
@@ -230,7 +230,7 @@ class ScoreBasedSamplingStrategy(BaseSamplingStrategy):
             sampled.extend(self._rng.sample(high_score_traces, high_sample_size))
 
         # No score - same rate as high scores
-        if no_score_traces:
+        if no_score_traces and self.high_score_rate > 0:
             no_score_sample_size = max(
                 1, int(len(no_score_traces) * self.high_score_rate)
             )

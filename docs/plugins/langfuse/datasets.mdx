@@ -338,7 +338,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: pip install fasteval fasteval-langfuse
+      - run: pip install fasteval-core fasteval-langfuse
       - run: pytest test_regression.py -v --tb=short
         env:
           LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}

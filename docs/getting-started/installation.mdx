@@ -29,10 +29,10 @@ Install fasteval using your preferred package manager:
 
 ```bash
 # Using pip
-pip install fasteval
+pip install fasteval-core
 
 # Using uv (faster dependency resolution)
-uv add fasteval
+uv add fasteval-core
 ```
 
 fasteval automatically installs its required dependencies, including pytest integration.
@@ -174,7 +174,7 @@ fasteval supports multi-modal evaluation for vision-language models, speech reco
 ### Vision-Language (GPT-4V, Claude Vision, Gemini)
 
 ```bash
-pip install fasteval[vision]
+pip install fasteval-core[vision]
 ```
 
 Enables: `@fe.image_understanding`, `@fe.ocr_accuracy`, `@fe.chart_interpretation`, `@fe.visual_grounding`, `@fe.image_faithfulness`, `@fe.image_quality`, `@fe.prompt_adherence`, `@fe.safety_check`
@@ -189,7 +189,7 @@ def test_vision_qa():
 ### Audio/Speech (Whisper, ASR)
 
 ```bash
-pip install fasteval[audio]
+pip install fasteval-core[audio]
 ```
 
 Enables: `@fe.word_error_rate`, `@fe.character_error_rate`, `@fe.transcription_accuracy`, `@fe.speaker_diarization`, `@fe.audio_sentiment`
@@ -204,7 +204,7 @@ def test_asr():
 ### Image Generation (DALL-E, Stable Diffusion)
 
 ```bash
-pip install fasteval[image-gen]
+pip install fasteval-core[image-gen]
 ```
 
 Enables CLIP-based evaluation for generated images.
@@ -219,7 +219,7 @@ def test_dalle():
 ### All Multi-Modal Features
 
 ```bash
-pip install fasteval[multimodal]
+pip install fasteval-core[multimodal]
 ```
 
 Installs vision and audio extras together.
@@ -228,11 +228,11 @@ Installs vision and audio extras together.
 
 | Extra | Install Command | Use Case |
 |-------|-----------------|----------|
-| `vision` | `pip install fasteval[vision]` | GPT-4V, Claude Vision, document AI |
-| `audio` | `pip install fasteval[audio]` | Whisper, speech-to-text, ASR |
-| `image-gen` | `pip install fasteval[image-gen]` | DALL-E, Stable Diffusion, Midjourney |
-| `multimodal` | `pip install fasteval[multimodal]` | All multi-modal features |
-| `ocr` | `pip install fasteval[ocr]` | Advanced OCR with Tesseract |
+| `vision` | `pip install fasteval-core[vision]` | GPT-4V, Claude Vision, document AI |
+| `audio` | `pip install fasteval-core[audio]` | Whisper, speech-to-text, ASR |
+| `image-gen` | `pip install fasteval-core[image-gen]` | DALL-E, Stable Diffusion, Midjourney |
+| `multimodal` | `pip install fasteval-core[multimodal]` | All multi-modal features |
+| `ocr` | `pip install fasteval-core[ocr]` | Advanced OCR with Tesseract |
 
 > **Tip:** Multi-modal features are optional - the core fasteval package works without them. Install extras only when needed to keep dependencies minimal.
 
@@ -283,7 +283,7 @@ which python
 pip list | grep fasteval
 
 # Reinstall if needed
-pip install fasteval
+pip install fasteval-core
 ```
 
 ### API Key Errors

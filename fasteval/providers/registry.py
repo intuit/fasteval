@@ -110,7 +110,7 @@ def create_provider_for_model(model_name: str) -> "LLMClient":
             return AnthropicClient(model=model_name)
         except ImportError:
             raise ImportError(
-                f"Anthropic provider not installed. Install with: pip install fasteval[anthropic]"
+                f"Anthropic provider not installed. Install with: pip install fasteval-core[anthropic]"
             )
 
     raise ValueError(

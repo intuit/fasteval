@@ -125,12 +125,24 @@ class TestObservationFlow:
     """Tests for the complete observation flow."""
 
     @pytest.mark.asyncio
-    async def test_full_observation_flow(self, capsys):
+    async def test_full_observation_flow(self):
         """Test complete flow from decorator to log output."""
-        from fasteval_observe import initialize_observer, shutdown_observer
+        import threading
 
-        # Initialize observer
+        from fasteval_observe import initialize_observer, shutdown_observer
+        from fasteval_observe.async_handler import get_observation_queue
+
+        flushed_observations = []
+        flush_event = threading.Event()
+
+        def capture_callback(observations):
+            flushed_observations.extend(observations)
+            flush_event.set()
+
+        # Initialize observer and set capture callback
         initialize_observer()
+        queue = get_observation_queue()
+        queue.set_flush_callback(capture_callback)
 
         @observe(sampling=NoSamplingStrategy())
         async def observed_func(x: int) -> int:
@@ -141,19 +153,30 @@ class TestObservationFlow:
         result = await observed_func(5)
         assert result == 10
 
-        # Shutdown to flush logs
+        # Shutdown to flush pending observations
         shutdown_observer()
 
-        # Verify log output
-        captured = capsys.readouterr()
-        assert "observed_func" in captured.out or "observed_func" in captured.err
+        # Verify observations were captured
+        assert len(flushed_observations) >= 1
+        assert flushed_observations[0].function_name == "observed_func"
+        assert flushed_observations[0].metrics.success is True
 
     @pytest.mark.asyncio
-    async def test_sampling_reduces_observations(self, capsys):
+    async def test_sampling_reduces_observations(self):
         """Sampling should reduce number of observations."""
+        import threading
+
         from fasteval_observe import initialize_observer, shutdown_observer
+        from fasteval_observe.async_handler import get_observation_queue
+
+        flushed_observations = []
+
+        def capture_callback(observations):
+            flushed_observations.extend(observations)
 
         initialize_observer()
+        queue = get_observation_queue()
+        queue.set_flush_callback(capture_callback)
 
         # Very low sampling rate
         @observe(sampling=FixedRateSamplingStrategy(rate=0.1))
@@ -167,9 +190,7 @@ class TestObservationFlow:
         shutdown_observer()
 
         # Should have approximately 10 observations (10%)
-        captured = capsys.readouterr()
-        # Count "sampled_func" occurrences in output
-        count = captured.out.count("sampled_func")
+        count = len(flushed_observations)
         assert count <= 20  # Should be around 10, allow some margin
 
     @pytest.mark.asyncio
@@ -189,11 +210,21 @@ class TestObservationFlow:
         shutdown_observer()
 
     @pytest.mark.asyncio
-    async def test_metadata_appears_in_logs(self, capsys):
+    async def test_metadata_appears_in_logs(self):
         """Custom metadata should appear in logs."""
+        import threading
+
         from fasteval_observe import initialize_observer, shutdown_observer
+        from fasteval_observe.async_handler import get_observation_queue
+
+        flushed_observations = []
+
+        def capture_callback(observations):
+            flushed_observations.extend(observations)
 
         initialize_observer()
+        queue = get_observation_queue()
+        queue.set_flush_callback(capture_callback)
 
         @observe(
             sampling=NoSamplingStrategy(),
@@ -205,6 +236,7 @@ class TestObservationFlow:
         await func_with_metadata()
         shutdown_observer()
 
-        captured = capsys.readouterr()
-        assert "custom_key" in captured.out
-        assert "custom_value" in captured.out
+        # Verify metadata was captured in observations
+        assert len(flushed_observations) >= 1
+        obs = flushed_observations[0]
+        assert obs.metadata["custom_key"] == "custom_value"

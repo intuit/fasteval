@@ -5,7 +5,7 @@ Langfuse integration for [fasteval](https://github.com/intuit/fasteval) - evalua
 ## Installation
 
 ```bash
-pip install fasteval fasteval-langfuse
+pip install fasteval-core fasteval-langfuse
 ```
 
 ## Quick Start

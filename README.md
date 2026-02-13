@@ -1,6 +1,6 @@
 # fasteval
 
-[![PyPI version](https://img.shields.io/pypi/v/fasteval.svg)](https://pypi.org/project/fasteval/)
+[![PyPI version](https://img.shields.io/pypi/v/fasteval-core.svg)](https://pypi.org/project/fasteval-core/)
 ![Python versions](https://img.shields.io/badge/python-3.10_|_3.11_|_3.12_|_3.13_|_3.14-blue?logo=python)
 [![CI](https://github.com/intuit/fasteval/actions/workflows/ci.yml/badge.svg)](https://github.com/intuit/fasteval/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
@@ -21,7 +21,7 @@ A **decorator-first LLM evaluation library** for testing AI agents and LLMs. Sta
 ## Quick Start
 
 ```bash
-pip install fasteval
+pip install fasteval-core
 ```
 
 Set your LLM provider key:
@@ -52,29 +52,29 @@ pytest test_qa_agent.py -v
 
 ```bash
 # pip
-pip install fasteval
+pip install fasteval-core
 
 # uv
-uv add fasteval
+uv add fasteval-core
 ```
 
 ### Optional Extras
 
 ```bash
 # Anthropic provider
-pip install fasteval[anthropic]
+pip install fasteval-core[anthropic]
 
 # Vision-language evaluation (GPT-4V, Claude Vision)
-pip install fasteval[vision]
+pip install fasteval-core[vision]
 
 # Audio/speech evaluation (Whisper, ASR)
-pip install fasteval[audio]
+pip install fasteval-core[audio]
 
 # Image generation evaluation (DALL-E, Stable Diffusion)
-pip install fasteval[image-gen]
+pip install fasteval-core[image-gen]
 
 # All multi-modal features
-pip install fasteval[multimodal]
+pip install fasteval-core[multimodal]
 ```
 
 ## Usage Examples

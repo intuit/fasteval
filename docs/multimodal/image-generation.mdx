@@ -12,10 +12,10 @@ Evaluate image generation models like DALL-E, Midjourney, and Stable Diffusion.
 
 ```bash
 # Basic vision support (LLM-based evaluation)
-pip install fasteval[vision]
+pip install fasteval-core[vision]
 
 # Full image generation support (CLIP scores, etc.)
-pip install fasteval[image-gen]
+pip install fasteval-core[image-gen]
 ```
 
 ## Available Metrics
@@ -122,7 +122,7 @@ def test_image_alignment():
     )
 ```
 
-**Note:** For actual CLIP embedding scores, install `fasteval[image-gen]` with PyTorch. The default uses LLM-based alignment evaluation.
+**Note:** For actual CLIP embedding scores, install `fasteval-core[image-gen]` with PyTorch. The default uses LLM-based alignment evaluation.
 
 ## Combining Metrics
 

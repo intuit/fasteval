@@ -3,7 +3,7 @@
 This module provides utilities for loading and processing audio files
 for speech-to-text and audio understanding evaluation.
 
-Requires: pip install fasteval[audio]
+Requires: pip install fasteval-core[audio]
 """
 
 from __future__ import annotations
@@ -56,7 +56,7 @@ def _check_audio_deps() -> None:
     if not SOUNDFILE_AVAILABLE and not PYDUB_AVAILABLE:
         raise ImportError(
             "Audio features require the 'audio' extra. "
-            "Install with: pip install fasteval[audio]"
+            "Install with: pip install fasteval-core[audio]"
         )
 
 
@@ -65,7 +65,7 @@ def _check_jiwer_deps() -> None:
     if not JIWER_AVAILABLE:
         raise ImportError(
             "WER/CER calculation requires jiwer. "
-            "Install with: pip install fasteval[audio]"
+            "Install with: pip install fasteval-core[audio]"
         )
 
 

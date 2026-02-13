@@ -5,7 +5,7 @@ Runtime monitoring plugin for [fasteval](https://github.com/intuit/fasteval) wit
 ## Installation
 
 ```bash
-pip install fasteval fasteval-observe
+pip install fasteval-core fasteval-observe
 ```
 
 ## Quick Start
