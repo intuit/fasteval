@@ -1,0 +1,352 @@
+---
+title: Multi-turn Sessions
+description: Test multi-turn conversations with shared state, conversation metrics, and human-in-the-loop flows
+order: 3
+sidebar:
+  - title: Creating a Session
+    anchor: creating-a-session
+  - title: Conversation Metrics
+    anchor: conversation-metrics
+  - title: Session History
+    anchor: session-history
+  - title: State Seeding
+    anchor: state-seeding
+  - title: Interrupt and Resume
+    anchor: interrupt-and-resume
+  - title: Designing Test Suites
+    anchor: designing-multi-turn-test-suites
+---
+
+# Multi-turn Sessions [Open in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/sessions.ipynb)
+
+This page covers multi-turn conversation testing with the `fasteval-langgraph` harness: sessions with shared state, conversation metrics, state seeding, and human-in-the-loop interrupt/resume flows.
+
+## Creating a Session
+
+While `.chat()` creates a new thread per call, `.session()` gives you a shared thread for multi-turn conversations:
+
+```python
+from fasteval_langgraph import harness
+
+graph = harness(compiled_agent)
+
+async with graph.session() as s:
+    r1 = await s.chat("Hello")
+    r2 = await s.chat("Follow up question")
+
+    # Same thread: state accumulates across turns
+    print(r1.state["call_count"])  # 1
+    print(r2.state["call_count"])  # 2
+```
+
+> [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/sessions.ipynb#scrollTo=create_session)
+
+Sessions can also be used without the context manager:
+
+```python
+s = graph.session()
+r1 = await s.chat("Hello")
+r2 = await s.chat("Follow up")
+```
+
+Each session has a unique `thread_id`:
+
+```python
+s = graph.session()
+print(s.thread_id)  # UUID string
+```
+
+> [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/sessions.ipynb#scrollTo=session_thread_id)
+
+### Session-level Config and Context
+
+Pass session-wide overrides that apply to all turns:
+
+```python
+async with graph.session(
+    config={"configurable": {"model": "gpt-4o"}},
+    context={"user_id": "test-user"},
+) as s:
+    r1 = await s.chat("Turn 1")
+
+    # Per-turn overrides deep-merge with session-level config
+    r2 = await s.chat("Turn 2", config={"configurable": {"temperature": 0.0}})
+```
+
+## Conversation Metrics
+
+fasteval provides three conversation-specific metrics that work naturally with sessions:
+
+| Metric | What it checks |
+|--------|---------------|
+| `@fe.context_retention` | Does the agent remember information from earlier turns? |
+| `@fe.consistency` | Does the agent avoid contradicting itself across turns? |
+| `@fe.topic_drift` | Does the agent stay on topic throughout the conversation? |
+
+### Context Retention
+
+Test that your agent remembers user information across turns:
+
+```python
+import fasteval as fe
+
+@fe.context_retention(threshold=0.8)
+async def test_remembers_user_name():
+    async with graph.session() as s:
+        r1 = await s.chat("My name is Alice")
+        r2 = await s.chat("What is my name?")
+
+        fe.score(
+            actual_output=r2.response,
+            expected_output="Your name is Alice",
+            input="What is my name?",
+            history=[
+                {"role": "user", "content": "My name is Alice"},
+                {"role": "assistant", "content": r1.response},
+            ],
+        )
+```
+
+> [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/sessions.ipynb#scrollTo=context_retention)
+
+### Consistency
+
+Verify the agent doesn't contradict earlier responses:
+
+```python
+@fe.consistency(threshold=0.85)
+async def test_price_consistency():
+    async with graph.session() as s:
+        r1 = await s.chat("How much does the Pro plan cost?")
+        r2 = await s.chat("Can you repeat the price of the Pro plan?")
+
+        fe.score(
+            actual_output=r2.response,
+            expected_output=r1.response,
+            input="Can you repeat the price of the Pro plan?",
+            history=[
+                {"role": "user", "content": "How much does the Pro plan cost?"},
+                {"role": "assistant", "content": r1.response},
+            ],
+        )
+```
+
+> [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/sessions.ipynb#scrollTo=consistency)
+
+### Topic Drift
+
+Ensure the agent stays on topic:
+
+```python
+@fe.topic_drift(threshold=0.8)
+async def test_stays_on_topic():
+    async with graph.session() as s:
+        r1 = await s.chat("Tell me about your return policy")
+        r2 = await s.chat("What about exchanges?")
+        r3 = await s.chat("And refund timelines?")
+
+        history = [
+            {"role": "user", "content": "Tell me about your return policy"},
+            {"role": "assistant", "content": r1.response},
+            {"role": "user", "content": "What about exchanges?"},
+            {"role": "assistant", "content": r2.response},
+        ]
+
+        fe.score(
+            actual_output=r3.response,
+            expected_output="Refund timelines for returns...",
+            input="And refund timelines?",
+            history=history,
+        )
+```
+
+> [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/sessions.ipynb#scrollTo=topic_drift)
+
+## Session History
+
+The session tracks all `ChatResult` objects in order:
+
+```python
+async with graph.session() as s:
+    await s.chat("First message")
+    await s.chat("Second message")
+    await s.chat("Third message")
+
+    print(len(s.history))  # 3
+    print(s.history[0].response)  # Response to "First message"
+    print(s.history[1].response)  # Response to "Second message"
+    print(s.history[2].response)  # Response to "Third message"
+```
+
+> [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/sessions.ipynb#scrollTo=session_history)
+
+Use history to build the conversation context for `fe.score()`:
+
+```python
+def build_history_from_session(session):
+    """Convert session history to fe.score() history format."""
+    history = []
+    for result in session.history:
+        history.append({"role": "user", "content": "..."})
+        history.append({"role": "assistant", "content": result.response})
+    return history
+```
+
+## State Seeding
+
+Use `update_state()` to pre-load data into the graph state before continuing the conversation:
+
+```python
+async with graph.session() as s:
+    # Seed the state with user preferences
+    await s.update_state(
+        values={"user_preferences": {"language": "en", "tier": "premium"}},
+        as_node="preferences_loader",
+    )
+
+    # Now chat — the agent has access to the seeded state
+    r1 = await s.chat("What features do I have access to?")
+```
+
+> [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/sessions.ipynb#scrollTo=state_seeding)
+
+This is useful for:
+
+- Setting up user context without simulating earlier turns
+- Testing specific states that are hard to reach organically
+- Providing mock retrieval results or tool outputs
+
+## Interrupt and Resume
+
+For human-in-the-loop agents that use `interrupt()`, the session automatically detects the interrupt and uses `resume_fn` on the next `.chat()` call:
+
+```python
+from langgraph.graph import StateGraph, START, END
+from langgraph.graph.message import MessagesState
+from langgraph.checkpoint.memory import MemorySaver
+from langgraph.types import interrupt
+from langchain_core.messages import AIMessage
+
+class ApprovalState(MessagesState):
+    approved: bool
+
+def ask(state):
+    return {"messages": [AIMessage(content="Do you approve this action?")]}
+
+def wait(state):
+    answer = interrupt("Waiting for user approval")
+    return {"approved": answer == "yes"}
+
+def final(state):
+    if state.get("approved"):
+        return {"messages": [AIMessage(content="Approved! Proceeding.")]}
+    return {"messages": [AIMessage(content="Rejected. Action cancelled.")]}
+
+builder = StateGraph(ApprovalState)
+builder.add_node("ask", ask)
+builder.add_node("wait", wait)
+builder.add_node("final", final)
+builder.add_edge(START, "ask")
+builder.add_edge("ask", "wait")
+builder.add_edge("wait", "final")
+builder.add_edge("final", END)
+agent = builder.compile(checkpointer=MemorySaver())
+```
+
+Test the full interrupt/resume flow:
+
+```python
+graph = harness(agent)
+
+async with graph.session() as s:
+    # First turn: triggers ask, then interrupt at wait
+    r1 = await s.chat("Start the process")
+    assert "approve" in r1.response.lower()
+
+    # Second turn: harness auto-detects interrupt and resumes
+    r2 = await s.chat("yes")
+    assert "Approved" in r2.response
+
+# Test the rejection path
+async with graph.session() as s:
+    r1 = await s.chat("Start the process")
+    r2 = await s.chat("no")
+    assert "Rejected" in r2.response
+```
+
+> [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/sessions.ipynb#scrollTo=interrupt_resume)
+
+### Custom resume_fn
+
+By default, the harness uses `Command(resume=msg)`. Override with a custom `resume_fn`:
+
+```python
+from langgraph.types import Command
+
+graph = harness(
+    agent,
+    resume_fn=lambda msg: Command(resume={"action": msg, "timestamp": "2024-01-01"}),
+)
+```
+
+## Designing Multi-turn Test Suites
+
+When testing multi-turn agents, organize your tests by conversation scenario:
+
+```python
+import pytest
+
+class TestPurchaseFlow:
+    @fe.context_retention(threshold=0.8)
+    @fe.consistency(threshold=0.85)
+    async def test_full_purchase(self):
+        async with graph.session() as s:
+            r1 = await s.chat("I want to buy a laptop")
+            r2 = await s.chat("What's the price of the MacBook Pro?")
+            r3 = await s.chat("I'll take it, ship to 123 Main St")
+
+            # Verify the agent remembers the product and address
+            fe.score(
+                actual_output=r3.response,
+                expected_output="Order confirmed for MacBook Pro, shipping to 123 Main St",
+                input="I'll take it, ship to 123 Main St",
+                history=[
+                    {"role": "user", "content": "I want to buy a laptop"},
+                    {"role": "assistant", "content": r1.response},
+                    {"role": "user", "content": "What's the price of the MacBook Pro?"},
+                    {"role": "assistant", "content": r2.response},
+                ],
+            )
+
+
+class TestSupportFlow:
+    @fe.context_retention(threshold=0.8)
+    @fe.topic_drift(threshold=0.7)
+    async def test_return_request(self):
+        async with graph.session() as s:
+            r1 = await s.chat("I want to return my order #12345")
+            r2 = await s.chat("It arrived damaged")
+            r3 = await s.chat("How long will the refund take?")
+
+            fe.score(
+                actual_output=r3.response,
+                expected_output="Refund for order #12345 will take 5-7 business days",
+                input="How long will the refund take?",
+                history=[
+                    {"role": "user", "content": "I want to return my order #12345"},
+                    {"role": "assistant", "content": r1.response},
+                    {"role": "user", "content": "It arrived damaged"},
+                    {"role": "assistant", "content": r2.response},
+                ],
+            )
+```
+
+> [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/sessions.ipynb#scrollTo=test_suite_design)
+
+### Tips
+
+- **Isolate scenarios**: Each test class covers one conversation flow
+- **Build history progressively**: Accumulate the `history` list as the conversation progresses
+- **Test edge cases**: Off-topic messages, topic switches, user corrections
+- **Use `update_state()`**: Skip to specific conversation states for targeted testing
+- **Parametrize**: Use `@pytest.mark.parametrize` for variations of the same flow

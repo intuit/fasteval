@@ -159,6 +159,16 @@ jobs:
           git tag "${{ steps.version.outputs.tag }}"
           git push origin "${{ steps.version.outputs.tag }}"
 
+      - name: Purge shields.io badge cache
+        run: |
+          # Wait briefly for PyPI index to propagate
+          sleep 30
+          # Purge shields.io cache so the PyPI version badge updates
+          curl -sS "https://purge.shields.io/pypi/v/fasteval-core.svg" || true
+          # Also purge the GitHub camo proxy cache for the badge
+          BADGE_URL="https://img.shields.io/pypi/v/fasteval-core.svg"
+          curl -sS -w "\n%{http_code}" "$BADGE_URL" > /dev/null || true
+
   # -----------------------------------------------------------------------
   # Job 5: Test plugins (after core is released, so deps resolve)
   # -----------------------------------------------------------------------
@@ -251,3 +261,8 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git tag "${{ steps.version.outputs.tag }}"
           git push origin "${{ steps.version.outputs.tag }}"
+
+      - name: Purge shields.io badge cache
+        run: |
+          sleep 30
+          curl -sS "https://purge.shields.io/pypi/v/fasteval-${{ matrix.package }}.svg" || true
