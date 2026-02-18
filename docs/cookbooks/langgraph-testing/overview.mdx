@@ -25,7 +25,7 @@ This cookbook shows how to evaluate LangGraph agents using `fasteval-langgraph` 
 
 Instead of manually invoking your graph, extracting messages, and parsing tool calls, the harness gives you a clean API:
 
-```python
+```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/overview.ipynb#scrollTo=overview_example)
 from fasteval_langgraph import harness
 import fasteval as fe
 
@@ -38,8 +38,6 @@ fe.score(
     input="What's the weather in Paris?",
 )
 ```
-
-> [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/overview.ipynb#scrollTo=overview_example)
 
 The harness handles thread management, state filtering, trace capture, and auto-detection of `MessagesState` vs plain `TypedDict` graphs.
 
@@ -66,7 +64,7 @@ This installs `fasteval-core`, `langgraph`, and `langchain_core` as dependencies
 
 Here's a multi-node support agent that classifies user intent and routes to different backends:
 
-```python
+```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/overview.ipynb#scrollTo=sample_agent)
 from langgraph.graph import StateGraph, END, START
 from langgraph.graph.message import MessagesState
 from langgraph.checkpoint.memory import MemorySaver
@@ -120,13 +118,11 @@ def build_support_agent():
 agent = build_support_agent()
 ```
 
-> [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/overview.ipynb#scrollTo=sample_agent)
-
 ## Your First Evaluation
 
 Wrap the compiled graph with `harness()` and use `.chat()` to send messages:
 
-```python
+```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/overview.ipynb#scrollTo=first_evaluation)
 from fasteval_langgraph import harness
 import fasteval as fe
 
@@ -149,8 +145,6 @@ async def test_faq_response():
     )
 ```
 
-> [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/overview.ipynb#scrollTo=first_evaluation)
-
 The `ChatResult` contains:
 
 | Field | Type | Description |
@@ -166,7 +160,7 @@ Use the harness to test that your agent follows the correct tool trajectory. The
 
 ### Verifying Node Routes
 
-```python
+```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/overview.ipynb#scrollTo=route_verification)
 @fe.correctness(threshold=0.7)
 async def test_faq_route():
     """Verify FAQ queries route through classifier -> rag -> responder."""
@@ -200,13 +194,11 @@ async def test_troubleshoot_route():
     )
 ```
 
-> [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/overview.ipynb#scrollTo=route_verification)
-
 ### Tool Call Accuracy with Harness
 
 When your agent uses LangChain tools, extract tool calls from the trace and evaluate them:
 
-```python
+```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/overview.ipynb#scrollTo=tool_call_accuracy)
 from fasteval.models import ExpectedTool, ToolCall
 
 @fe.tool_call_accuracy(threshold=0.9)
@@ -232,11 +224,9 @@ async def test_tool_usage():
     )
 ```
 
-> [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/overview.ipynb#scrollTo=tool_call_accuracy)
-
 ### Tool Sequence Verification
 
-```python
+```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/overview.ipynb#scrollTo=tool_sequence)
 @fe.tool_sequence(threshold=0.9)
 async def test_multi_step_tool_order():
     """Verify tools are called in the correct order."""
@@ -264,13 +254,11 @@ async def test_multi_step_tool_order():
     )
 ```
 
-> [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/overview.ipynb#scrollTo=tool_sequence)
-
 ## Combining Tool and Output Metrics
 
 Stack multiple decorators to evaluate both tool usage AND response quality in a single test:
 
-```python
+```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/overview.ipynb#scrollTo=combined_metrics)
 @fe.tool_call_accuracy(threshold=0.9)
 @fe.tool_args_match(threshold=0.8)
 @fe.correctness(threshold=0.8)
@@ -296,8 +284,6 @@ async def test_complete_agent_behavior():
         input="What is OAuth and how does it work?",
     )
 ```
-
-> [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/overview.ipynb#scrollTo=combined_metrics)
 
 ## Running Tests
 

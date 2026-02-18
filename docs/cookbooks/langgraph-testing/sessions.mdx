@@ -25,7 +25,7 @@ This page covers multi-turn conversation testing with the `fasteval-langgraph` h
 
 While `.chat()` creates a new thread per call, `.session()` gives you a shared thread for multi-turn conversations:
 
-```python
+```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/sessions.ipynb#scrollTo=create_session)
 from fasteval_langgraph import harness
 
 graph = harness(compiled_agent)
@@ -39,8 +39,6 @@ async with graph.session() as s:
     print(r2.state["call_count"])  # 2
 ```
 
-> [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/sessions.ipynb#scrollTo=create_session)
-
 Sessions can also be used without the context manager:
 
 ```python
@@ -51,12 +49,10 @@ r2 = await s.chat("Follow up")
 
 Each session has a unique `thread_id`:
 
-```python
+```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/sessions.ipynb#scrollTo=session_thread_id)
 s = graph.session()
 print(s.thread_id)  # UUID string
 ```
-
-> [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/sessions.ipynb#scrollTo=session_thread_id)
 
 ### Session-level Config and Context
 
@@ -87,7 +83,7 @@ fasteval provides three conversation-specific metrics that work naturally with s
 
 Test that your agent remembers user information across turns:
 
-```python
+```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/sessions.ipynb#scrollTo=context_retention)
 import fasteval as fe
 
 @fe.context_retention(threshold=0.8)
@@ -107,13 +103,11 @@ async def test_remembers_user_name():
         )
 ```
 
-> [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/sessions.ipynb#scrollTo=context_retention)
-
 ### Consistency
 
 Verify the agent doesn't contradict earlier responses:
 
-```python
+```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/sessions.ipynb#scrollTo=consistency)
 @fe.consistency(threshold=0.85)
 async def test_price_consistency():
     async with graph.session() as s:
@@ -131,13 +125,11 @@ async def test_price_consistency():
         )
 ```
 
-> [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/sessions.ipynb#scrollTo=consistency)
-
 ### Topic Drift
 
 Ensure the agent stays on topic:
 
-```python
+```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/sessions.ipynb#scrollTo=topic_drift)
 @fe.topic_drift(threshold=0.8)
 async def test_stays_on_topic():
     async with graph.session() as s:
@@ -160,13 +152,11 @@ async def test_stays_on_topic():
         )
 ```
 
-> [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/sessions.ipynb#scrollTo=topic_drift)
-
 ## Session History
 
 The session tracks all `ChatResult` objects in order:
 
-```python
+```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/sessions.ipynb#scrollTo=session_history)
 async with graph.session() as s:
     await s.chat("First message")
     await s.chat("Second message")
@@ -177,8 +167,6 @@ async with graph.session() as s:
     print(s.history[1].response)  # Response to "Second message"
     print(s.history[2].response)  # Response to "Third message"
 ```
-
-> [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/sessions.ipynb#scrollTo=session_history)
 
 Use history to build the conversation context for `fe.score()`:
 
@@ -196,7 +184,7 @@ def build_history_from_session(session):
 
 Use `update_state()` to pre-load data into the graph state before continuing the conversation:
 
-```python
+```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/sessions.ipynb#scrollTo=state_seeding)
 async with graph.session() as s:
     # Seed the state with user preferences
     await s.update_state(
@@ -207,8 +195,6 @@ async with graph.session() as s:
     # Now chat — the agent has access to the seeded state
     r1 = await s.chat("What features do I have access to?")
 ```
-
-> [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/sessions.ipynb#scrollTo=state_seeding)
 
 This is useful for:
 
@@ -255,7 +241,7 @@ agent = builder.compile(checkpointer=MemorySaver())
 
 Test the full interrupt/resume flow:
 
-```python
+```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/sessions.ipynb#scrollTo=interrupt_resume)
 graph = harness(agent)
 
 async with graph.session() as s:
@@ -274,8 +260,6 @@ async with graph.session() as s:
     assert "Rejected" in r2.response
 ```
 
-> [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/sessions.ipynb#scrollTo=interrupt_resume)
-
 ### Custom resume_fn
 
 By default, the harness uses `Command(resume=msg)`. Override with a custom `resume_fn`:
@@ -293,7 +277,7 @@ graph = harness(
 
 When testing multi-turn agents, organize your tests by conversation scenario:
 
-```python
+```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/sessions.ipynb#scrollTo=test_suite_design)
 import pytest
 
 class TestPurchaseFlow:
@@ -337,11 +321,9 @@ class TestSupportFlow:
                     {"role": "assistant", "content": r1.response},
                     {"role": "user", "content": "It arrived damaged"},
                     {"role": "assistant", "content": r2.response},
-                ],
-            )
+            ],
+        )
 ```
-
-> [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/sessions.ipynb#scrollTo=test_suite_design)
 
 ### Tips
 

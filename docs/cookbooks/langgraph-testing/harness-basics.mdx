@@ -25,7 +25,7 @@ This page covers the `fasteval-langgraph` harness API in detail: wrapping graphs
 
 The `harness()` function wraps any compiled `StateGraph` for testing:
 
-```python
+```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/harness-basics.ipynb#scrollTo=wrap_messages_graph)
 from fasteval_langgraph import harness
 from langgraph.graph import StateGraph, START, END
 from langgraph.graph.message import MessagesState
@@ -53,11 +53,9 @@ result = await graph.chat("Hello world")
 print(result.response)  # "Echo: Hello world"
 ```
 
-> [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/harness-basics.ipynb#scrollTo=wrap_messages_graph)
-
 Each `.chat()` call creates a **new thread** automatically, so calls are isolated:
 
-```python
+```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/harness-basics.ipynb#scrollTo=new_thread_per_chat)
 r1 = await graph.chat("First")
 r2 = await graph.chat("Second")
 # Both have call_count=1 — fresh thread each time
@@ -65,13 +63,11 @@ assert r1.state["call_count"] == 1
 assert r2.state["call_count"] == 1
 ```
 
-> [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/harness-basics.ipynb#scrollTo=new_thread_per_chat)
-
 ### Plain TypedDict Graphs
 
 The harness also works with graphs that don't use `MessagesState`:
 
-```python
+```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/harness-basics.ipynb#scrollTo=wrap_plain_graph)
 from typing import TypedDict
 
 class CalcState(TypedDict):
@@ -92,13 +88,11 @@ result = await calc_graph.chat("5 + 3")
 print(result.response)  # "{'input': '5 + 3', 'result': 'Calculated: 5 + 3'}"
 ```
 
-> [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/harness-basics.ipynb#scrollTo=wrap_plain_graph)
-
 ## Inspecting ChatResult
 
 Every `.chat()` call returns a `ChatResult` with four fields:
 
-```python
+```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/harness-basics.ipynb#scrollTo=inspect_chat_result)
 result = await graph.chat("Hello")
 
 # The AI response (extracted by output_fn)
@@ -115,13 +109,11 @@ for step in result.trace:
 print(result.nodes_ran)   # ["echo"]
 ```
 
-> [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/harness-basics.ipynb#scrollTo=inspect_chat_result)
-
 ### Trace with Multi-Node Graphs
 
 For graphs with multiple nodes, the trace shows the full execution path:
 
-```python
+```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/harness-basics.ipynb#scrollTo=trace_multi_node)
 result = await router_graph.chat("What is OAuth?")
 print(result.nodes_ran)
 # ["classifier", "rag", "responder"]
@@ -133,8 +125,6 @@ for step in result.trace:
 # responder: {"messages": [AIMessage(content="...")]}
 ```
 
-> [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/harness-basics.ipynb#scrollTo=trace_multi_node)
-
 ## Auto-Detection
 
 The harness automatically detects whether your graph uses `MessagesState` or a plain `TypedDict` and configures itself accordingly:
@@ -145,7 +135,7 @@ The harness automatically detects whether your graph uses `MessagesState` or a p
 | `output_fn` | Extracts last `AIMessage.content` | `str(state)` |
 | `state_filter` | Excludes `messages` key | Identity (all keys) |
 
-```python
+```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/harness-basics.ipynb#scrollTo=auto_detection)
 # MessagesState graph
 msg_graph = harness(echo_compiled)
 assert msg_graph.has_messages_state is True
@@ -155,8 +145,6 @@ plain_graph = harness(calc_compiled)
 assert plain_graph.has_messages_state is False
 ```
 
-> [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/harness-basics.ipynb#scrollTo=auto_detection)
-
 ## Custom Hooks
 
 Override any auto-detected behavior with custom hooks:
@@ -165,14 +153,12 @@ Override any auto-detected behavior with custom hooks:
 
 Controls how a string message becomes graph input:
 
-```python
+```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/harness-basics.ipynb#scrollTo=custom_input_fn)
 graph = harness(
     compiled,
     input_fn=lambda msg: {"messages": [HumanMessage(content=msg)], "metadata": {"source": "test"}},
 )
 ```
-
-> [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/harness-basics.ipynb#scrollTo=custom_input_fn)
 
 ### output_fn
 
@@ -200,7 +186,7 @@ graph = harness(
 
 Inject runtime configuration and context:
 
-```python
+```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/harness-basics.ipynb#scrollTo=custom_hooks)
 graph = harness(
     compiled,
     config_factory=lambda tid: {
@@ -209,8 +195,6 @@ graph = harness(
     context_factory=lambda: {"user_id": "test-user-123"},
 )
 ```
-
-> [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/harness-basics.ipynb#scrollTo=custom_hooks)
 
 ### Per-call overrides
 
@@ -228,7 +212,7 @@ result = await graph.chat(
 
 The harness exposes useful properties for assertions and debugging:
 
-```python
+```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/harness-basics.ipynb#scrollTo=graph_introspection)
 graph = harness(router_compiled)
 
 # All user-defined node names (excludes internal __start__, __end__)
@@ -242,13 +226,11 @@ print(graph.has_messages_state)  # True
 print(graph.entry)  # "classifier"
 ```
 
-> [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/harness-basics.ipynb#scrollTo=graph_introspection)
-
 ## Tool Trajectory via Harness
 
 When your agent uses tools, combine the harness with fasteval's tool metrics. Here's the complete pattern:
 
-```python
+```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/harness-basics.ipynb#scrollTo=tool_trajectory)
 from fasteval.models import ExpectedTool, ToolCall
 
 @fe.tool_call_accuracy(threshold=0.9)
@@ -274,13 +256,11 @@ async def test_weather_tool():
     )
 ```
 
-> [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/harness-basics.ipynb#scrollTo=tool_trajectory)
-
 ### Argument Matching with Fuzzy Search
 
 For search queries where exact matching is too strict, use fuzzy matching:
 
-```python
+```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/harness-basics.ipynb#scrollTo=fuzzy_args_match)
 @fe.tool_args_match(threshold=0.8, fuzzy=True)
 async def test_search_args():
     result = await graph.chat("Find recent news about climate change")
@@ -296,8 +276,6 @@ async def test_search_args():
         input="Find recent news about climate change",
     )
 ```
-
-> [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/harness-basics.ipynb#scrollTo=fuzzy_args_match)
 
 ## Running Tests
 
