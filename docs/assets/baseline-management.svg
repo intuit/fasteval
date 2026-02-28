@@ -31,118 +31,106 @@
     </marker>
   </defs>
   
-  <!-- Background -->
   <rect width="800" height="395" fill="#f8fafc"/>
-  
-  <!-- Title -->
+
   <text x="400" y="32" text-anchor="middle" font-size="22" font-weight="700" fill="#1e293b">Baseline Management Workflow</text>
   <text x="400" y="52" text-anchor="middle" font-size="12" fill="#64748b">Tracking and promoting prompt version baselines</text>
-  
-  <!-- Archive section (left) -->
+
   <g transform="translate(30, 80)">
     <rect x="0" y="0" width="160" height="200" rx="10" fill="#f1f5f9" stroke="#e2e8f0"/>
     <text x="80" y="25" text-anchor="middle" font-size="12" font-weight="600" fill="#475569">Archive</text>
-    
-    <!-- Archived baselines -->
+
     <g filter="url(#bmShadow)">
       <rect x="15" y="40" width="130" height="45" rx="6" fill="url(#bmArchiveGrad)"/>
       <text x="80" y="60" text-anchor="middle" font-size="10" fill="white">v1.0</text>
       <text x="80" y="75" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.7)">Score: 0.82</text>
     </g>
-    
+
     <g filter="url(#bmShadow)">
       <rect x="15" y="95" width="130" height="45" rx="6" fill="url(#bmArchiveGrad)"/>
       <text x="80" y="115" text-anchor="middle" font-size="10" fill="white">v1.1</text>
       <text x="80" y="130" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.7)">Score: 0.84</text>
     </g>
-    
+
     <g filter="url(#bmShadow)">
       <rect x="15" y="150" width="130" height="45" rx="6" fill="url(#bmArchiveGrad)"/>
       <text x="80" y="170" text-anchor="middle" font-size="10" fill="white">v1.2</text>
       <text x="80" y="185" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.7)">Score: 0.83</text>
     </g>
   </g>
-  
-  <!-- Production baseline (center) -->
+
   <g transform="translate(250, 80)">
     <rect x="0" y="0" width="180" height="130" rx="10" fill="white" stroke="#10b981" stroke-width="2"/>
     <rect x="0" y="0" width="180" height="40" rx="10" fill="url(#bmProdGrad)"/>
     <rect x="0" y="28" width="180" height="12" fill="url(#bmProdGrad)"/>
     <text x="90" y="28" text-anchor="middle" font-size="13" font-weight="700" fill="white">🏆 Production</text>
-    
+
     <text x="90" y="70" text-anchor="middle" font-size="14" font-weight="700" fill="#1e293b">v2.0</text>
     <text x="90" y="90" text-anchor="middle" font-size="11" fill="#475569">Score: 0.85</text>
     <text x="90" y="110" text-anchor="middle" font-size="9" fill="#64748b">Current baseline</text>
     <text x="90" y="123" text-anchor="middle" font-size="9" fill="#64748b">baselines/production.json</text>
   </g>
-  
-  <!-- Candidate baseline (right) -->
+
   <g transform="translate(500, 80)">
     <rect x="0" y="0" width="180" height="130" rx="10" fill="white" stroke="#8b5cf6" stroke-width="2"/>
     <rect x="0" y="0" width="180" height="40" rx="10" fill="url(#bmCandidateGrad)"/>
     <rect x="0" y="28" width="180" height="12" fill="url(#bmCandidateGrad)"/>
     <text x="90" y="28" text-anchor="middle" font-size="13" font-weight="700" fill="white">🧪 Candidate</text>
-    
+
     <text x="90" y="70" text-anchor="middle" font-size="14" font-weight="700" fill="#1e293b">v2.1</text>
     <text x="90" y="90" text-anchor="middle" font-size="11" fill="#475569">Score: 0.87</text>
     <text x="90" y="110" text-anchor="middle" font-size="9" fill="#64748b">Testing version</text>
     <text x="90" y="123" text-anchor="middle" font-size="9" fill="#64748b">Δ = +0.02</text>
   </g>
-  
-  <!-- Test arrow -->
+
   <line x1="590" y1="210" x2="590" y2="240" stroke="#f59e0b" stroke-width="2" marker-end="url(#bmArrow)"/>
-  
-  <!-- Test box -->
+
   <g filter="url(#bmShadow)" transform="translate(470, 250)">
     <rect x="0" y="0" width="210" height="50" rx="8" fill="url(#bmTestGrad)"/>
     <text x="105" y="25" text-anchor="middle" font-size="11" font-weight="600" fill="white">Compare vs Production</text>
     <text x="105" y="42" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.9)">No regression? Promote</text>
   </g>
-  
-  <!-- Promotion arrow -->
-  <path d="M 470 275 L 430 275 L 430 180 L 200 180" stroke="#10b981" stroke-width="2" fill="none" stroke-dasharray="6,3" marker-end="url(#bmArrowGreen)"/>
-  <text x="310" y="165" font-size="10" font-weight="600" fill="#10b981">promote_to_production()</text>
-  
-  <!-- Archive arrow -->
+
+  <path d="M 470 275 L 340 275 L 340 215" stroke="#10b981" stroke-width="2" fill="none" stroke-dasharray="6,3" marker-end="url(#bmArrowGreen)"/>
+  <text x="405" y="265" text-anchor="middle" font-size="10" font-weight="600" fill="#10b981">promote_to_production()</text>
+
   <line x1="250" y1="150" x2="200" y2="150" stroke="#64748b" stroke-width="2" marker-end="url(#bmArrow)"/>
-  <text x="225" y="140" font-size="9" fill="#64748b">archive</text>
-  
-  <!-- Workflow steps at bottom -->
+  <text x="225" y="142" text-anchor="middle" font-size="10" fill="#64748b">archive</text>
+
   <g transform="translate(30, 315)">
     <rect x="0" y="0" width="740" height="50" rx="8" fill="#f1f5f9" stroke="#e2e8f0"/>
     <text x="370" y="20" text-anchor="middle" font-size="11" font-weight="600" fill="#475569">Baseline Management Lifecycle</text>
-    
+
     <g transform="translate(30, 32)">
       <circle cx="0" cy="0" r="10" fill="#8b5cf6"/>
       <text x="0" y="4" text-anchor="middle" font-size="9" fill="white">1</text>
       <text x="20" y="4" font-size="9" fill="#475569">Create candidate</text>
     </g>
-    
+
     <text x="170" y="36" font-size="12" fill="#64748b">to</text>
-    
+
     <g transform="translate(200, 32)">
       <circle cx="0" cy="0" r="10" fill="#f59e0b"/>
       <text x="0" y="4" text-anchor="middle" font-size="9" fill="white">2</text>
       <text x="20" y="4" font-size="9" fill="#475569">Run regression tests</text>
     </g>
-    
+
     <text x="370" y="36" font-size="12" fill="#64748b">to</text>
-    
+
     <g transform="translate(400, 32)">
       <circle cx="0" cy="0" r="10" fill="#10b981"/>
       <text x="0" y="4" text-anchor="middle" font-size="9" fill="white">3</text>
       <text x="20" y="4" font-size="9" fill="#475569">Promote if passed</text>
     </g>
-    
+
     <text x="560" y="36" font-size="12" fill="#64748b">to</text>
-    
+
     <g transform="translate(590, 32)">
       <circle cx="0" cy="0" r="10" fill="#64748b"/>
       <text x="0" y="4" text-anchor="middle" font-size="9" fill="white">4</text>
       <text x="20" y="4" font-size="9" fill="#475569">Archive old production</text>
     </g>
   </g>
-  
-  <!-- Footer -->
+
   <text x="400" y="385" text-anchor="middle" font-size="11" fill="#94a3b8">fasteval • Baseline Version Management</text>
 </svg>

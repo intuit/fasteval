@@ -1,168 +1,110 @@
-<svg viewBox="0 0 900 280" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, -apple-system, sans-serif">
+<svg viewBox="0 0 900 340" xmlns="http://www.w3.org/2000/svg" font-family="Inter, system-ui, -apple-system, sans-serif">
   <defs>
-    <!-- Gradients -->
-    <linearGradient id="heroGradBg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#0f172a"/>
-      <stop offset="100%" style="stop-color:#1e293b"/>
-    </linearGradient>
-    <linearGradient id="heroAccent1" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#6366f1"/>
-      <stop offset="100%" style="stop-color:#8b5cf6"/>
-    </linearGradient>
-    <linearGradient id="heroAccent2" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#3b82f6"/>
-      <stop offset="100%" style="stop-color:#06b6d4"/>
-    </linearGradient>
-    <linearGradient id="heroAccent3" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#10b981"/>
-      <stop offset="100%" style="stop-color:#22c55e"/>
-    </linearGradient>
     <linearGradient id="heroGlow" x1="0%" y1="0%" x2="100%" y2="0%">
       <stop offset="0%" style="stop-color:#6366f1;stop-opacity:0"/>
       <stop offset="50%" style="stop-color:#6366f1;stop-opacity:0.5"/>
       <stop offset="100%" style="stop-color:#6366f1;stop-opacity:0"/>
     </linearGradient>
-    
-    <!-- Filters -->
-    <filter id="heroShadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#6366f1" flood-opacity="0.3"/>
-    </filter>
-    <filter id="heroGlowFilter" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur stdDeviation="6" result="blur"/>
-      <feMerge>
-        <feMergeNode in="blur"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
-    </filter>
-    
-    <!-- Animated marker -->
-    <marker id="heroArrow" markerWidth="12" markerHeight="8" refX="11" refY="4" orient="auto">
-      <polygon points="0 0, 12 4, 0 8" fill="#64748b"/>
+
+    <marker id="heroArrow" markerWidth="10" markerHeight="6" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#64748b"/>
     </marker>
-    
-    <!-- Pulse animation -->
+
     <style>
       @keyframes heroPulse {
-        0%, 100% { opacity: 0.3; }
+        0%, 100% { opacity: 0.4; }
         50% { opacity: 1; }
       }
       @keyframes heroFlow {
-        0% { stroke-dashoffset: 20; }
+        0% { stroke-dashoffset: 12; }
         100% { stroke-dashoffset: 0; }
       }
-      @keyframes heroScale {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.05); }
-      }
-      .hero-pulse { animation: heroPulse 2s ease-in-out infinite; }
-      .hero-flow { animation: heroFlow 1.5s linear infinite; stroke-dasharray: 10 10; }
-      .hero-glow { animation: heroPulse 3s ease-in-out infinite; }
     </style>
   </defs>
-  
-  <!-- Background -->
-  <rect width="900" height="280" rx="16" fill="url(#heroGradBg)"/>
-  
-  <!-- Decorative grid pattern -->
-  <g opacity="0.1">
-    <line x1="0" y1="70" x2="900" y2="70" stroke="#64748b" stroke-width="0.5"/>
-    <line x1="0" y1="140" x2="900" y2="140" stroke="#64748b" stroke-width="0.5"/>
-    <line x1="0" y1="210" x2="900" y2="210" stroke="#64748b" stroke-width="0.5"/>
-    <line x1="180" y1="0" x2="180" y2="280" stroke="#64748b" stroke-width="0.5"/>
-    <line x1="360" y1="0" x2="360" y2="280" stroke="#64748b" stroke-width="0.5"/>
-    <line x1="540" y1="0" x2="540" y2="280" stroke="#64748b" stroke-width="0.5"/>
-    <line x1="720" y1="0" x2="720" y2="280" stroke="#64748b" stroke-width="0.5"/>
+
+  <rect width="900" height="340" rx="12" fill="#0f172a"/>
+
+  <g opacity="0.05">
+    <line x1="0" y1="75" x2="900" y2="75" stroke="#ffffff" stroke-width="1"/>
+    <line x1="0" y1="162" x2="900" y2="162" stroke="#ffffff" stroke-width="1"/>
+    <line x1="0" y1="250" x2="900" y2="250" stroke="#ffffff" stroke-width="1"/>
+    <line x1="240" y1="0" x2="240" y2="340" stroke="#ffffff" stroke-width="1"/>
+    <line x1="450" y1="0" x2="450" y2="340" stroke="#ffffff" stroke-width="1"/>
+    <line x1="660" y1="0" x2="660" y2="340" stroke="#ffffff" stroke-width="1"/>
   </g>
-  
-  <!-- Title area -->
-  <text x="450" y="40" text-anchor="middle" font-size="11" font-weight="500" fill="#94a3b8" letter-spacing="2">THE EVALUATION JOURNEY</text>
-  
-  <!-- Main flow visualization -->
-  
-  <!-- Step 1: Problem (Red zone) -->
-  <g transform="translate(50, 70)">
-    <rect width="160" height="140" rx="12" fill="#1e293b" stroke="#ef4444" stroke-width="1" stroke-opacity="0.3"/>
-    
-    <!-- Problem icon - question marks -->
-    <circle cx="80" cy="45" r="25" fill="none" stroke="#ef4444" stroke-width="2" opacity="0.5"/>
-    <text x="80" y="53" text-anchor="middle" font-size="22" fill="#ef4444">?</text>
-    
-    <text x="80" y="90" text-anchor="middle" font-size="13" font-weight="600" fill="#f8fafc">The Problem</text>
-    <text x="80" y="110" text-anchor="middle" font-size="10" fill="#94a3b8">LLM outputs are</text>
-    <text x="80" y="124" text-anchor="middle" font-size="10" fill="#94a3b8">non-deterministic</text>
-    
-    <rect x="20" y="135" width="120" height="24" rx="4" fill="#7f1d1d" opacity="0.3"/>
-    <text x="80" y="151" text-anchor="middle" font-size="9" fill="#fca5a5">Manual review doesn't scale</text>
+
+  <text x="450" y="42" text-anchor="middle" font-size="14" font-weight="600" fill="#94a3b8" letter-spacing="2">THE EVALUATION JOURNEY</text>
+
+  <g transform="translate(55, 75)">
+    <rect width="160" height="175" rx="12" fill="#1e293b" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+
+    <circle cx="80" cy="45" r="22" fill="rgba(239, 68, 68, 0.1)" stroke="#ef4444" stroke-width="1.5" stroke-opacity="0.5"/>
+    <text x="80" y="53" text-anchor="middle" font-size="20" font-weight="600" fill="#ef4444">?</text>
+
+    <text x="80" y="92" text-anchor="middle" font-size="16" font-weight="600" fill="#f8fafc">The Problem</text>
+    <text x="80" y="114" text-anchor="middle" font-size="13" fill="#94a3b8">LLM outputs are</text>
+    <text x="80" y="132" text-anchor="middle" font-size="13" fill="#94a3b8">non-deterministic</text>
+
+    <rect x="15" y="144" width="130" height="24" rx="4" fill="rgba(239, 68, 68, 0.15)"/>
+    <text x="80" y="161" text-anchor="middle" font-size="12" font-weight="600" fill="#fca5a5">Manual review fails</text>
   </g>
-  
-  <!-- Arrow 1 with animation -->
+
   <g class="hero-pulse">
-    <line x1="220" y1="140" x2="270" y2="140" stroke="#64748b" stroke-width="2" marker-end="url(#heroArrow)"/>
+    <line x1="225" y1="162" x2="255" y2="162" stroke="#475569" stroke-width="2" stroke-linecap="round" marker-end="url(#heroArrow)"/>
   </g>
-  
-  <!-- Step 2: fasteval (Purple/Blue zone) -->
-  <g transform="translate(280, 70)" filter="url(#heroShadow)">
-    <rect width="180" height="140" rx="12" fill="url(#heroAccent1)"/>
-    
-    <!-- Code icon -->
-    <rect x="55" y="18" width="70" height="50" rx="6" fill="rgba(0,0,0,0.2)"/>
-    <text x="90" y="38" text-anchor="middle" font-family="monospace" font-size="9" fill="#e0e7ff">@fe.metric()</text>
-    <text x="90" y="52" text-anchor="middle" font-family="monospace" font-size="9" fill="#c7d2fe">def test_...</text>
-    
-    <text x="90" y="90" text-anchor="middle" font-size="13" font-weight="700" fill="white">fasteval</text>
-    <text x="90" y="108" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.8)">Decorator-first</text>
-    <text x="90" y="122" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.8)">LLM evaluation</text>
+
+  <g transform="translate(265, 75)">
+    <rect width="160" height="175" rx="12" fill="#1e293b" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+
+    <rect x="55" y="25" width="50" height="40" rx="6" fill="rgba(99, 102, 241, 0.1)" stroke="#6366f1" stroke-width="1.5" stroke-opacity="0.5"/>
+    <text x="80" y="44" text-anchor="middle" font-family="monospace" font-size="16" fill="#818cf8">&lt;/&gt;</text>
+
+    <text x="80" y="92" text-anchor="middle" font-size="16" font-weight="600" fill="#f8fafc">fasteval</text>
+    <text x="80" y="114" text-anchor="middle" font-size="13" fill="#94a3b8">Decorator-first</text>
+    <text x="80" y="132" text-anchor="middle" font-size="13" fill="#94a3b8">LLM evaluation</text>
+
+    <rect x="15" y="144" width="130" height="24" rx="4" fill="rgba(99, 102, 241, 0.15)"/>
+    <text x="80" y="161" text-anchor="middle" font-size="12" font-weight="600" fill="#a5b4fc">Unit test for AI</text>
   </g>
-  
-  <!-- Arrow 2 with flow animation -->
-  <line x1="470" y1="140" x2="520" y2="140" stroke="#64748b" stroke-width="2" class="hero-flow" marker-end="url(#heroArrow)"/>
-  
-  <!-- Step 3: LLM Judge (Blue zone) -->
-  <g transform="translate(530, 70)">
-    <rect width="160" height="140" rx="12" fill="url(#heroAccent2)"/>
-    
-    <!-- Brain/AI icon -->
-    <circle cx="80" cy="40" r="22" fill="rgba(255,255,255,0.15)"/>
-    <text x="80" y="47" text-anchor="middle" font-size="20">🧠</text>
-    
-    <text x="80" y="85" text-anchor="middle" font-size="13" font-weight="700" fill="white">LLM Judge</text>
-    <text x="80" y="103" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.8)">Semantic evaluation</text>
-    <text x="80" y="117" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.8)">with reasoning</text>
-    
-    <!-- Score indicator -->
-    <rect x="50" y="125" width="60" height="20" rx="10" fill="rgba(255,255,255,0.2)"/>
-    <text x="80" y="139" text-anchor="middle" font-size="10" font-weight="600" fill="white">0.92</text>
+
+  <line x1="435" y1="162" x2="465" y2="162" stroke="#6366f1" stroke-width="2" stroke-linecap="round" class="hero-flow" marker-end="url(#heroArrow)"/>
+
+  <g transform="translate(475, 75)">
+    <rect width="160" height="175" rx="12" fill="#1e293b" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+
+    <circle cx="80" cy="45" r="22" fill="rgba(59, 130, 246, 0.1)" stroke="#3b82f6" stroke-width="1.5" stroke-opacity="0.5"/>
+    <text x="80" y="52" text-anchor="middle" font-size="18">🧠</text>
+
+    <text x="80" y="92" text-anchor="middle" font-size="16" font-weight="600" fill="#f8fafc">LLM Judge</text>
+    <text x="80" y="114" text-anchor="middle" font-size="13" fill="#94a3b8">Semantic grading</text>
+    <text x="80" y="132" text-anchor="middle" font-size="13" fill="#94a3b8">with reasoning</text>
+
+    <rect x="15" y="144" width="130" height="24" rx="4" fill="rgba(59, 130, 246, 0.15)"/>
+    <text x="80" y="161" text-anchor="middle" font-size="12" font-weight="600" fill="#93c5fd">Score: 0.92</text>
   </g>
-  
-  <!-- Arrow 3 -->
+
   <g class="hero-pulse" style="animation-delay: 0.5s">
-    <line x1="700" y1="140" x2="750" y2="140" stroke="#64748b" stroke-width="2" marker-end="url(#heroArrow)"/>
+    <line x1="645" y1="162" x2="675" y2="162" stroke="#475569" stroke-width="2" stroke-linecap="round" marker-end="url(#heroArrow)"/>
   </g>
-  
-  <!-- Step 4: Confidence (Green zone) -->
-  <g transform="translate(760, 70)">
-    <rect width="120" height="140" rx="12" fill="url(#heroAccent3)"/>
-    
-    <!-- Checkmark icon -->
-    <circle cx="60" cy="42" r="22" fill="rgba(255,255,255,0.2)"/>
-    <text x="60" y="50" text-anchor="middle" font-size="22" fill="white">✓</text>
-    
-    <text x="60" y="85" text-anchor="middle" font-size="13" font-weight="700" fill="white">Confidence</text>
-    <text x="60" y="103" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.85)">Ship with</text>
-    <text x="60" y="117" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.85)">certainty</text>
-    
-    <!-- PASS badge -->
-    <rect x="25" y="125" width="70" height="22" rx="11" fill="rgba(255,255,255,0.25)"/>
-    <text x="60" y="140" text-anchor="middle" font-size="11" font-weight="700" fill="white">PASS</text>
+
+  <g transform="translate(685, 75)">
+    <rect width="160" height="175" rx="12" fill="#1e293b" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+
+    <circle cx="80" cy="45" r="22" fill="rgba(16, 185, 129, 0.1)" stroke="#10b981" stroke-width="1.5" stroke-opacity="0.5"/>
+    <text x="80" y="52" text-anchor="middle" font-size="20" font-weight="600" fill="#10b981">✓</text>
+
+    <text x="80" y="92" text-anchor="middle" font-size="16" font-weight="600" fill="#f8fafc">Confidence</text>
+    <text x="80" y="114" text-anchor="middle" font-size="13" fill="#94a3b8">Ship features</text>
+    <text x="80" y="132" text-anchor="middle" font-size="13" fill="#94a3b8">with certainty</text>
+
+    <rect x="15" y="144" width="130" height="24" rx="4" fill="rgba(16, 185, 129, 0.15)"/>
+    <text x="80" y="161" text-anchor="middle" font-size="12" font-weight="600" fill="#6ee7b7">PASS</text>
   </g>
-  
-  <!-- Bottom tagline -->
-  <rect x="250" y="230" width="400" height="36" rx="8" fill="#1e293b" stroke="#3b82f6" stroke-width="1" opacity="0.8"/>
-  <text x="450" y="253" text-anchor="middle" font-size="12" fill="#f8fafc">
-    <tspan font-weight="600">pytest test_agent.py</tspan>
-    <tspan fill="#94a3b8"> — Evaluation as natural as unit testing</tspan>
+
+  <rect x="190" y="275" width="555" height="36" rx="6" fill="#0f172a" stroke="#1e293b" stroke-width="2"/>
+  <text x="210" y="298" font-family="monospace" font-size="14" fill="#e2e8f0">
+    <tspan fill="#6366f1">$</tspan> pytest test_agent.py
+    <tspan fill="#64748b">— Evaluation as natural as unit testing</tspan>
   </text>
-  
-  <!-- Decorative glow line -->
-  <rect x="0" y="276" width="900" height="4" fill="url(#heroGlow)" class="hero-glow"/>
+
 </svg>
