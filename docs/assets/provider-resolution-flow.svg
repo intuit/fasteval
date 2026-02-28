@@ -1,4 +1,4 @@
-<svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, -apple-system, sans-serif">
+<svg viewBox="-40 0 840 500" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, -apple-system, sans-serif">
   <defs>
     <linearGradient id="prfTopGrad" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" style="stop-color:#6366f1"/>
@@ -28,7 +28,7 @@
   </defs>
   
   <!-- Background -->
-  <rect width="800" height="500" fill="#f8fafc"/>
+  <rect x="-40" width="880" height="500" fill="#f8fafc"/>
   
   <!-- Title -->
   <text x="400" y="35" text-anchor="middle" font-size="22" font-weight="700" fill="#1e293b">Provider Resolution Flow</text>

@@ -41,7 +41,7 @@
     <text x="65" y="28" text-anchor="middle" font-size="12" font-weight="600" fill="white">Load Data</text>
     <text x="65" y="50" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.85)">CSV / JSON / DB</text>
     <text x="65" y="68" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.7)">10,000+ cases</text>
-    <text x="65" y="82" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.6)">Streaming load</text>
+    <text x="65" y="82" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.6)">Streaming load</text>
   </g>
   
   <!-- Arrow 1 -->
@@ -53,7 +53,7 @@
     <text x="65" y="28" text-anchor="middle" font-size="12" font-weight="600" fill="white">📦 Batch</text>
     <text x="65" y="50" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.85)">Size: 50-100</text>
     <text x="65" y="68" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.7)">Memory efficient</text>
-    <text x="65" y="82" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.6)">Iterator pattern</text>
+    <text x="65" y="82" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.6)">Iterator pattern</text>
   </g>
   
   <!-- Arrow 2 -->
@@ -68,16 +68,16 @@
     
     <!-- Worker boxes -->
     <rect x="10" y="45" width="42" height="25" rx="4" fill="#dcfce7"/>
-    <text x="31" y="62" text-anchor="middle" font-size="8" fill="#059669">W1</text>
+    <text x="31" y="62" text-anchor="middle" font-size="9" fill="#059669">W1</text>
     
     <rect x="58" y="45" width="42" height="25" rx="4" fill="#dcfce7"/>
-    <text x="79" y="62" text-anchor="middle" font-size="8" fill="#059669">W2</text>
+    <text x="79" y="62" text-anchor="middle" font-size="9" fill="#059669">W2</text>
     
     <rect x="106" y="45" width="42" height="25" rx="4" fill="#dcfce7"/>
-    <text x="127" y="62" text-anchor="middle" font-size="8" fill="#059669">...</text>
+    <text x="127" y="62" text-anchor="middle" font-size="9" fill="#059669">...</text>
     
     <text x="80" y="88" text-anchor="middle" font-size="9" fill="#475569">asyncio.gather()</text>
-    <text x="80" y="102" text-anchor="middle" font-size="8" fill="#64748b">max_concurrent=20</text>
+    <text x="80" y="102" text-anchor="middle" font-size="9" fill="#64748b">max_concurrent=20</text>
   </g>
   
   <!-- Arrow 3 -->
@@ -89,7 +89,7 @@
     <text x="65" y="28" text-anchor="middle" font-size="12" font-weight="600" fill="white">Aggregate</text>
     <text x="65" y="50" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.85)">Collect results</text>
     <text x="65" y="68" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.7)">Pass/fail stats</text>
-    <text x="65" y="82" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.6)">Per-metric scores</text>
+    <text x="65" y="82" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.6)">Per-metric scores</text>
   </g>
   
   <!-- Arrow down to report -->
@@ -113,7 +113,7 @@
   </g>
   
   <!-- Cost management box -->
-  <g transform="translate(250, 210)">
+  <g transform="translate(265, 210)">
     <rect x="0" y="0" width="200" height="80" rx="8" fill="#fef3c7" stroke="#f59e0b"/>
     <text x="100" y="20" text-anchor="middle" font-size="10" font-weight="600" fill="#92400e">💰 Cost Management</text>
     <text x="15" y="40" font-size="9" fill="#78350f">- Pre-run estimation</text>
@@ -127,16 +127,16 @@
     <text x="370" y="18" text-anchor="middle" font-size="11" font-weight="600" fill="#475569">Key Performance Numbers</text>
     
     <text x="80" y="38" text-anchor="middle" font-size="10" fill="#64748b">~100 evals/min</text>
-    <text x="80" y="48" text-anchor="middle" font-size="8" fill="#94a3b8">(20 workers)</text>
+    <text x="80" y="48" text-anchor="middle" font-size="9" fill="#94a3b8">(20 workers)</text>
     
     <text x="250" y="38" text-anchor="middle" font-size="10" fill="#64748b">~$0.50 / 1000 evals</text>
-    <text x="250" y="48" text-anchor="middle" font-size="8" fill="#94a3b8">(gpt-4o-mini)</text>
+    <text x="250" y="48" text-anchor="middle" font-size="9" fill="#94a3b8">(gpt-4o-mini)</text>
     
     <text x="440" y="38" text-anchor="middle" font-size="10" fill="#64748b">Batch: 50-100</text>
-    <text x="440" y="48" text-anchor="middle" font-size="8" fill="#94a3b8">(optimal)</text>
+    <text x="440" y="48" text-anchor="middle" font-size="9" fill="#94a3b8">(optimal)</text>
     
     <text x="620" y="38" text-anchor="middle" font-size="10" fill="#64748b">Memory: O(batch)</text>
-    <text x="620" y="48" text-anchor="middle" font-size="8" fill="#94a3b8">(streaming)</text>
+    <text x="620" y="48" text-anchor="middle" font-size="9" fill="#94a3b8">(streaming)</text>
   </g>
   
   <!-- Footer -->

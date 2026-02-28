@@ -1,4 +1,4 @@
-<svg viewBox="0 0 800 420" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, -apple-system, sans-serif">
+<svg viewBox="0 0 800 435" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, -apple-system, sans-serif">
   <defs>
     <linearGradient id="fccResponseGrad" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" style="stop-color:#8b5cf6"/>
@@ -29,7 +29,7 @@
   </defs>
   
   <!-- Background -->
-  <rect width="800" height="420" fill="#f8fafc"/>
+  <rect width="800" height="435" fill="#f8fafc"/>
   
   <!-- Title -->
   <text x="400" y="32" text-anchor="middle" font-size="22" font-weight="700" fill="#1e293b">Faithfulness Claim Checking</text>
@@ -125,9 +125,9 @@
   <g transform="translate(570, 365)">
     <rect x="0" y="0" width="200" height="45" rx="8" fill="#fef3c7" stroke="#f59e0b"/>
     <text x="100" y="18" text-anchor="middle" font-size="9" font-weight="600" fill="#92400e">Key Insight</text>
-    <text x="100" y="35" text-anchor="middle" font-size="8" fill="#78350f">Unsupported claim = hallucination</text>
+    <text x="100" y="35" text-anchor="middle" font-size="9" fill="#78350f">Unsupported claim = hallucination</text>
   </g>
   
   <!-- Footer -->
-  <text x="400" y="415" text-anchor="middle" font-size="11" fill="#94a3b8">fasteval • Faithfulness Metric (RAG Grounding)</text>
+  <text x="400" y="422" text-anchor="middle" font-size="11" fill="#94a3b8">fasteval • Faithfulness Metric (RAG Grounding)</text>
 </svg>

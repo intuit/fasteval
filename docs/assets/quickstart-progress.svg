@@ -1,4 +1,4 @@
-<svg viewBox="0 0 850 100" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, -apple-system, sans-serif">
+<svg viewBox="0 0 850 110" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, -apple-system, sans-serif">
   <defs>
     <linearGradient id="progressActive" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" style="stop-color:#6366f1"/>
@@ -27,7 +27,7 @@
   </defs>
   
   <!-- Background -->
-  <rect width="850" height="100" fill="#f8fafc"/>
+  <rect width="850" height="110" fill="#f8fafc"/>
   
   <!-- Progress line -->
   <rect x="100" y="47" width="650" height="6" rx="3" fill="#e2e8f0"/>
@@ -36,41 +36,41 @@
   <!-- Step 1: Setup -->
   <g transform="translate(85, 25)" filter="url(#progressShadow)">
     <circle cx="15" cy="25" r="18" fill="url(#progressComplete)"/>
-    <text x="15" y="30" text-anchor="middle" font-size="12" font-weight="700" fill="white">1</text>
+    <text x="15" y="28" text-anchor="middle" font-size="12" font-weight="700" fill="white">1</text>
     <text x="15" y="62" text-anchor="middle" font-size="10" font-weight="600" fill="#1e293b">Setup</text>
-    <text x="15" y="75" text-anchor="middle" font-size="8" fill="#64748b">Install &amp; configure</text>
+    <text x="15" y="75" text-anchor="middle" font-size="9" fill="#64748b">Install &amp; configure</text>
   </g>
   
   <!-- Step 2: Write -->
   <g transform="translate(235, 25)" filter="url(#progressShadow)">
     <circle cx="15" cy="25" r="18" fill="url(#progressActive)" class="progress-active"/>
-    <text x="15" y="30" text-anchor="middle" font-size="12" font-weight="700" fill="white">2</text>
+    <text x="15" y="28" text-anchor="middle" font-size="12" font-weight="700" fill="white">2</text>
     <text x="15" y="62" text-anchor="middle" font-size="10" font-weight="600" fill="#1e293b">Write</text>
-    <text x="15" y="75" text-anchor="middle" font-size="8" fill="#64748b">Create test file</text>
+    <text x="15" y="75" text-anchor="middle" font-size="9" fill="#64748b">Create test file</text>
   </g>
   
   <!-- Step 3: Decorate -->
   <g transform="translate(385, 25)" filter="url(#progressShadow)">
     <circle cx="15" cy="25" r="18" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2"/>
-    <text x="15" y="30" text-anchor="middle" font-size="12" font-weight="700" fill="#64748b">3</text>
+    <text x="15" y="28" text-anchor="middle" font-size="12" font-weight="700" fill="#64748b">3</text>
     <text x="15" y="62" text-anchor="middle" font-size="10" font-weight="600" fill="#64748b">Decorate</text>
-    <text x="15" y="75" text-anchor="middle" font-size="8" fill="#94a3b8">Add metrics</text>
+    <text x="15" y="75" text-anchor="middle" font-size="9" fill="#94a3b8">Add metrics</text>
   </g>
   
   <!-- Step 4: Run -->
   <g transform="translate(535, 25)" filter="url(#progressShadow)">
     <circle cx="15" cy="25" r="18" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2"/>
-    <text x="15" y="30" text-anchor="middle" font-size="12" font-weight="700" fill="#64748b">4</text>
+    <text x="15" y="28" text-anchor="middle" font-size="12" font-weight="700" fill="#64748b">4</text>
     <text x="15" y="62" text-anchor="middle" font-size="10" font-weight="600" fill="#64748b">Run</text>
-    <text x="15" y="75" text-anchor="middle" font-size="8" fill="#94a3b8">pytest</text>
+    <text x="15" y="75" text-anchor="middle" font-size="9" fill="#94a3b8">pytest</text>
   </g>
   
   <!-- Step 5: Ship -->
   <g transform="translate(685, 25)" filter="url(#progressShadow)">
     <circle cx="15" cy="25" r="18" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2"/>
-    <text x="15" y="30" text-anchor="middle" font-size="12" font-weight="700" fill="#64748b">5</text>
+    <text x="15" y="28" text-anchor="middle" font-size="12" font-weight="700" fill="#64748b">5</text>
     <text x="15" y="62" text-anchor="middle" font-size="10" font-weight="600" fill="#64748b">Ship</text>
-    <text x="15" y="75" text-anchor="middle" font-size="8" fill="#94a3b8">Deploy confident</text>
+    <text x="15" y="75" text-anchor="middle" font-size="9" fill="#94a3b8">Deploy confident</text>
   </g>
   
   <!-- Time indicator -->

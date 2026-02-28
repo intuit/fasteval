@@ -29,7 +29,7 @@
   <rect width="800" height="400" fill="#f8fafc"/>
   
   <!-- Title -->
-  <text x="400" y="40" text-anchor="middle" font-size="24" font-weight="700" fill="#1e293b">LLM as a Judge Evaluation Flow</text>
+  <text x="400" y="40" text-anchor="middle" font-size="22" font-weight="700" fill="#1e293b">LLM as a Judge Evaluation Flow</text>
   
   <!-- Your LLM Box -->
   <g filter="url(#shadow)">

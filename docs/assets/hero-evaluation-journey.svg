@@ -85,7 +85,7 @@
     
     <!-- Problem icon - question marks -->
     <circle cx="80" cy="45" r="25" fill="none" stroke="#ef4444" stroke-width="2" opacity="0.5"/>
-    <text x="80" y="53" text-anchor="middle" font-size="24" fill="#ef4444">?</text>
+    <text x="80" y="53" text-anchor="middle" font-size="22" fill="#ef4444">?</text>
     
     <text x="80" y="90" text-anchor="middle" font-size="13" font-weight="600" fill="#f8fafc">The Problem</text>
     <text x="80" y="110" text-anchor="middle" font-size="10" fill="#94a3b8">LLM outputs are</text>

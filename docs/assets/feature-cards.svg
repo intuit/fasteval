@@ -27,7 +27,7 @@
     
     <!-- Icon -->
     <circle cx="55" cy="55" r="22" fill="#eef2ff"/>
-    <text x="55" y="62" text-anchor="middle" font-size="18">🎯</text>
+    <text x="55" y="62" text-anchor="middle" font-size="22">🎯</text>
     
     <!-- Text -->
     <text x="90" y="52" font-size="14" font-weight="700" fill="#1e293b">Decorator-First</text>
@@ -48,7 +48,7 @@
     
     <!-- Icon -->
     <circle cx="330" cy="55" r="22" fill="#eff6ff"/>
-    <text x="330" y="62" text-anchor="middle" font-size="18">🧪</text>
+    <text x="330" y="62" text-anchor="middle" font-size="22">🧪</text>
     
     <!-- Text -->
     <text x="365" y="52" font-size="14" font-weight="700" fill="#1e293b">Pytest Native</text>
@@ -69,7 +69,7 @@
     
     <!-- Icon -->
     <circle cx="605" cy="55" r="22" fill="#ecfdf5"/>
-    <text x="605" y="62" text-anchor="middle" font-size="18">🚀</text>
+    <text x="605" y="62" text-anchor="middle" font-size="22">🚀</text>
     
     <!-- Text -->
     <text x="640" y="52" font-size="14" font-weight="700" fill="#1e293b">Production Ready</text>

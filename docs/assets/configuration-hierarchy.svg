@@ -70,29 +70,29 @@
   <g transform="translate(630, 95)">
     <rect x="0" y="0" width="155" height="55" rx="8" fill="#f1f5f9" stroke="#6366f1" stroke-width="1.5"/>
     <text x="10" y="18" font-size="9" font-weight="600" fill="#6366f1">Priority 1 Example:</text>
-    <text x="10" y="33" font-size="8" fill="#475569" font-family="monospace">@fe.correctness(</text>
-    <text x="10" y="45" font-size="8" fill="#475569" font-family="monospace">  model="gpt-4o")</text>
+    <text x="10" y="33" font-size="9" fill="#475569" font-family="monospace">@fe.correctness(</text>
+    <text x="10" y="45" font-size="9" fill="#475569" font-family="monospace">  model="gpt-4o")</text>
   </g>
   
   <g transform="translate(630, 160)">
     <rect x="0" y="0" width="155" height="55" rx="8" fill="#f1f5f9" stroke="#8b5cf6" stroke-width="1.5"/>
     <text x="10" y="18" font-size="9" font-weight="600" fill="#8b5cf6">Priority 2 Example:</text>
-    <text x="10" y="33" font-size="8" fill="#475569" font-family="monospace">fe.configure(</text>
-    <text x="10" y="45" font-size="8" fill="#475569" font-family="monospace">  model="gpt-4o-mini")</text>
+    <text x="10" y="33" font-size="9" fill="#475569" font-family="monospace">fe.configure(</text>
+    <text x="10" y="45" font-size="9" fill="#475569" font-family="monospace">  model="gpt-4o-mini")</text>
   </g>
   
   <g transform="translate(630, 225)">
     <rect x="0" y="0" width="155" height="55" rx="8" fill="#f1f5f9" stroke="#a78bfa" stroke-width="1.5"/>
     <text x="10" y="18" font-size="9" font-weight="600" fill="#7c3aed">Priority 3 Example:</text>
-    <text x="10" y="33" font-size="8" fill="#475569" font-family="monospace">[tool.fasteval]</text>
-    <text x="10" y="45" font-size="8" fill="#475569" font-family="monospace">default_model = "..."</text>
+    <text x="10" y="33" font-size="9" fill="#475569" font-family="monospace">[tool.fasteval]</text>
+    <text x="10" y="45" font-size="9" fill="#475569" font-family="monospace">default_model = "..."</text>
   </g>
   
   <g transform="translate(630, 290)">
     <rect x="0" y="0" width="155" height="55" rx="8" fill="#f1f5f9" stroke="#c4b5fd" stroke-width="1.5"/>
     <text x="10" y="18" font-size="9" font-weight="600" fill="#7c3aed">Priority 4 Example:</text>
-    <text x="10" y="33" font-size="8" fill="#475569" font-family="monospace">export OPENAI_API_KEY=</text>
-    <text x="10" y="45" font-size="8" fill="#475569" font-family="monospace">  sk-...</text>
+    <text x="10" y="33" font-size="9" fill="#475569" font-family="monospace">export OPENAI_API_KEY=</text>
+    <text x="10" y="45" font-size="9" fill="#475569" font-family="monospace">  sk-...</text>
   </g>
   
   <!-- Override arrows connecting levels -->

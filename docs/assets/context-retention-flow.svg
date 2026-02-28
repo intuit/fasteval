@@ -51,7 +51,7 @@
     <!-- Memory stored indicator -->
     <rect x="240" y="30" width="75" height="50" rx="6" fill="#dcfce7" stroke="#10b981" stroke-dasharray="4,2"/>
     <text x="277" y="50" text-anchor="middle" font-size="9" font-weight="600" fill="#059669">💾 Store</text>
-    <text x="277" y="68" text-anchor="middle" font-size="8" fill="#059669">name=Alice</text>
+    <text x="277" y="68" text-anchor="middle" font-size="9" fill="#059669">name=Alice</text>
   </g>
   
   <!-- Arrow to Turn 2 -->
@@ -76,11 +76,11 @@
     <!-- Memory stored indicator -->
     <rect x="260" y="30" width="85" height="50" rx="6" fill="#dcfce7" stroke="#10b981" stroke-dasharray="4,2"/>
     <text x="302" y="50" text-anchor="middle" font-size="9" font-weight="600" fill="#059669">💾 Store</text>
-    <text x="302" y="68" text-anchor="middle" font-size="8" fill="#059669">order=#12345</text>
+    <text x="302" y="68" text-anchor="middle" font-size="9" fill="#059669">order=#12345</text>
   </g>
   
   <!-- Turn 3 - Test Turn -->
-  <g transform="translate(185, 195)">
+  <g transform="translate(210, 195)">
     <text x="0" y="0" font-size="11" font-weight="600" fill="#f59e0b">Turn 3 (Test)</text>
     
     <!-- User message -->
@@ -97,11 +97,11 @@
     </g>
     
     <!-- Memory retrieval -->
-    <line x1="-30" y1="75" x2="-70" y2="50" stroke="#10b981" stroke-width="2" stroke-dasharray="4,2"/>
-    <rect x="-180" y="20" width="100" height="55" rx="6" fill="url(#crfMemoryGrad)"/>
-    <text x="-130" y="42" text-anchor="middle" font-size="9" font-weight="600" fill="white">📚 History</text>
-    <text x="-130" y="58" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.9)">name=Alice</text>
-    <text x="-130" y="70" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.9)">order=#12345</text>
+    <line x1="-5" y1="75" x2="-55" y2="50" stroke="#10b981" stroke-width="2" stroke-dasharray="4,2"/>
+    <rect x="-155" y="20" width="100" height="55" rx="6" fill="url(#crfMemoryGrad)"/>
+    <text x="-105" y="42" text-anchor="middle" font-size="9" font-weight="600" fill="white">📚 History</text>
+    <text x="-105" y="58" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.9)">name=Alice</text>
+    <text x="-105" y="70" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.9)">order=#12345</text>
   </g>
   
   <!-- Evaluation box -->
