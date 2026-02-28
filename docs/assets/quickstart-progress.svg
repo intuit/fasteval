@@ -1,79 +1,67 @@
-<svg viewBox="0 0 850 110" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, -apple-system, sans-serif">
+<svg viewBox="0 0 900 160" xmlns="http://www.w3.org/2000/svg" font-family="Inter, system-ui, -apple-system, sans-serif">
   <defs>
-    <linearGradient id="progressActive" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#6366f1"/>
-      <stop offset="100%" style="stop-color:#4f46e5"/>
-    </linearGradient>
-    <linearGradient id="progressComplete" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#10b981"/>
-      <stop offset="100%" style="stop-color:#059669"/>
-    </linearGradient>
-    <linearGradient id="progressLine" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#6366f1"/>
-      <stop offset="100%" style="stop-color:#10b981"/>
-    </linearGradient>
-    
     <filter id="progressShadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.15"/>
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-opacity="0.08"/>
     </filter>
-    
+
     <style>
       @keyframes progressPulse {
         0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.05); }
+        50% { transform: scale(1.1); }
       }
-      .progress-active { animation: progressPulse 1.5s ease-in-out infinite; }
+      .progress-active {
+        animation: progressPulse 2s ease-in-out infinite;
+        transform-origin: 290px 75px;
+      }
     </style>
   </defs>
-  
-  <!-- Background -->
-  <rect width="850" height="110" fill="#f8fafc"/>
-  
-  <!-- Progress line -->
-  <rect x="100" y="47" width="650" height="6" rx="3" fill="#e2e8f0"/>
-  <rect x="100" y="47" width="650" height="6" rx="3" fill="url(#progressLine)" opacity="0.3"/>
-  
-  <!-- Step 1: Setup -->
-  <g transform="translate(85, 25)" filter="url(#progressShadow)">
-    <circle cx="15" cy="25" r="18" fill="url(#progressComplete)"/>
-    <text x="15" y="28" text-anchor="middle" font-size="12" font-weight="700" fill="white">1</text>
-    <text x="15" y="62" text-anchor="middle" font-size="10" font-weight="600" fill="#1e293b">Setup</text>
-    <text x="15" y="75" text-anchor="middle" font-size="9" fill="#64748b">Install &amp; configure</text>
+
+  <rect width="900" height="160" rx="12" fill="#f8fafc"/>
+
+  <rect x="740" y="15" width="130" height="30" rx="15" fill="#dcfce7" stroke="#86efac" stroke-width="1"/>
+  <text x="805" y="35" text-anchor="middle" font-size="13" font-weight="600" fill="#166534">⏱ 5 minutes</text>
+
+  <rect x="130" y="72" width="640" height="6" rx="3" fill="#e2e8f0"/>
+
+  <rect x="130" y="72" width="160" height="6" rx="3" fill="#10b981"/>
+
+  <g filter="url(#progressShadow)">
+    <circle cx="130" cy="75" r="22" fill="#10b981"/>
+    <text x="130" y="80" text-anchor="middle" font-size="14" font-weight="700" fill="white">1</text>
+
+    <text x="130" y="120" text-anchor="middle" font-size="15" font-weight="600" fill="#1e293b">Setup</text>
+    <text x="130" y="138" text-anchor="middle" font-size="13" fill="#64748b">Install &amp; configure</text>
   </g>
-  
-  <!-- Step 2: Write -->
-  <g transform="translate(235, 25)" filter="url(#progressShadow)">
-    <circle cx="15" cy="25" r="18" fill="url(#progressActive)" class="progress-active"/>
-    <text x="15" y="28" text-anchor="middle" font-size="12" font-weight="700" fill="white">2</text>
-    <text x="15" y="62" text-anchor="middle" font-size="10" font-weight="600" fill="#1e293b">Write</text>
-    <text x="15" y="75" text-anchor="middle" font-size="9" fill="#64748b">Create test file</text>
+
+  <g filter="url(#progressShadow)">
+    <circle cx="290" cy="75" r="22" fill="#6366f1" class="progress-active"/>
+    <text x="290" y="80" text-anchor="middle" font-size="14" font-weight="700" fill="white">2</text>
+
+    <text x="290" y="120" text-anchor="middle" font-size="15" font-weight="600" fill="#1e293b">Write</text>
+    <text x="290" y="138" text-anchor="middle" font-size="13" font-weight="500" fill="#6366f1">Create test file</text>
   </g>
-  
-  <!-- Step 3: Decorate -->
-  <g transform="translate(385, 25)" filter="url(#progressShadow)">
-    <circle cx="15" cy="25" r="18" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2"/>
-    <text x="15" y="28" text-anchor="middle" font-size="12" font-weight="700" fill="#64748b">3</text>
-    <text x="15" y="62" text-anchor="middle" font-size="10" font-weight="600" fill="#64748b">Decorate</text>
-    <text x="15" y="75" text-anchor="middle" font-size="9" fill="#94a3b8">Add metrics</text>
+
+  <g filter="url(#progressShadow)">
+    <circle cx="450" cy="75" r="22" fill="white" stroke="#cbd5e1" stroke-width="2"/>
+    <text x="450" y="80" text-anchor="middle" font-size="14" font-weight="700" fill="#64748b">3</text>
+
+    <text x="450" y="120" text-anchor="middle" font-size="15" font-weight="600" fill="#64748b">Decorate</text>
+    <text x="450" y="138" text-anchor="middle" font-size="13" fill="#94a3b8">Add metrics</text>
   </g>
-  
-  <!-- Step 4: Run -->
-  <g transform="translate(535, 25)" filter="url(#progressShadow)">
-    <circle cx="15" cy="25" r="18" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2"/>
-    <text x="15" y="28" text-anchor="middle" font-size="12" font-weight="700" fill="#64748b">4</text>
-    <text x="15" y="62" text-anchor="middle" font-size="10" font-weight="600" fill="#64748b">Run</text>
-    <text x="15" y="75" text-anchor="middle" font-size="9" fill="#94a3b8">pytest</text>
+
+  <g filter="url(#progressShadow)">
+    <circle cx="610" cy="75" r="22" fill="white" stroke="#cbd5e1" stroke-width="2"/>
+    <text x="610" y="80" text-anchor="middle" font-size="14" font-weight="700" fill="#64748b">4</text>
+
+    <text x="610" y="120" text-anchor="middle" font-size="15" font-weight="600" fill="#64748b">Run</text>
+    <text x="610" y="138" text-anchor="middle" font-size="13" fill="#94a3b8">pytest</text>
   </g>
-  
-  <!-- Step 5: Ship -->
-  <g transform="translate(685, 25)" filter="url(#progressShadow)">
-    <circle cx="15" cy="25" r="18" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2"/>
-    <text x="15" y="28" text-anchor="middle" font-size="12" font-weight="700" fill="#64748b">5</text>
-    <text x="15" y="62" text-anchor="middle" font-size="10" font-weight="600" fill="#64748b">Ship</text>
-    <text x="15" y="75" text-anchor="middle" font-size="9" fill="#94a3b8">Deploy confident</text>
+
+  <g filter="url(#progressShadow)">
+    <circle cx="770" cy="75" r="22" fill="white" stroke="#cbd5e1" stroke-width="2"/>
+    <text x="770" y="80" text-anchor="middle" font-size="14" font-weight="700" fill="#64748b">5</text>
+
+    <text x="770" y="120" text-anchor="middle" font-size="15" font-weight="600" fill="#64748b">Ship</text>
+    <text x="770" y="138" text-anchor="middle" font-size="13" fill="#94a3b8">Deploy confident</text>
   </g>
-  
-  <!-- Time indicator -->
-  <rect x="730" y="25" width="100" height="24" rx="12" fill="#f0fdf4" stroke="#86efac"/>
-  <text x="780" y="41" text-anchor="middle" font-size="10" font-weight="600" fill="#166534">⏱ 5 minutes</text>
 </svg>
