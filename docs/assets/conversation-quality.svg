@@ -50,13 +50,13 @@
     <line x1="240" y1="84" x2="280" y2="84" stroke="#3b82f6" stroke-width="2" marker-end="url(#arrowhead)"/>
 
     <path d="M 210 194 L 240 194 L 240 238 L 210 238" fill="none" stroke="#10b981" stroke-width="2"/>
-    <line x1="240" y1="216" x2="280" y2="216" stroke="#10b981" stroke-width="2" marker-end="url(#arrowhead)"/>
+    <line x1="240" y1="200" x2="280" y2="200" stroke="#10b981" stroke-width="2" marker-end="url(#arrowhead)"/>
 
     <line x1="210" y1="282" x2="280" y2="282" stroke="#f59e0b" stroke-width="2" marker-end="url(#arrowhead)"/>
   </g>
 
   <g transform="translate(330, 100)">
-    <g filter="url(#shadow)">
+    <g transform="translate(0, 36)" filter="url(#shadow)">
       <rect width="240" height="90" rx="12" fill="white" stroke="#3b82f6" stroke-width="1.5"/>
       <text x="20" y="30" font-size="13" font-weight="700" fill="#1d4ed8">CONTEXT RETENTION</text>
       <text x="20" y="52" font-size="12" fill="#475569">Long-term memory &amp; resolution</text>
@@ -64,7 +64,7 @@
       <text x="30" y="75" font-family="monospace" font-size="10" fill="#a78bfa">@fe.context_retention<tspan fill="#f8fafc">(0.8)</tspan></text>
     </g>
 
-    <g transform="translate(0, 105)" filter="url(#shadow)">
+    <g transform="translate(0, 155)" filter="url(#shadow)">
       <rect width="240" height="90" rx="12" fill="white" stroke="#10b981" stroke-width="1.5"/>
       <text x="20" y="30" font-size="13" font-weight="700" fill="#047857">CONSISTENCY</text>
       <text x="20" y="52" font-size="12" fill="#475569">Avoidance of contradictions</text>
@@ -72,7 +72,7 @@
       <text x="30" y="75" font-family="monospace" font-size="10" fill="#10b981">@fe.consistency<tspan fill="#f8fafc">(0.9)</tspan></text>
     </g>
 
-    <g transform="translate(0, 210)" filter="url(#shadow)">
+    <g transform="translate(0, 250)" filter="url(#shadow)">
       <rect width="240" height="60" rx="12" fill="white" stroke="#f59e0b" stroke-width="1.5"/>
       <text x="20" y="25" font-size="13" font-weight="700" fill="#b45309">TOPIC DRIFT</text>
       <rect x="20" y="34" width="200" height="18" rx="4" fill="#0f172a"/>
