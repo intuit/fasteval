@@ -1,0 +1,60 @@
+<svg viewBox="0 0 880 80" xmlns="http://www.w3.org/2000/svg" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.06"/>
+    </filter>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8"/>
+    </marker>
+  </defs>
+
+  <g transform="translate(0, 5)">
+    <g filter="url(#shadow)">
+      <rect width="148" height="70" rx="10" fill="white" stroke="#c7d2fe" stroke-width="1.5"/>
+      <rect width="148" height="26" rx="10" fill="#eef2ff"/>
+      <rect y="18" width="148" height="8" fill="#eef2ff"/>
+      <text x="74" y="18" text-anchor="middle" font-size="12" font-weight="700" fill="#4f46e5">DECORATE</text>
+      <text x="74" y="52" text-anchor="middle" font-size="11" fill="#94a3b8">@fe.metric()</text>
+    </g>
+
+    <line x1="148" y1="35" x2="183" y2="35" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+
+    <g transform="translate(183, 0)" filter="url(#shadow)">
+      <rect width="148" height="70" rx="10" fill="white" stroke="#ddd6fe" stroke-width="1.5"/>
+      <rect width="148" height="26" rx="10" fill="#f5f3ff"/>
+      <rect y="18" width="148" height="8" fill="#f5f3ff"/>
+      <text x="74" y="18" text-anchor="middle" font-size="12" font-weight="700" fill="#7c3aed">TEST</text>
+      <text x="74" y="52" text-anchor="middle" font-size="11" fill="#94a3b8">Call your agent</text>
+    </g>
+
+    <line x1="331" y1="35" x2="366" y2="35" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+
+    <g transform="translate(366, 0)" filter="url(#shadow)">
+      <rect width="148" height="70" rx="10" fill="white" stroke="#c7d2fe" stroke-width="1.5"/>
+      <rect width="148" height="26" rx="10" fill="#eff6ff"/>
+      <rect y="18" width="148" height="8" fill="#eff6ff"/>
+      <text x="74" y="18" text-anchor="middle" font-size="12" font-weight="700" fill="#2563eb">SCORE</text>
+      <text x="74" y="52" text-anchor="middle" font-size="11" fill="#94a3b8">fe.score()</text>
+    </g>
+
+    <line x1="514" y1="35" x2="549" y2="35" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+
+    <g transform="translate(549, 0)" filter="url(#shadow)">
+      <rect width="148" height="70" rx="10" fill="white" stroke="#bbf7d0" stroke-width="1.5"/>
+      <rect width="148" height="26" rx="10" fill="#ecfdf5"/>
+      <rect y="18" width="148" height="8" fill="#ecfdf5"/>
+      <text x="74" y="18" text-anchor="middle" font-size="12" font-weight="700" fill="#059669">EVALUATE</text>
+      <text x="74" y="52" text-anchor="middle" font-size="11" fill="#94a3b8">LLM Judge</text>
+    </g>
+
+    <line x1="697" y1="35" x2="732" y2="35" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+
+    <g transform="translate(732, 0)" filter="url(#shadow)">
+      <rect width="148" height="70" rx="10" fill="white" stroke="#fcd34d" stroke-width="1.5"/>
+      <rect width="148" height="26" rx="10" fill="#fffbeb"/>
+      <rect y="18" width="148" height="8" fill="#fffbeb"/>
+      <text x="74" y="18" text-anchor="middle" font-size="12" font-weight="700" fill="#b45309">RESULT</text>
+      <text x="74" y="52" text-anchor="middle" font-size="11" fill="#94a3b8">PASS / FAIL</text>
+    </g>
+  </g>
+</svg>
