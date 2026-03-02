@@ -1,6 +1,7 @@
 """Async utility functions."""
 
 import asyncio
+import concurrent.futures
 from typing import Any, Coroutine, TypeVar
 
 T = TypeVar("T")
@@ -8,10 +9,13 @@ T = TypeVar("T")
 
 def run_async(coro: Coroutine[Any, Any, T]) -> T:
     """
-    Run an async coroutine safely, handling event loop issues in Python 3.10+.
+    Run an async coroutine from synchronous code, whether or not an event
+    loop is already running (e.g. Jupyter, Colab, IPython).
 
-    Uses asyncio.run() which creates a new event loop and closes it when done.
-    This avoids issues with get_event_loop() deprecation warnings and errors.
+    When no loop is running, delegates to ``asyncio.run()``.
+    When called inside a running loop, spins up a worker thread with its
+    own loop so the caller never blocks the outer loop and ``asyncio.run()``
+    is never nested.
 
     Args:
         coro: The coroutine to run
@@ -25,4 +29,11 @@ def run_async(coro: Coroutine[Any, Any, T]) -> T:
 
         result = run_async(fetch_data())
     """
-    return asyncio.run(coro)
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        return asyncio.run(coro)
+
+    # Already inside a running loop — run in a dedicated thread.
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+        return pool.submit(asyncio.run, coro).result()
