@@ -72,10 +72,10 @@
     </g>
   </g>
 
+
   <g transform="translate(740, 100)">
-    <g>
-      <path d="M -40 100 L -10 100" stroke="#cbd5e1" stroke-width="2" marker-end="url(#arrowhead)"/>
-      
+    <path d="M -40 100 L -10 100" stroke="#cbd5e1" stroke-width="2" marker-end="url(#arrowhead)"/>
+    <g transform="translate(0, -50)">
       <rect x="0" y="55" width="120" height="90" rx="8" fill="#ecfdf5" stroke="#10b981"/>
       <text x="60" y="85" text-anchor="middle" font-size="15" font-weight="800" fill="#047857">PASS</text>
       <text x="60" y="105" text-anchor="middle" font-size="10" font-weight="600" fill="#059669">Δ ≥ -0.05</text>

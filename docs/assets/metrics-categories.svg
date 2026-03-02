@@ -65,11 +65,11 @@
   </g>
 
   <g transform="translate(40, 285)" filter="url(#shadow)">
-    <rect width="390" height="140" rx="12" fill="white" stroke="#bbf7d0" stroke-width="1.5"/>
+    <rect width="390" height="155" rx="12" fill="white" stroke="#bbf7d0" stroke-width="1.5"/>
     <rect width="390" height="40" rx="12" fill="#ecfdf5"/>
     <rect y="30" width="390" height="10" fill="#ecfdf5"/>
     <text x="20" y="26" font-size="14" font-weight="700" fill="#047857">DETERMINISTIC</text>
-    <text x="370" y="26" text-anchor="end" font-size="11" font-weight="700" fill="#059669">⚡ INSTANT</text>
+    <text x="370" y="26" text-anchor="end" font-size="11" font-weight="700" fill="#059669">Functional</text>
     
     <text x="20" y="62" font-size="12" fill="#475569">No LLM calls. Rule-based and string-matching logic.</text>
     
@@ -89,7 +89,7 @@
   </g>
 
   <g transform="translate(470, 285)" filter="url(#shadow)">
-    <rect width="390" height="140" rx="12" fill="white" stroke="#fde68a" stroke-width="1.5"/>
+    <rect width="390" height="155" rx="12" fill="white" stroke="#fde68a" stroke-width="1.5"/>
     <rect width="390" height="40" rx="12" fill="#fffbeb"/>
     <rect y="30" width="390" height="10" fill="#fffbeb"/>
     <text x="20" y="26" font-size="14" font-weight="700" fill="#b45309">CONVERSATION</text>
