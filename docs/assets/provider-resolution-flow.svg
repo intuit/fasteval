@@ -1,160 +1,95 @@
-<svg viewBox="-40 0 840 500" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, -apple-system, sans-serif">
+<svg viewBox="0 0 900 620" xmlns="http://www.w3.org/2000/svg" font-family="Inter, system-ui, -apple-system, sans-serif">
   <defs>
-    <linearGradient id="prfTopGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#6366f1"/>
-      <stop offset="100%" style="stop-color:#4f46e5"/>
-    </linearGradient>
-    <linearGradient id="prfDecisionGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#f59e0b"/>
-      <stop offset="100%" style="stop-color:#d97706"/>
-    </linearGradient>
-    <linearGradient id="prfUseGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#10b981"/>
-      <stop offset="100%" style="stop-color:#059669"/>
-    </linearGradient>
-    <linearGradient id="prfErrorGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#ef4444"/>
-      <stop offset="100%" style="stop-color:#dc2626"/>
-    </linearGradient>
-    <filter id="prfShadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-opacity="0.12"/>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-opacity="0.08"/>
     </filter>
-    <marker id="prfArrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
       <polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/>
     </marker>
-    <marker id="prfArrowGreen" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+    <marker id="arrowhead-green" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
       <polygon points="0 0, 10 3.5, 0 7" fill="#10b981"/>
     </marker>
   </defs>
-  
-  <!-- Background -->
-  <rect x="-40" width="880" height="500" fill="#f8fafc"/>
-  
-  <!-- Title -->
-  <text x="400" y="35" text-anchor="middle" font-size="22" font-weight="700" fill="#1e293b">Provider Resolution Flow</text>
-  <text x="400" y="55" text-anchor="middle" font-size="12" fill="#64748b">How fasteval determines which LLM provider to use</text>
-  
-  <!-- Priority Label -->
-  <text x="60" y="85" font-size="11" font-weight="600" fill="#6366f1">HIGHEST PRIORITY</text>
-  <line x1="60" y1="90" x2="175" y2="90" stroke="#6366f1" stroke-width="2"/>
-  
-  <!-- Decision 1: Per-metric llm= parameter -->
-  <g filter="url(#prfShadow)">
-    <polygon points="400,100 550,145 400,190 250,145" fill="url(#prfDecisionGrad)"/>
-    <text x="400" y="140" text-anchor="middle" font-size="11" font-weight="600" fill="white">Per-metric llm=</text>
-    <text x="400" y="155" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.85)">parameter set?</text>
+
+  <rect width="900" height="620" fill="#f8fafc"/>
+
+  <text x="450" y="45" text-anchor="middle" font-size="22" font-weight="700" fill="#1e293b">Provider Resolution Flow</text>
+  <text x="450" y="70" text-anchor="middle" font-size="14" fill="#64748b">Hierarchy of logic fasteval uses to select an LLM judge</text>
+
+  <line x1="80" y1="100" x2="80" y2="500" stroke="#e2e8f0" stroke-width="4" stroke-linecap="round"/>
+  <text x="65" y="300" text-anchor="middle" font-size="11" font-weight="800" fill="#94a3b8" transform="rotate(-90 65 300)">RESOLUTION PRIORITY</text>
+
+  <g transform="translate(280, 100)">
+    <path d="M 120 0 L 240 45 L 120 90 L 0 45 Z" fill="#f59e0b" filter="url(#shadow)"/>
+    <text x="120" y="40" text-anchor="middle" font-size="12" font-weight="700" fill="white">PER-METRIC LLM=</text>
+    <text x="120" y="55" text-anchor="middle" font-size="11" fill="white" opacity="0.9">PARAMETER SET?</text>
+    <text x="-30" y="48" text-anchor="end" font-size="11" font-weight="700" fill="#4f46e5">PRIORITY 1</text>
+    
+    <line x1="240" y1="45" x2="310" y2="45" stroke="#10b981" stroke-width="2" marker-end="url(#arrowhead-green)"/>
+    <text x="275" y="38" text-anchor="middle" font-size="11" font-weight="700" fill="#059669">YES</text>
+    <g transform="translate(310, 15)" filter="url(#shadow)">
+      <rect width="220" height="60" rx="12" fill="white" stroke="#10b981" stroke-width="2"/>
+      <text x="110" y="28" text-anchor="middle" font-size="13" font-weight="700" fill="#047857">Use Custom Client</text>
+      <text x="110" y="46" text-anchor="middle" font-size="11" font-family="monospace" fill="#059669">@fe.metric(llm=client)</text>
+    </g>
+    
+    <line x1="120" y1="90" x2="120" y2="120" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrowhead)"/>
   </g>
-  
-  <!-- Yes arrow from Decision 1 -->
-  <line x1="550" y1="145" x2="620" y2="145" stroke="#10b981" stroke-width="2" marker-end="url(#prfArrowGreen)"/>
-  <text x="575" y="138" font-size="10" font-weight="600" fill="#10b981">Yes</text>
-  
-  <!-- Use 1: Per-metric llm -->
-  <g filter="url(#prfShadow)">
-    <rect x="630" y="120" width="140" height="50" rx="8" fill="url(#prfUseGrad)"/>
-    <text x="700" y="142" text-anchor="middle" font-size="11" font-weight="600" fill="white">Use llm= client</text>
-    <text x="700" y="158" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.8)">@fe.metric(llm=client)</text>
+
+  <g transform="translate(280, 220)">
+    <path d="M 120 0 L 240 45 L 120 90 L 0 45 Z" fill="#f59e0b" filter="url(#shadow)"/>
+    <text x="120" y="40" text-anchor="middle" font-size="12" font-weight="700" fill="white">PER-METRIC MODEL=</text>
+    <text x="120" y="55" text-anchor="middle" font-size="11" fill="white" opacity="0.9">PARAMETER SET?</text>
+    <text x="-30" y="48" text-anchor="end" font-size="11" font-weight="700" fill="#7c3aed">PRIORITY 2</text>
+
+    <line x1="240" y1="45" x2="310" y2="45" stroke="#10b981" stroke-width="2" marker-end="url(#arrowhead-green)"/>
+    <g transform="translate(310, 15)" filter="url(#shadow)">
+      <rect width="220" height="60" rx="12" fill="white" stroke="#10b981" stroke-width="2"/>
+      <text x="110" y="28" text-anchor="middle" font-size="13" font-weight="700" fill="#047857">Use Specific Model</text>
+      <text x="110" y="46" text-anchor="middle" font-size="11" font-family="monospace" fill="#059669">model="gpt-4o-mini"</text>
+    </g>
+
+    <line x1="120" y1="90" x2="120" y2="120" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrowhead)"/>
   </g>
-  
-  <!-- No arrow from Decision 1 -->
-  <line x1="400" y1="190" x2="400" y2="220" stroke="#64748b" stroke-width="2" marker-end="url(#prfArrow)"/>
-  <text x="410" y="210" font-size="10" fill="#64748b">No</text>
-  
-  <!-- Decision 2: Per-metric model= parameter -->
-  <g filter="url(#prfShadow)">
-    <polygon points="400,230 550,275 400,320 250,275" fill="url(#prfDecisionGrad)"/>
-    <text x="400" y="270" text-anchor="middle" font-size="11" font-weight="600" fill="white">Per-metric model=</text>
-    <text x="400" y="285" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.85)">parameter set?</text>
+
+  <g transform="translate(280, 340)">
+    <path d="M 120 0 L 240 45 L 120 90 L 0 45 Z" fill="#f59e0b" filter="url(#shadow)"/>
+    <text x="120" y="40" text-anchor="middle" font-size="12" font-weight="700" fill="white">GLOBAL PROVIDER</text>
+    <text x="120" y="55" text-anchor="middle" font-size="11" fill="white" opacity="0.9">CONFIGURED?</text>
+    <text x="-30" y="48" text-anchor="end" font-size="11" font-weight="700" fill="#2563eb">PRIORITY 3</text>
+
+    <line x1="240" y1="45" x2="310" y2="45" stroke="#10b981" stroke-width="2" marker-end="url(#arrowhead-green)"/>
+    <g transform="translate(310, 15)" filter="url(#shadow)">
+      <rect width="220" height="60" rx="12" fill="white" stroke="#10b981" stroke-width="2"/>
+      <text x="110" y="28" text-anchor="middle" font-size="13" font-weight="700" fill="#047857">Use Global Setting</text>
+      <text x="110" y="46" text-anchor="middle" font-size="11" font-family="monospace" fill="#059669">fe.set_default_provider()</text>
+    </g>
+
+    <line x1="120" y1="90" x2="120" y2="120" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrowhead)"/>
   </g>
-  
-  <!-- Yes arrow from Decision 2 -->
-  <line x1="550" y1="275" x2="620" y2="275" stroke="#10b981" stroke-width="2" marker-end="url(#prfArrowGreen)"/>
-  <text x="575" y="268" font-size="10" font-weight="600" fill="#10b981">Yes</text>
-  
-  <!-- Use 2: Per-metric model -->
-  <g filter="url(#prfShadow)">
-    <rect x="630" y="250" width="140" height="50" rx="8" fill="url(#prfUseGrad)"/>
-    <text x="700" y="272" text-anchor="middle" font-size="11" font-weight="600" fill="white">Use model string</text>
-    <text x="700" y="288" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.8)">model="gpt-4o"</text>
+
+  <g transform="translate(280, 460)">
+    <path d="M 120 0 L 240 45 L 120 90 L 0 45 Z" fill="#f59e0b" filter="url(#shadow)"/>
+    <text x="120" y="40" text-anchor="middle" font-size="12" font-weight="700" fill="white">ENV API KEY</text>
+    <text x="120" y="55" text-anchor="middle" font-size="11" fill="white" opacity="0.9">DETECTED?</text>
+    <text x="-30" y="48" text-anchor="end" font-size="11" font-weight="700" fill="#475569">PRIORITY 4</text>
+
+    <line x1="240" y1="45" x2="310" y2="45" stroke="#10b981" stroke-width="2" marker-end="url(#arrowhead-green)"/>
+    <g transform="translate(310, 15)" filter="url(#shadow)">
+      <rect width="220" height="60" rx="12" fill="white" stroke="#10b981" stroke-width="2"/>
+      <text x="110" y="28" text-anchor="middle" font-size="13" font-weight="700" fill="#047857">Auto-Detect Provider</text>
+      <text x="110" y="46" text-anchor="middle" font-size="10" fill="#059669">OPENAI_API_KEY / ANTHROPIC_...</text>
+    </g>
+
+    <path d="M 120 90 L 120 125 L 310 125" fill="none" stroke="#ef4444" stroke-width="2" marker-end="url(#arrowhead)"/>
+    <text x="130" y="115" font-size="11" font-weight="700" fill="#dc2626">NO</text>
+    
+    <g transform="translate(310, 95)" filter="url(#shadow)">
+      <rect width="220" height="60" rx="12" fill="#fef2f2" stroke="#ef4444" stroke-width="2"/>
+      <text x="110" y="28" text-anchor="middle" font-size="13" font-weight="800" fill="#991b1b">CONFIGURATION ERROR</text>
+      <text x="110" y="46" text-anchor="middle" font-size="11" fill="#b91c1c">No valid provider found</text>
+    </g>
   </g>
-  
-  <!-- No arrow from Decision 2 -->
-  <line x1="400" y1="320" x2="400" y2="350" stroke="#64748b" stroke-width="2" marker-end="url(#prfArrow)"/>
-  <text x="410" y="340" font-size="10" fill="#64748b">No</text>
-  
-  <!-- Decision 3: Global set_default_provider -->
-  <g filter="url(#prfShadow)">
-    <polygon points="400,360 550,405 400,450 250,405" fill="url(#prfDecisionGrad)"/>
-    <text x="400" y="398" text-anchor="middle" font-size="11" font-weight="600" fill="white">Global provider</text>
-    <text x="400" y="413" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.85)">configured?</text>
-  </g>
-  
-  <!-- Yes arrow from Decision 3 -->
-  <line x1="550" y1="405" x2="620" y2="405" stroke="#10b981" stroke-width="2" marker-end="url(#prfArrowGreen)"/>
-  <text x="575" y="398" font-size="10" font-weight="600" fill="#10b981">Yes</text>
-  
-  <!-- Use 3: Global provider -->
-  <g filter="url(#prfShadow)">
-    <rect x="630" y="380" width="140" height="50" rx="8" fill="url(#prfUseGrad)"/>
-    <text x="700" y="402" text-anchor="middle" font-size="11" font-weight="600" fill="white">Use global provider</text>
-    <text x="700" y="418" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.8)">set_default_provider()</text>
-  </g>
-  
-  <!-- No arrow from Decision 3 to Decision 4 -->
-  <line x1="250" y1="405" x2="180" y2="405" stroke="#64748b" stroke-width="2"/>
-  <line x1="180" y1="405" x2="180" y2="275" stroke="#64748b" stroke-width="2"/>
-  <line x1="180" y1="275" x2="100" y2="275" stroke="#64748b" stroke-width="2" marker-end="url(#prfArrow)"/>
-  <text x="195" y="398" font-size="10" fill="#64748b">No</text>
-  
-  <!-- Decision 4: Environment variable -->
-  <g filter="url(#prfShadow)">
-    <polygon points="60,230 145,275 60,320 -25,275" fill="url(#prfDecisionGrad)"/>
-    <text x="60" y="268" text-anchor="middle" font-size="10" font-weight="600" fill="white">API key in</text>
-    <text x="60" y="283" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.85)">env var?</text>
-  </g>
-  
-  <!-- Yes arrow from Decision 4 -->
-  <line x1="60" y1="230" x2="60" y2="190" stroke="#10b981" stroke-width="2" marker-end="url(#prfArrowGreen)"/>
-  <text x="70" y="215" font-size="10" font-weight="600" fill="#10b981">Yes</text>
-  
-  <!-- Use 4: Auto-detect -->
-  <g filter="url(#prfShadow)">
-    <rect x="-10" y="130" width="140" height="55" rx="8" fill="url(#prfUseGrad)"/>
-    <text x="60" y="152" text-anchor="middle" font-size="11" font-weight="600" fill="white">Auto-detect</text>
-    <text x="60" y="168" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.8)">OPENAI_API_KEY or</text>
-    <text x="60" y="180" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.8)">ANTHROPIC_API_KEY</text>
-  </g>
-  
-  <!-- No arrow from Decision 4 to Error -->
-  <line x1="60" y1="320" x2="60" y2="360" stroke="#ef4444" stroke-width="2" marker-end="url(#prfArrow)"/>
-  <text x="70" y="345" font-size="10" fill="#ef4444">No</text>
-  
-  <!-- Error state -->
-  <g filter="url(#prfShadow)">
-    <rect x="-10" y="370" width="140" height="55" rx="8" fill="url(#prfErrorGrad)"/>
-    <text x="60" y="392" text-anchor="middle" font-size="11" font-weight="700" fill="white">Error</text>
-    <text x="60" y="408" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.9)">No LLM provider</text>
-    <text x="60" y="420" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.9)">configured</text>
-  </g>
-  
-  <!-- Priority indicators on right side -->
-  <g transform="translate(720, 95)">
-    <rect x="0" y="0" width="65" height="18" rx="9" fill="#6366f1"/>
-    <text x="32" y="13" text-anchor="middle" font-size="9" font-weight="600" fill="white">Priority 1</text>
-  </g>
-  <g transform="translate(720, 225)">
-    <rect x="0" y="0" width="65" height="18" rx="9" fill="#8b5cf6"/>
-    <text x="32" y="13" text-anchor="middle" font-size="9" font-weight="600" fill="white">Priority 2</text>
-  </g>
-  <g transform="translate(720, 355)">
-    <rect x="0" y="0" width="65" height="18" rx="9" fill="#a78bfa"/>
-    <text x="32" y="13" text-anchor="middle" font-size="9" font-weight="600" fill="white">Priority 3</text>
-  </g>
-  <g transform="translate(60, 105)">
-    <rect x="-32" y="0" width="65" height="18" rx="9" fill="#c4b5fd"/>
-    <text x="0" y="13" text-anchor="middle" font-size="9" font-weight="600" fill="#4c1d95">Priority 4</text>
-  </g>
-  
-  <!-- Footer -->
-  <text x="400" y="485" text-anchor="middle" font-size="11" fill="#94a3b8">fasteval • LLM Provider Resolution</text>
+
+  <text x="450" y="608" text-anchor="middle" font-size="11" fill="#94a3b8">FastEval Documentation • Architectural Resolution Standards • 2026</text>
 </svg>

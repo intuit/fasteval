@@ -1,145 +1,114 @@
-<svg viewBox="0 0 800 480" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, -apple-system, sans-serif">
+<svg viewBox="0 0 900 620" xmlns="http://www.w3.org/2000/svg" font-family="Inter, system-ui, -apple-system, sans-serif">
   <defs>
-    <linearGradient id="lmsPatchGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#3b82f6"/>
-      <stop offset="100%" style="stop-color:#1d4ed8"/>
-    </linearGradient>
-    <linearGradient id="lmsFactoryGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#10b981"/>
-      <stop offset="100%" style="stop-color:#059669"/>
-    </linearGradient>
-    <linearGradient id="lmsNodeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#8b5cf6"/>
-      <stop offset="100%" style="stop-color:#6d28d9"/>
-    </linearGradient>
-    <filter id="lmsShadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-opacity="0.12"/>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-opacity="0.08"/>
     </filter>
-    <marker id="lmsArrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
       <polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/>
     </marker>
   </defs>
-  
-  <!-- Background -->
-  <rect width="800" height="480" fill="#f8fafc"/>
-  
-  <!-- Title -->
-  <text x="400" y="35" text-anchor="middle" font-size="22" font-weight="700" fill="#1e293b">LangGraph Mocking Strategies</text>
-  <text x="400" y="55" text-anchor="middle" font-size="12" fill="#64748b">Two approaches to isolate LangGraph nodes for testing</text>
-  
-  <!-- Left side: Direct Patching -->
-  <g filter="url(#lmsShadow)">
-    <rect x="30" y="80" width="355" height="370" rx="12" fill="white" stroke="#3b82f6" stroke-width="2"/>
-    
-    <!-- Header -->
-    <rect x="30" y="80" width="355" height="45" rx="12" fill="url(#lmsPatchGrad)"/>
-    <rect x="30" y="113" width="355" height="12" fill="url(#lmsPatchGrad)"/>
-    <text x="207" y="108" text-anchor="middle" font-size="15" font-weight="700" fill="white">Direct Patching</text>
+
+  <rect width="900" height="620" fill="#f8fafc"/>
+
+  <text x="450" y="45" text-anchor="middle" font-size="22" font-weight="700" fill="#1e293b">LangGraph Mocking Strategies</text>
+  <text x="450" y="70" text-anchor="middle" font-size="14" fill="#64748b">Approaches to isolating agent nodes for deterministic unit testing</text>
+
+  <line x1="450" y1="110" x2="450" y2="570" stroke="#e2e8f0" stroke-width="2" stroke-dasharray="8 4"/>
+  <circle cx="450" cy="340" r="22" fill="white" stroke="#e2e8f0" stroke-width="2"/>
+  <text x="450" y="345" text-anchor="middle" font-size="13" font-weight="800" fill="#94a3b8">VS</text>
+
+  <g transform="translate(40, 110)">
+    <rect width="380" height="40" rx="8" fill="#eff6ff" stroke="#3b82f6" stroke-width="1"/>
+    <text x="20" y="25" font-size="14" font-weight="700" fill="#1d4ed8">1. Direct Patching (Monkeypatch)</text>
+
+    <g transform="translate(0, 55)" filter="url(#shadow)">
+      <rect width="380" height="425" rx="12" fill="white" stroke="#c7d2fe" stroke-width="1.5"/>
+      
+      <g transform="translate(20, 20)">
+        <rect width="140" height="80" rx="8" fill="#f1f5f9" stroke="#e2e8f0"/>
+        <text x="70" y="25" text-anchor="middle" font-size="11" font-weight="700" fill="#475569">PRODUCTION</text>
+        <rect x="20" y="40" width="100" height="24" rx="4" fill="#8b5cf6"/>
+        <text x="70" y="56" text-anchor="middle" font-size="10" fill="white">retrieval_node</text>
+        <text x="70" y="72" text-anchor="middle" font-size="9" fill="#94a3b8">Calls Real API</text>
+
+        <line x1="145" y1="43" x2="185" y2="43" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <text x="165" y="35" text-anchor="middle" font-size="10" fill="#64748b">patch</text>
+
+        <rect x="190" width="140" height="80" rx="8" fill="#eff6ff" stroke="#3b82f6"/>
+        <text x="260" y="25" text-anchor="middle" font-size="11" font-weight="700" fill="#1d4ed8">PATCHED</text>
+        <rect x="210" y="40" width="100" height="24" rx="4" fill="#2563eb"/>
+        <text x="260" y="56" text-anchor="middle" font-size="10" fill="white">mock_retrieval</text>
+        <text x="260" y="72" text-anchor="middle" font-size="9" fill="#3b82f6">Fixed Response</text>
+      </g>
+
+      <rect x="15" y="115" width="350" height="120" rx="8" fill="#0f172a"/>
+      <g transform="translate(25, 140)" font-family="monospace" font-size="11">
+        <text y="0" fill="#a78bfa">@patch(<tspan fill="#fbbf24">"agent.graph.retrieval"</tspan>)</text>
+        <text y="22" fill="#60a5fa">def <tspan fill="#f8fafc">test_rag(mock_retrieval):</tspan></text>
+        <text y="44" fill="#f8fafc">  mock_retrieval.return_value = {</text>
+        <text y="66" fill="#fbbf24">    "context": ["Mocked docs"]</text>
+        <text y="88" fill="#f8fafc">  }</text>
+      </g>
+
+      <g transform="translate(25, 255)">
+        <text font-size="12" font-weight="700" fill="#059669">PROS</text>
+        <text y="20" font-size="11" fill="#475569">• Zero production code changes</text>
+        <text y="36" font-size="11" fill="#475569">• Quick setup for legacy apps</text>
+        
+        <text y="65" font-size="12" font-weight="700" fill="#dc2626">CONS</text>
+        <text y="85" font-size="11" fill="#475569">• Brittle to internal refactoring</text>
+        <text y="101" font-size="11" fill="#475569">• Path string must be exact</text>
+      </g>
+
+      <rect x="15" y="365" width="350" height="45" rx="8" fill="#fffbeb" stroke="#fcd34d"/>
+      <text x="190" y="385" text-anchor="middle" font-size="11" font-weight="600" fill="#92400e">Patch where imported, not where defined!</text>
+      <text x="190" y="398" text-anchor="middle" font-size="10" fill="#b45309">(Crucial for LangGraph node resolution)</text>
+    </g>
   </g>
-  
-  <!-- Direct Patching content -->
-  <g transform="translate(45, 140)">
-    <!-- Description -->
-    <text x="0" y="0" font-size="11" font-weight="600" fill="#1e293b">Using unittest.mock.patch</text>
-    
-    <!-- Diagram: Original vs Patched -->
-    <rect x="0" y="15" width="130" height="80" rx="8" fill="#f1f5f9" stroke="#e2e8f0"/>
-    <text x="65" y="35" text-anchor="middle" font-size="10" font-weight="600" fill="#475569">Production Graph</text>
-    <rect x="15" y="45" width="100" height="22" rx="4" fill="url(#lmsNodeGrad)"/>
-    <text x="65" y="60" text-anchor="middle" font-size="9" fill="white">retrieval_node</text>
-    <rect x="15" y="70" width="100" height="18" rx="4" fill="#ddd6fe"/>
-    <text x="65" y="82" text-anchor="middle" font-size="9" fill="#6d28d9">Real API call</text>
-    
-    <text x="150" y="55" text-anchor="middle" font-size="14" fill="#64748b">to</text>
-    
-    <rect x="170" y="15" width="150" height="80" rx="8" fill="#dbeafe" stroke="#3b82f6"/>
-    <text x="245" y="35" text-anchor="middle" font-size="10" font-weight="600" fill="#1d4ed8">Patched Graph</text>
-    <rect x="185" y="45" width="120" height="22" rx="4" fill="#3b82f6"/>
-    <text x="245" y="60" text-anchor="middle" font-size="9" fill="white">mock_retrieval</text>
-    <rect x="185" y="70" width="120" height="18" rx="4" fill="#93c5fd"/>
-    <text x="245" y="82" text-anchor="middle" font-size="9" fill="#1d4ed8">Controlled response</text>
-    
-    <!-- Code example -->
-    <rect x="0" y="105" width="325" height="85" rx="6" fill="#1e293b"/>
-    <text x="10" y="122" font-size="9" fill="#94a3b8" font-family="monospace">@patch("my_agent.graph.retrieval_node")</text>
-    <text x="10" y="136" font-size="9" fill="#94a3b8" font-family="monospace">def test_rag(mock_retrieval):</text>
-    <text x="10" y="150" font-size="9" fill="#60a5fa" font-family="monospace">    mock_retrieval.return_value = {</text>
-    <text x="10" y="164" font-size="9" fill="#60a5fa" font-family="monospace">        "context": ["Mocked docs"]</text>
-    <text x="10" y="178" font-size="9" fill="#60a5fa" font-family="monospace">    }</text>
-    
-    <!-- Pros/Cons -->
-    <text x="0" y="210" font-size="11" font-weight="600" fill="#059669">Pros:</text>
-    <text x="0" y="228" font-size="10" fill="#475569">+ Quick to set up</text>
-    <text x="0" y="243" font-size="10" fill="#475569">+ Works with existing code</text>
-    <text x="0" y="258" font-size="10" fill="#475569">+ pytest-mock integration</text>
-    
-    <text x="170" y="210" font-size="11" font-weight="600" fill="#dc2626">Cons:</text>
-    <text x="170" y="228" font-size="10" fill="#475569">- Must patch correct path</text>
-    <text x="170" y="243" font-size="10" fill="#475569">- Refactor can break tests</text>
-    <text x="170" y="258" font-size="10" fill="#475569">- Implicit dependencies</text>
-    
-    <!-- Warning -->
-    <rect x="0" y="275" width="325" height="30" rx="6" fill="#fef3c7" stroke="#f59e0b"/>
-    <text x="162" y="295" text-anchor="middle" font-size="9" fill="#92400e">Warning: Patch where imported, not where defined!</text>
+
+  <g transform="translate(480, 110)">
+    <rect width="380" height="40" rx="8" fill="#ecfdf5" stroke="#10b981" stroke-width="1"/>
+    <text x="20" y="25" font-size="14" font-weight="700" fill="#047857">2. Dependency Injection (Factory)</text>
+
+    <g transform="translate(0, 55)" filter="url(#shadow)">
+      <rect width="380" height="425" rx="12" fill="white" stroke="#86efac" stroke-width="1.5"/>
+      
+      <g transform="translate(20, 20)">
+        <rect width="340" height="80" rx="8" fill="#ecfdf5" stroke="#10b981" stroke-dasharray="4 4"/>
+        <text x="170" y="25" text-anchor="middle" font-size="11" font-weight="700" fill="#059669">create_agent(retrieval_fn=None)</text>
+        
+        <rect x="20" y="38" width="135" height="30" rx="6" fill="white" stroke="#86efac"/>
+        <text x="87" y="57" text-anchor="middle" font-size="10" fill="#059669">PROD: real_fn</text>
+
+        <rect x="185" y="38" width="135" height="30" rx="6" fill="white" stroke="#86efac"/>
+        <text x="252" y="57" text-anchor="middle" font-size="10" fill="#059669">TEST: mock_fn</text>
+      </g>
+
+      <rect x="15" y="115" width="350" height="120" rx="8" fill="#0f172a"/>
+      <g transform="translate(25, 140)" font-family="monospace" font-size="11">
+        <text y="0" fill="#60a5fa">def <tspan fill="#f8fafc">mock_retrieval(state):</tspan></text>
+        <text y="22" fill="#10b981">  return {"context": ["Test Docs"]}</text>
+        <text y="44" fill="#94a3b8"># Explicit injection</text>
+        <text y="66" fill="#f8fafc">agent = create_agent(</text>
+        <text y="88" fill="#f8fafc">  retrieval_fn=mock_retrieval</text>
+        <text y="105" fill="#f8fafc">)</text>
+      </g>
+
+      <g transform="translate(25, 255)">
+        <text font-size="12" font-weight="700" fill="#059669">PROS</text>
+        <text y="20" font-size="11" fill="#475569">• Refactor-safe (explicit dependencies)</text>
+        <text y="36" font-size="11" fill="#475569">• Perfect isolation / deterministic</text>
+        
+        <text y="65" font-size="12" font-weight="700" fill="#dc2626">CONS</text>
+        <text y="85" font-size="11" fill="#475569">• Requires initial architectural planning</text>
+        <text y="101" font-size="11" fill="#475569">• Slightly more verbose boilerplate</text>
+      </g>
+
+      <rect x="15" y="365" width="350" height="45" rx="8" fill="#eff6ff" stroke="#3b82f6"/>
+      <text x="190" y="392" text-anchor="middle" font-size="12" font-weight="700" fill="#1d4ed8">RECOMMENDED</text>
+      <text x="190" y="405" text-anchor="middle" font-size="10" fill="#2563eb">Standard practice for production agents</text>
+    </g>
   </g>
-  
-  <!-- Right side: Factory Pattern -->
-  <g filter="url(#lmsShadow)">
-    <rect x="415" y="80" width="355" height="370" rx="12" fill="white" stroke="#10b981" stroke-width="2"/>
-    
-    <!-- Header -->
-    <rect x="415" y="80" width="355" height="45" rx="12" fill="url(#lmsFactoryGrad)"/>
-    <rect x="415" y="113" width="355" height="12" fill="url(#lmsFactoryGrad)"/>
-    <text x="592" y="108" text-anchor="middle" font-size="15" font-weight="700" fill="white">Factory Pattern</text>
-  </g>
-  
-  <!-- Factory Pattern content -->
-  <g transform="translate(430, 140)">
-    <!-- Description -->
-    <text x="0" y="0" font-size="11" font-weight="600" fill="#1e293b">Dependency injection via factory</text>
-    
-    <!-- Diagram: Factory creates agent -->
-    <rect x="0" y="15" width="325" height="80" rx="8" fill="#d1fae5" stroke="#10b981"/>
-    <text x="162" y="35" text-anchor="middle" font-size="10" font-weight="600" fill="#059669">create_agent(retrieval_fn=None)</text>
-    
-    <rect x="20" y="48" width="125" height="38" rx="4" fill="white" stroke="#a7f3d0"/>
-    <text x="82" y="65" text-anchor="middle" font-size="9" fill="#059669">Production:</text>
-    <text x="82" y="78" text-anchor="middle" font-size="9" fill="#475569">default_retrieval()</text>
-    
-    <rect x="180" y="48" width="125" height="38" rx="4" fill="white" stroke="#a7f3d0"/>
-    <text x="242" y="65" text-anchor="middle" font-size="9" fill="#059669">Testing:</text>
-    <text x="242" y="78" text-anchor="middle" font-size="9" fill="#475569">mock_retrieval()</text>
-    
-    <!-- Code example -->
-    <rect x="0" y="105" width="325" height="85" rx="6" fill="#1e293b"/>
-    <text x="10" y="122" font-size="9" fill="#94a3b8" font-family="monospace">def mock_retrieval(state):</text>
-    <text x="10" y="136" font-size="9" fill="#34d399" font-family="monospace">    return {"context": ["Test docs"]}</text>
-    <text x="10" y="154" font-size="9" fill="#94a3b8" font-family="monospace">test_agent = create_agent(</text>
-    <text x="10" y="168" font-size="9" fill="#34d399" font-family="monospace">    retrieval_fn=mock_retrieval</text>
-    <text x="10" y="182" font-size="9" fill="#94a3b8" font-family="monospace">)</text>
-    
-    <!-- Pros/Cons -->
-    <text x="0" y="210" font-size="11" font-weight="600" fill="#059669">Pros:</text>
-    <text x="0" y="228" font-size="10" fill="#475569">+ Explicit dependencies</text>
-    <text x="0" y="243" font-size="10" fill="#475569">+ Refactor-safe</text>
-    <text x="0" y="258" font-size="10" fill="#475569">+ Better test isolation</text>
-    
-    <text x="170" y="210" font-size="11" font-weight="600" fill="#dc2626">Cons:</text>
-    <text x="170" y="228" font-size="10" fill="#475569">- More initial setup</text>
-    <text x="170" y="243" font-size="10" fill="#475569">- Need factory design</text>
-    <text x="170" y="258" font-size="10" fill="#475569">- More verbose</text>
-    
-    <!-- Recommendation -->
-    <rect x="0" y="275" width="325" height="30" rx="6" fill="#d1fae5" stroke="#10b981"/>
-    <text x="162" y="295" text-anchor="middle" font-size="9" fill="#047857">✨ Recommended for production codebases</text>
-  </g>
-  
-  <!-- "VS" divider -->
-  <g transform="translate(385, 250)">
-    <circle cx="15" cy="15" r="20" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="2"/>
-    <text x="15" y="21" text-anchor="middle" font-size="12" font-weight="700" fill="#64748b">VS</text>
-  </g>
-  
-  <!-- Footer -->
-  <text x="400" y="470" text-anchor="middle" font-size="11" fill="#94a3b8">fasteval • LangGraph Testing Strategies</text>
+
+  <text x="450" y="605" text-anchor="middle" font-size="11" fill="#94a3b8">fasteval • LangGraph Architectural Standards • 2026</text>
 </svg>

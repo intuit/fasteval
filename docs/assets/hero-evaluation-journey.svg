@@ -1,110 +1,82 @@
-<svg viewBox="0 0 900 340" xmlns="http://www.w3.org/2000/svg" font-family="Inter, system-ui, -apple-system, sans-serif">
+<svg viewBox="0 0 900 440" xmlns="http://www.w3.org/2000/svg" font-family="Inter, system-ui, -apple-system, sans-serif">
   <defs>
-    <linearGradient id="heroGlow" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#6366f1;stop-opacity:0"/>
-      <stop offset="50%" style="stop-color:#6366f1;stop-opacity:0.5"/>
-      <stop offset="100%" style="stop-color:#6366f1;stop-opacity:0"/>
-    </linearGradient>
-
-    <marker id="heroArrow" markerWidth="10" markerHeight="6" refX="9" refY="3" orient="auto">
-      <polygon points="0 0, 10 3, 0 6" fill="#64748b"/>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-opacity="0.08"/>
+    </filter>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/>
     </marker>
-
-    <style>
-      @keyframes heroPulse {
-        0%, 100% { opacity: 0.4; }
-        50% { opacity: 1; }
-      }
-      @keyframes heroFlow {
-        0% { stroke-dashoffset: 12; }
-        100% { stroke-dashoffset: 0; }
-      }
-    </style>
   </defs>
 
-  <rect width="900" height="340" rx="12" fill="#0f172a"/>
+  <rect width="900" height="440" fill="#f8fafc"/>
 
-  <g opacity="0.05">
-    <line x1="0" y1="75" x2="900" y2="75" stroke="#ffffff" stroke-width="1"/>
-    <line x1="0" y1="162" x2="900" y2="162" stroke="#ffffff" stroke-width="1"/>
-    <line x1="0" y1="250" x2="900" y2="250" stroke="#ffffff" stroke-width="1"/>
-    <line x1="240" y1="0" x2="240" y2="340" stroke="#ffffff" stroke-width="1"/>
-    <line x1="450" y1="0" x2="450" y2="340" stroke="#ffffff" stroke-width="1"/>
-    <line x1="660" y1="0" x2="660" y2="340" stroke="#ffffff" stroke-width="1"/>
+  <text x="450" y="45" text-anchor="middle" font-size="22" font-weight="700" fill="#1e293b">The Evaluation Journey</text>
+  <text x="450" y="70" text-anchor="middle" font-size="14" fill="#64748b">Transforming non-deterministic outputs into reliable engineering metrics</text>
+
+  <g transform="translate(36, 110)" filter="url(#shadow)">
+    <rect width="180" height="180" rx="12" fill="white" stroke="#fecaca" stroke-width="1.5"/>
+    <circle cx="90" cy="45" r="22" fill="#fef2f2" stroke="#ef4444" stroke-width="1.5"/>
+    <text x="90" y="53" text-anchor="middle" font-size="20" font-weight="700" fill="#ef4444">?</text>
+    
+    <text x="90" y="95" text-anchor="middle" font-size="14" font-weight="700" fill="#1e293b">The Problem</text>
+    <text x="90" y="118" text-anchor="middle" font-size="12" fill="#64748b">LLM outputs are</text>
+    <text x="90" y="136" text-anchor="middle" font-size="12" fill="#64748b">non-deterministic</text>
+    
+    <rect x="20" y="148" width="140" height="22" rx="4" fill="#fef2f2"/>
+    <text x="90" y="163" text-anchor="middle" font-size="11" font-weight="700" fill="#dc2626">Manual review fails</text>
   </g>
 
-  <text x="450" y="42" text-anchor="middle" font-size="14" font-weight="600" fill="#94a3b8" letter-spacing="2">THE EVALUATION JOURNEY</text>
+  <line x1="216" y1="200" x2="252" y2="200" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrowhead)"/>
 
-  <g transform="translate(55, 75)">
-    <rect width="160" height="175" rx="12" fill="#1e293b" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
-
-    <circle cx="80" cy="45" r="22" fill="rgba(239, 68, 68, 0.1)" stroke="#ef4444" stroke-width="1.5" stroke-opacity="0.5"/>
-    <text x="80" y="53" text-anchor="middle" font-size="20" font-weight="600" fill="#ef4444">?</text>
-
-    <text x="80" y="92" text-anchor="middle" font-size="16" font-weight="600" fill="#f8fafc">The Problem</text>
-    <text x="80" y="114" text-anchor="middle" font-size="13" fill="#94a3b8">LLM outputs are</text>
-    <text x="80" y="132" text-anchor="middle" font-size="13" fill="#94a3b8">non-deterministic</text>
-
-    <rect x="15" y="144" width="130" height="24" rx="4" fill="rgba(239, 68, 68, 0.15)"/>
-    <text x="80" y="161" text-anchor="middle" font-size="12" font-weight="600" fill="#fca5a5">Manual review fails</text>
+  <g transform="translate(252, 110)" filter="url(#shadow)">
+    <rect width="180" height="180" rx="12" fill="white" stroke="#c7d2fe" stroke-width="1.5"/>
+    <rect x="65" y="25" width="50" height="40" rx="6" fill="#eef2ff" stroke="#6366f1" stroke-width="1.5"/>
+    <text x="90" y="50" text-anchor="middle" font-family="monospace" font-size="15" font-weight="700" fill="#4f46e5">&lt;/&gt;</text>
+    
+    <text x="90" y="95" text-anchor="middle" font-size="14" font-weight="700" fill="#1e293b">FastEval</text>
+    <text x="90" y="118" text-anchor="middle" font-size="12" fill="#64748b">Decorator-first</text>
+    <text x="90" y="136" text-anchor="middle" font-size="12" fill="#64748b">evaluation library</text>
+    
+    <rect x="20" y="148" width="140" height="22" rx="4" fill="#eef2ff"/>
+    <text x="90" y="163" text-anchor="middle" font-size="11" font-weight="700" fill="#4f46e5">Unit test for AI</text>
   </g>
 
-  <g class="hero-pulse">
-    <line x1="225" y1="162" x2="255" y2="162" stroke="#475569" stroke-width="2" stroke-linecap="round" marker-end="url(#heroArrow)"/>
+  <line x1="432" y1="200" x2="468" y2="200" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+  <g transform="translate(468, 110)" filter="url(#shadow)">
+    <rect width="180" height="180" rx="12" fill="white" stroke="#cbd5e1" stroke-width="1.5"/>
+    <circle cx="90" cy="45" r="22" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.5"/>
+    <path d="M 82 45 Q 90 35 98 45 Q 90 55 82 45" fill="none" stroke="#3b82f6" stroke-width="2"/>
+    
+    <text x="90" y="95" text-anchor="middle" font-size="14" font-weight="700" fill="#1e293b">LLM Judge</text>
+    <text x="90" y="118" text-anchor="middle" font-size="12" fill="#64748b">Semantic grading</text>
+    <text x="90" y="136" text-anchor="middle" font-size="12" fill="#64748b">with reasoning</text>
+    
+    <rect x="20" y="148" width="140" height="22" rx="4" fill="#eff6ff"/>
+    <text x="90" y="163" text-anchor="middle" font-size="11" font-weight="700" fill="#2563eb">Score: 0.92</text>
   </g>
 
-  <g transform="translate(265, 75)">
-    <rect width="160" height="175" rx="12" fill="#1e293b" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <line x1="648" y1="200" x2="684" y2="200" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrowhead)"/>
 
-    <rect x="55" y="25" width="50" height="40" rx="6" fill="rgba(99, 102, 241, 0.1)" stroke="#6366f1" stroke-width="1.5" stroke-opacity="0.5"/>
-    <text x="80" y="44" text-anchor="middle" font-family="monospace" font-size="16" fill="#818cf8">&lt;/&gt;</text>
-
-    <text x="80" y="92" text-anchor="middle" font-size="16" font-weight="600" fill="#f8fafc">fasteval</text>
-    <text x="80" y="114" text-anchor="middle" font-size="13" fill="#94a3b8">Decorator-first</text>
-    <text x="80" y="132" text-anchor="middle" font-size="13" fill="#94a3b8">LLM evaluation</text>
-
-    <rect x="15" y="144" width="130" height="24" rx="4" fill="rgba(99, 102, 241, 0.15)"/>
-    <text x="80" y="161" text-anchor="middle" font-size="12" font-weight="600" fill="#a5b4fc">Unit test for AI</text>
+  <g transform="translate(684, 110)" filter="url(#shadow)">
+    <rect width="180" height="180" rx="12" fill="white" stroke="#bbf7d0" stroke-width="1.5"/>
+    <circle cx="90" cy="45" r="22" fill="#ecfdf5" stroke="#10b981" stroke-width="1.5"/>
+    <text x="90" y="53" text-anchor="middle" font-size="20" font-weight="700" fill="#10b981">✓</text>
+    
+    <text x="90" y="95" text-anchor="middle" font-size="14" font-weight="700" fill="#1e293b">Confidence</text>
+    <text x="90" y="118" text-anchor="middle" font-size="12" fill="#64748b">Ship AI features</text>
+    <text x="90" y="136" text-anchor="middle" font-size="12" fill="#64748b">with certainty</text>
+    
+    <rect x="20" y="148" width="140" height="22" rx="4" fill="#ecfdf5"/>
+    <text x="90" y="163" text-anchor="middle" font-size="11" font-weight="700" fill="#059669">DEPLOY: PASS</text>
   </g>
 
-  <line x1="435" y1="162" x2="465" y2="162" stroke="#6366f1" stroke-width="2" stroke-linecap="round" class="hero-flow" marker-end="url(#heroArrow)"/>
-
-  <g transform="translate(475, 75)">
-    <rect width="160" height="175" rx="12" fill="#1e293b" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
-
-    <circle cx="80" cy="45" r="22" fill="rgba(59, 130, 246, 0.1)" stroke="#3b82f6" stroke-width="1.5" stroke-opacity="0.5"/>
-    <text x="80" y="52" text-anchor="middle" font-size="18">🧠</text>
-
-    <text x="80" y="92" text-anchor="middle" font-size="16" font-weight="600" fill="#f8fafc">LLM Judge</text>
-    <text x="80" y="114" text-anchor="middle" font-size="13" fill="#94a3b8">Semantic grading</text>
-    <text x="80" y="132" text-anchor="middle" font-size="13" fill="#94a3b8">with reasoning</text>
-
-    <rect x="15" y="144" width="130" height="24" rx="4" fill="rgba(59, 130, 246, 0.15)"/>
-    <text x="80" y="161" text-anchor="middle" font-size="12" font-weight="600" fill="#93c5fd">Score: 0.92</text>
+  <g transform="translate(180, 320)">
+    <rect width="530" height="40" rx="8" fill="#0f172a" filter="url(#shadow)"/>
+    <text x="25" y="25" font-family="monospace" font-size="13" fill="#f8fafc">
+      <tspan fill="#6366f1">$</tspan> pytest test_agent.py <tspan fill="#94a3b8">— Evaluation as natural as unit testing</tspan>
+    </text>
   </g>
 
-  <g class="hero-pulse" style="animation-delay: 0.5s">
-    <line x1="645" y1="162" x2="675" y2="162" stroke="#475569" stroke-width="2" stroke-linecap="round" marker-end="url(#heroArrow)"/>
-  </g>
-
-  <g transform="translate(685, 75)">
-    <rect width="160" height="175" rx="12" fill="#1e293b" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
-
-    <circle cx="80" cy="45" r="22" fill="rgba(16, 185, 129, 0.1)" stroke="#10b981" stroke-width="1.5" stroke-opacity="0.5"/>
-    <text x="80" y="52" text-anchor="middle" font-size="20" font-weight="600" fill="#10b981">✓</text>
-
-    <text x="80" y="92" text-anchor="middle" font-size="16" font-weight="600" fill="#f8fafc">Confidence</text>
-    <text x="80" y="114" text-anchor="middle" font-size="13" fill="#94a3b8">Ship features</text>
-    <text x="80" y="132" text-anchor="middle" font-size="13" fill="#94a3b8">with certainty</text>
-
-    <rect x="15" y="144" width="130" height="24" rx="4" fill="rgba(16, 185, 129, 0.15)"/>
-    <text x="80" y="161" text-anchor="middle" font-size="12" font-weight="600" fill="#6ee7b7">PASS</text>
-  </g>
-
-  <rect x="190" y="275" width="555" height="36" rx="6" fill="#0f172a" stroke="#1e293b" stroke-width="2"/>
-  <text x="210" y="298" font-family="monospace" font-size="14" fill="#e2e8f0">
-    <tspan fill="#6366f1">$</tspan> pytest test_agent.py
-    <tspan fill="#64748b">— Evaluation as natural as unit testing</tspan>
-  </text>
-
+  <text x="450" y="428" text-anchor="middle" font-size="11" fill="#94a3b8">FastEval Documentation • Architectural Lifecycle Standards • 2026</text>
 </svg>

@@ -1,136 +1,110 @@
-<svg viewBox="0 0 800 395" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, -apple-system, sans-serif">
+<svg viewBox="0 0 900 480" xmlns="http://www.w3.org/2000/svg" font-family="Inter, system-ui, -apple-system, sans-serif">
   <defs>
-    <linearGradient id="bmArchiveGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#64748b"/>
-      <stop offset="100%" style="stop-color:#475569"/>
-    </linearGradient>
-    <linearGradient id="bmProdGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#10b981"/>
-      <stop offset="100%" style="stop-color:#059669"/>
-    </linearGradient>
-    <linearGradient id="bmCandidateGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#8b5cf6"/>
-      <stop offset="100%" style="stop-color:#6d28d9"/>
-    </linearGradient>
-    <linearGradient id="bmTestGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#f59e0b"/>
-      <stop offset="100%" style="stop-color:#d97706"/>
-    </linearGradient>
-    <linearGradient id="bmPromoteGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#3b82f6"/>
-      <stop offset="100%" style="stop-color:#1d4ed8"/>
-    </linearGradient>
-    <filter id="bmShadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="4" stdDeviation="5" flood-opacity="0.12"/>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-opacity="0.08"/>
     </filter>
-    <marker id="bmArrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-      <polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8"/>
     </marker>
-    <marker id="bmArrowGreen" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-      <polygon points="0 0, 10 3.5, 0 7" fill="#10b981"/>
+    <marker id="arrowhead-green" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#059669"/>
     </marker>
   </defs>
-  
-  <rect width="800" height="395" fill="#f8fafc"/>
 
-  <text x="400" y="32" text-anchor="middle" font-size="22" font-weight="700" fill="#1e293b">Baseline Management Workflow</text>
-  <text x="400" y="52" text-anchor="middle" font-size="12" fill="#64748b">Tracking and promoting prompt version baselines</text>
+  <rect width="900" height="480" fill="#f8fafc"/>
 
-  <g transform="translate(30, 80)">
-    <rect x="0" y="0" width="160" height="200" rx="10" fill="#f1f5f9" stroke="#e2e8f0"/>
-    <text x="80" y="25" text-anchor="middle" font-size="12" font-weight="600" fill="#475569">Archive</text>
+  <text x="450" y="45" text-anchor="middle" font-size="22" font-weight="700" fill="#1e293b">Baseline Management Workflow</text>
+  <text x="450" y="70" text-anchor="middle" font-size="14" fill="#64748b">Tracking and promoting prompt version baselines</text>
 
-    <g filter="url(#bmShadow)">
-      <rect x="15" y="40" width="130" height="45" rx="6" fill="url(#bmArchiveGrad)"/>
-      <text x="80" y="60" text-anchor="middle" font-size="10" fill="white">v1.0</text>
-      <text x="80" y="75" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.7)">Score: 0.82</text>
+  <g transform="translate(50, 110)">
+    
+    <g transform="translate(0, 0)">
+      <rect width="180" height="230" rx="12" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="1.5"/>
+      <text x="90" y="25" text-anchor="middle" font-size="13" font-weight="700" fill="#475569">ARCHIVE</text>
+      
+      <g transform="translate(15, 45)">
+        <rect width="150" height="45" rx="8" fill="white" stroke="#cbd5e1" filter="url(#shadow)"/>
+        <text x="75" y="20" text-anchor="middle" font-size="12" font-weight="700" fill="#64748b">v1.2</text>
+        <text x="75" y="36" text-anchor="middle" font-size="11" fill="#94a3b8">Score: 0.83</text>
+      </g>
+      <g transform="translate(15, 105)">
+        <rect width="150" height="45" rx="8" fill="white" stroke="#cbd5e1" filter="url(#shadow)"/>
+        <text x="75" y="20" text-anchor="middle" font-size="12" font-weight="700" fill="#64748b">v1.1</text>
+        <text x="75" y="36" text-anchor="middle" font-size="11" fill="#94a3b8">Score: 0.84</text>
+      </g>
+      <g transform="translate(15, 165)">
+        <rect width="150" height="45" rx="8" fill="white" stroke="#cbd5e1" filter="url(#shadow)"/>
+        <text x="75" y="20" text-anchor="middle" font-size="12" font-weight="700" fill="#64748b">v1.0</text>
+        <text x="75" y="36" text-anchor="middle" font-size="11" fill="#94a3b8">Score: 0.82</text>
+      </g>
     </g>
 
-    <g filter="url(#bmShadow)">
-      <rect x="15" y="95" width="130" height="45" rx="6" fill="url(#bmArchiveGrad)"/>
-      <text x="80" y="115" text-anchor="middle" font-size="10" fill="white">v1.1</text>
-      <text x="80" y="130" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.7)">Score: 0.84</text>
+    <g transform="translate(260, 0)">
+      <rect width="220" height="160" rx="12" fill="white" stroke="#86efac" stroke-width="2" filter="url(#shadow)"/>
+      <rect width="220" height="40" rx="12" fill="#ecfdf5"/>
+      <rect y="30" width="220" height="10" fill="#ecfdf5"/>
+      <text x="110" y="26" text-anchor="middle" font-size="14" font-weight="700" fill="#047857">PRODUCTION</text>
+      
+      <text x="110" y="75" text-anchor="middle" font-size="18" font-weight="700" fill="#1e293b">v2.0</text>
+      <text x="110" y="98" text-anchor="middle" font-size="13" font-weight="600" fill="#059669">Score: 0.85</text>
+      <text x="110" y="125" text-anchor="middle" font-size="12" fill="#64748b">production.json</text>
+      <text x="110" y="142" text-anchor="middle" font-size="11" fill="#94a3b8">Active Baseline</text>
+
+      <line x1="0" y1="115" x2="-80" y2="115" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrowhead)"/>
+      <text x="-40" y="105" text-anchor="middle" font-size="11" font-weight="600" fill="#64748b">archive</text>
     </g>
 
-    <g filter="url(#bmShadow)">
-      <rect x="15" y="150" width="130" height="45" rx="6" fill="url(#bmArchiveGrad)"/>
-      <text x="80" y="170" text-anchor="middle" font-size="10" fill="white">v1.2</text>
-      <text x="80" y="185" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.7)">Score: 0.83</text>
-    </g>
-  </g>
-
-  <g transform="translate(250, 80)">
-    <rect x="0" y="0" width="180" height="130" rx="10" fill="white" stroke="#10b981" stroke-width="2"/>
-    <rect x="0" y="0" width="180" height="40" rx="10" fill="url(#bmProdGrad)"/>
-    <rect x="0" y="28" width="180" height="12" fill="url(#bmProdGrad)"/>
-    <text x="90" y="28" text-anchor="middle" font-size="13" font-weight="700" fill="white">🏆 Production</text>
-
-    <text x="90" y="70" text-anchor="middle" font-size="14" font-weight="700" fill="#1e293b">v2.0</text>
-    <text x="90" y="90" text-anchor="middle" font-size="11" fill="#475569">Score: 0.85</text>
-    <text x="90" y="110" text-anchor="middle" font-size="9" fill="#64748b">Current baseline</text>
-    <text x="90" y="123" text-anchor="middle" font-size="9" fill="#64748b">baselines/production.json</text>
-  </g>
-
-  <g transform="translate(500, 80)">
-    <rect x="0" y="0" width="180" height="130" rx="10" fill="white" stroke="#8b5cf6" stroke-width="2"/>
-    <rect x="0" y="0" width="180" height="40" rx="10" fill="url(#bmCandidateGrad)"/>
-    <rect x="0" y="28" width="180" height="12" fill="url(#bmCandidateGrad)"/>
-    <text x="90" y="28" text-anchor="middle" font-size="13" font-weight="700" fill="white">🧪 Candidate</text>
-
-    <text x="90" y="70" text-anchor="middle" font-size="14" font-weight="700" fill="#1e293b">v2.1</text>
-    <text x="90" y="90" text-anchor="middle" font-size="11" fill="#475569">Score: 0.87</text>
-    <text x="90" y="110" text-anchor="middle" font-size="9" fill="#64748b">Testing version</text>
-    <text x="90" y="123" text-anchor="middle" font-size="9" fill="#64748b">Δ = +0.02</text>
-  </g>
-
-  <line x1="590" y1="210" x2="590" y2="240" stroke="#f59e0b" stroke-width="2" marker-end="url(#bmArrow)"/>
-
-  <g filter="url(#bmShadow)" transform="translate(470, 250)">
-    <rect x="0" y="0" width="210" height="50" rx="8" fill="url(#bmTestGrad)"/>
-    <text x="105" y="25" text-anchor="middle" font-size="11" font-weight="600" fill="white">Compare vs Production</text>
-    <text x="105" y="42" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.9)">No regression? Promote</text>
-  </g>
-
-  <path d="M 470 275 L 340 275 L 340 215" stroke="#10b981" stroke-width="2" fill="none" stroke-dasharray="6,3" marker-end="url(#bmArrowGreen)"/>
-  <text x="405" y="265" text-anchor="middle" font-size="10" font-weight="600" fill="#10b981">promote_to_production()</text>
-
-  <line x1="250" y1="150" x2="200" y2="150" stroke="#64748b" stroke-width="2" marker-end="url(#bmArrow)"/>
-  <text x="225" y="142" text-anchor="middle" font-size="10" fill="#64748b">archive</text>
-
-  <g transform="translate(30, 315)">
-    <rect x="0" y="0" width="740" height="50" rx="8" fill="#f1f5f9" stroke="#e2e8f0"/>
-    <text x="370" y="20" text-anchor="middle" font-size="11" font-weight="600" fill="#475569">Baseline Management Lifecycle</text>
-
-    <g transform="translate(30, 32)">
-      <circle cx="0" cy="0" r="10" fill="#8b5cf6"/>
-      <text x="0" y="4" text-anchor="middle" font-size="9" fill="white">1</text>
-      <text x="20" y="4" font-size="9" fill="#475569">Create candidate</text>
+    <g transform="translate(580, 0)">
+      <rect width="220" height="160" rx="12" fill="white" stroke="#c7d2fe" stroke-width="2" filter="url(#shadow)"/>
+      <rect width="220" height="40" rx="12" fill="#f5f3ff"/>
+      <rect y="30" width="220" height="10" fill="#f5f3ff"/>
+      <text x="110" y="26" text-anchor="middle" font-size="14" font-weight="700" fill="#4f46e5">CANDIDATE</text>
+      
+      <text x="110" y="75" text-anchor="middle" font-size="18" font-weight="700" fill="#1e293b">v2.1</text>
+      <text x="110" y="98" text-anchor="middle" font-size="13" font-weight="600" fill="#7c3aed">Score: 0.87</text>
+      <text x="110" y="125" text-anchor="middle" font-size="12" fill="#64748b">candidate.json</text>
+      <text x="110" y="142" text-anchor="middle" font-size="11" fill="#8b5cf6">Δ +0.02</text>
     </g>
 
-    <text x="170" y="36" font-size="12" fill="#64748b">to</text>
+    <g transform="translate(380, 190)">
+      <rect x="200" y="0" width="220" height="50" rx="8" fill="#fffbeb" stroke="#f59e0b" stroke-width="1.5" filter="url(#shadow)"/>
+      <text x="310" y="22" text-anchor="middle" font-size="12" font-weight="700" fill="#b45309">Compare vs Production</text>
+      <text x="310" y="38" text-anchor="middle" font-size="11" fill="#d97706">Regression Testing</text>
 
-    <g transform="translate(200, 32)">
-      <circle cx="0" cy="0" r="10" fill="#f59e0b"/>
-      <text x="0" y="4" text-anchor="middle" font-size="9" fill="white">2</text>
-      <text x="20" y="4" font-size="9" fill="#475569">Run regression tests</text>
-    </g>
-
-    <text x="370" y="36" font-size="12" fill="#64748b">to</text>
-
-    <g transform="translate(400, 32)">
-      <circle cx="0" cy="0" r="10" fill="#10b981"/>
-      <text x="0" y="4" text-anchor="middle" font-size="9" fill="white">3</text>
-      <text x="20" y="4" font-size="9" fill="#475569">Promote if passed</text>
-    </g>
-
-    <text x="560" y="36" font-size="12" fill="#64748b">to</text>
-
-    <g transform="translate(590, 32)">
-      <circle cx="0" cy="0" r="10" fill="#64748b"/>
-      <text x="0" y="4" text-anchor="middle" font-size="9" fill="white">4</text>
-      <text x="20" y="4" font-size="9" fill="#475569">Archive old production</text>
+      <line x1="310" y1="-30" x2="310" y2="0" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrowhead)"/>
+      
+      <path d="M 200 25 L -10 25 L -10 -30" fill="none" stroke="#059669" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arrowhead-green)"/>
+      <text x="95" y="15" text-anchor="middle" font-size="12" font-weight="700" fill="#047857">promote_to_production()</text>
     </g>
   </g>
 
-  <text x="400" y="385" text-anchor="middle" font-size="11" fill="#94a3b8">fasteval • Baseline Version Management</text>
+  <g transform="translate(50, 400)">
+    <rect width="800" height="45" rx="22.5" fill="white" stroke="#e2e8f0" stroke-width="1.5" filter="url(#shadow)"/>
+    
+    <g transform="translate(30, 23)">
+      <circle r="10" fill="#8b5cf6"/>
+      <text text-anchor="middle" y="4" font-size="11" font-weight="700" fill="white">1</text>
+      <text x="15" y="4" font-size="12" fill="#475569">Create candidate</text>
+    </g>
+
+    <g transform="translate(230, 23)">
+      <circle r="10" fill="#f59e0b"/>
+      <text text-anchor="middle" y="4" font-size="11" font-weight="700" fill="white">2</text>
+      <text x="15" y="4" font-size="12" fill="#475569">Run regression</text>
+    </g>
+
+    <g transform="translate(430, 23)">
+      <circle r="10" fill="#10b981"/>
+      <text text-anchor="middle" y="4" font-size="11" font-weight="700" fill="white">3</text>
+      <text x="15" y="4" font-size="12" fill="#475569">Promote to Prod</text>
+    </g>
+
+    <g transform="translate(630, 23)">
+      <circle r="10" fill="#94a3b8"/>
+      <text text-anchor="middle" y="4" font-size="11" font-weight="700" fill="white">4</text>
+      <text x="15" y="4" font-size="12" fill="#475569">Archive previous</text>
+    </g>
+  </g>
+
+  <text x="450" y="468" text-anchor="middle" font-size="11" fill="#94a3b8">fasteval • Baseline Version Management • 2026 Architectural Standard</text>
 </svg>

@@ -1,154 +1,110 @@
-<svg viewBox="0 0 800 380" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, -apple-system, sans-serif">
+<svg viewBox="0 0 900 480" xmlns="http://www.w3.org/2000/svg" font-family="Inter, system-ui, -apple-system, sans-serif">
   <defs>
-    <linearGradient id="turnUserGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#64748b"/>
-      <stop offset="100%" style="stop-color:#475569"/>
-    </linearGradient>
-    <linearGradient id="retentionGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#3b82f6"/>
-      <stop offset="100%" style="stop-color:#1d4ed8"/>
-    </linearGradient>
-    <linearGradient id="consistencyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#10b981"/>
-      <stop offset="100%" style="stop-color:#059669"/>
-    </linearGradient>
-    <linearGradient id="driftGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#f59e0b"/>
-      <stop offset="100%" style="stop-color:#d97706"/>
-    </linearGradient>
-    <filter id="shadowConv" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-opacity="0.12"/>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-opacity="0.08"/>
     </filter>
-    <marker id="arrowConvBlue" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-      <polygon points="0 0, 10 3.5, 0 7" fill="#3b82f6"/>
-    </marker>
-    <marker id="arrowConvGreen" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-      <polygon points="0 0, 10 3.5, 0 7" fill="#10b981"/>
-    </marker>
-    <marker id="arrowConvOrange" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-      <polygon points="0 0, 10 3.5, 0 7" fill="#f59e0b"/>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/>
     </marker>
   </defs>
-  
-  <!-- Background -->
-  <rect width="800" height="380" fill="#f8fafc"/>
-  
-  <!-- Title -->
-  <text x="400" y="35" text-anchor="middle" font-size="22" font-weight="700" fill="#1e293b">Conversation Quality Dimensions</text>
-  
-  <!-- Conversation Flow (left side) -->
-  <!-- Turn 1: User -->
-  <g filter="url(#shadowConv)">
-    <rect x="30" y="55" width="180" height="36" rx="8" fill="url(#turnUserGrad)"/>
-    <text x="120" y="78" text-anchor="middle" font-size="10" fill="white">Turn 1: User asks about account</text>
-  </g>
-  
-  <!-- Turn 2: Bot -->
-  <g filter="url(#shadowConv)">
-    <rect x="30" y="97" width="180" height="36" rx="8" fill="white" stroke="#e2e8f0" stroke-width="2"/>
-    <text x="120" y="120" text-anchor="middle" font-size="10" fill="#475569">Turn 2: Bot responds with info</text>
-  </g>
-  
-  <!-- Turn 3: User -->
-  <g filter="url(#shadowConv)">
-    <rect x="30" y="139" width="180" height="36" rx="8" fill="url(#turnUserGrad)"/>
-    <text x="120" y="162" text-anchor="middle" font-size="10" fill="white">Turn 3: User asks about "it"</text>
-  </g>
-  
-  <!-- Turn 4: Bot -->
-  <g filter="url(#shadowConv)">
-    <rect x="30" y="181" width="180" height="36" rx="8" fill="white" stroke="#e2e8f0" stroke-width="2"/>
-    <text x="120" y="204" text-anchor="middle" font-size="10" fill="#475569">Turn 4: Bot understands "it"</text>
-  </g>
-  
-  <!-- Turn 5: User -->
-  <g filter="url(#shadowConv)">
-    <rect x="30" y="223" width="180" height="36" rx="8" fill="url(#turnUserGrad)"/>
-    <text x="120" y="246" text-anchor="middle" font-size="10" fill="white">Turn 5: User rephrases question</text>
-  </g>
-  
-  <!-- Turn 6: Bot -->
-  <g filter="url(#shadowConv)">
-    <rect x="30" y="265" width="180" height="36" rx="8" fill="white" stroke="#e2e8f0" stroke-width="2"/>
-    <text x="120" y="288" text-anchor="middle" font-size="10" fill="#475569">Turn 6: Consistent response</text>
-  </g>
-  
-  <!-- Turn 7: User -->
-  <g filter="url(#shadowConv)">
-    <rect x="30" y="307" width="180" height="36" rx="8" fill="url(#turnUserGrad)"/>
-    <text x="120" y="330" text-anchor="middle" font-size="10" fill="white">Turn 7: Off-topic question</text>
-  </g>
-  
-  <!-- Connecting lines between turns -->
-  <line x1="120" y1="91" x2="120" y2="97" stroke="#94a3b8" stroke-width="1"/>
-  <line x1="120" y1="133" x2="120" y2="139" stroke="#94a3b8" stroke-width="1"/>
-  <line x1="120" y1="175" x2="120" y2="181" stroke="#94a3b8" stroke-width="1"/>
-  <line x1="120" y1="217" x2="120" y2="223" stroke="#94a3b8" stroke-width="1"/>
-  <line x1="120" y1="259" x2="120" y2="265" stroke="#94a3b8" stroke-width="1"/>
-  <line x1="120" y1="301" x2="120" y2="307" stroke="#94a3b8" stroke-width="1"/>
-  
-  <!-- Bracket for Context Retention (turns 1-4) -->
-  <path d="M 215 73 L 235 73 L 235 199 L 215 199" fill="none" stroke="#3b82f6" stroke-width="2"/>
-  <line x1="235" y1="136" x2="280" y2="136" stroke="#3b82f6" stroke-width="2" marker-end="url(#arrowConvBlue)"/>
-  
-  <!-- Context Retention Box -->
-  <g filter="url(#shadowConv)">
-    <rect x="290" y="75" width="200" height="95" rx="12" fill="url(#retentionGrad)"/>
-    <text x="390" y="105" text-anchor="middle" font-size="13" font-weight="700" fill="white">CONTEXT RETENTION</text>
-    <line x1="310" y1="115" x2="470" y2="115" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
-    <text x="390" y="135" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.9)">Does bot remember earlier context?</text>
-    <text x="390" y="155" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.7)" font-family="monospace">@fe.context_retention(0.8)</text>
-  </g>
-  
-  <!-- Bracket for Consistency (turns 5-6) -->
-  <path d="M 215 241 L 245 241 L 245 283 L 215 283" fill="none" stroke="#10b981" stroke-width="2"/>
-  <line x1="245" y1="262" x2="280" y2="262" stroke="#10b981" stroke-width="2" marker-end="url(#arrowConvGreen)"/>
-  
-  <!-- Consistency Box -->
-  <g filter="url(#shadowConv)">
-    <rect x="290" y="195" width="200" height="95" rx="12" fill="url(#consistencyGrad)"/>
-    <text x="390" y="225" text-anchor="middle" font-size="13" font-weight="700" fill="white">CONSISTENCY</text>
-    <line x1="310" y1="235" x2="470" y2="235" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
-    <text x="390" y="255" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.9)">Are responses aligned?</text>
-    <text x="390" y="275" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.7)" font-family="monospace">@fe.consistency(0.9)</text>
-  </g>
-  
-  <!-- Arrow for Topic Drift (turn 7) -->
-  <line x1="210" y1="325" x2="280" y2="325" stroke="#f59e0b" stroke-width="2" marker-end="url(#arrowConvOrange)"/>
-  
-  <!-- Topic Drift Box -->
-  <g filter="url(#shadowConv)">
-    <rect x="290" y="300" width="200" height="60" rx="12" fill="url(#driftGrad)"/>
-    <text x="390" y="325" text-anchor="middle" font-size="13" font-weight="700" fill="white">TOPIC DRIFT</text>
-    <text x="390" y="347" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.7)" font-family="monospace">@fe.topic_drift(0.85)</text>
-  </g>
-  
-  <!-- Summary Box (right side) -->
-  <g filter="url(#shadowConv)">
-    <rect x="540" y="75" width="220" height="230" rx="12" fill="white" stroke="#e2e8f0" stroke-width="2"/>
-    <text x="650" y="105" text-anchor="middle" font-size="13" font-weight="600" fill="#1e293b">Metric Summary</text>
-    <line x1="560" y1="118" x2="740" y2="118" stroke="#e2e8f0" stroke-width="1"/>
+
+  <rect width="900" height="480" fill="#f8fafc"/>
+
+  <text x="450" y="45" text-anchor="middle" font-size="22" font-weight="700" fill="#1e293b">Conversation Quality Dimensions</text>
+  <text x="450" y="70" text-anchor="middle" font-size="14" fill="#64748b">Evaluating long-range coherence, logic, and focus in multi-turn agents</text>
+
+  <g transform="translate(50, 100)">
+    <g filter="url(#shadow)">
+      <rect width="200" height="36" rx="8" fill="#475569"/>
+      <text x="100" y="22" text-anchor="middle" font-size="11" font-weight="600" fill="white">Turn 1: User Account Inquiry</text>
+    </g>
+    <g transform="translate(0, 44)" filter="url(#shadow)">
+      <rect width="200" height="36" rx="8" fill="white" stroke="#e2e8f0" stroke-width="1.5"/>
+      <text x="100" y="22" text-anchor="middle" font-size="11" fill="#475569">Turn 2: Bot Info Response</text>
+    </g>
     
-    <!-- Context Retention -->
-    <circle cx="575" cy="145" r="8" fill="#3b82f6"/>
-    <text x="595" y="142" font-size="11" font-weight="500" fill="#1e293b">Context Retention</text>
-    <text x="595" y="158" font-size="9" fill="#64748b">Remembers earlier turns</text>
-    
-    <!-- Consistency -->
-    <circle cx="575" cy="195" r="8" fill="#10b981"/>
-    <text x="595" y="192" font-size="11" font-weight="500" fill="#1e293b">Consistency</text>
-    <text x="595" y="208" font-size="9" fill="#64748b">No contradictions</text>
-    
-    <!-- Topic Drift -->
-    <circle cx="575" cy="245" r="8" fill="#f59e0b"/>
-    <text x="595" y="242" font-size="11" font-weight="500" fill="#1e293b">Topic Drift</text>
-    <text x="595" y="258" font-size="9" fill="#64748b">Stays focused on task</text>
-    
-    <!-- Usage tip -->
-    <rect x="560" y="275" width="180" height="22" rx="6" fill="#f1f5f9"/>
-    <text x="650" y="290" text-anchor="middle" font-size="9" fill="#64748b">Stack all three for full conversation QA</text>
+    <g transform="translate(0, 88)" filter="url(#shadow)">
+      <rect width="200" height="36" rx="8" fill="#475569"/>
+      <text x="100" y="22" text-anchor="middle" font-size="11" font-weight="600" fill="white">Turn 3: User references "it"</text>
+    </g>
+    <g transform="translate(0, 132)" filter="url(#shadow)">
+      <rect width="200" height="36" rx="8" fill="white" stroke="#e2e8f0" stroke-width="1.5"/>
+      <text x="100" y="22" text-anchor="middle" font-size="11" fill="#475569">Turn 4: Bot resolves "it"</text>
+    </g>
+
+    <g transform="translate(0, 176)" filter="url(#shadow)">
+      <rect width="200" height="36" rx="8" fill="#475569"/>
+      <text x="100" y="22" text-anchor="middle" font-size="11" font-weight="600" fill="white">Turn 5: User Rephrases</text>
+    </g>
+    <g transform="translate(0, 220)" filter="url(#shadow)">
+      <rect width="200" height="36" rx="8" fill="white" stroke="#e2e8f0" stroke-width="1.5"/>
+      <text x="100" y="22" text-anchor="middle" font-size="11" fill="#475569">Turn 6: Aligned Response</text>
+    </g>
+
+    <g transform="translate(0, 264)" filter="url(#shadow)">
+      <rect width="200" height="36" rx="8" fill="#475569"/>
+      <text x="100" y="22" text-anchor="middle" font-size="11" font-weight="600" fill="white">Turn 7: Off-topic query</text>
+    </g>
+
+    <path d="M 210 18 L 240 18 L 240 150 L 210 150" fill="none" stroke="#3b82f6" stroke-width="2"/>
+    <line x1="240" y1="84" x2="280" y2="84" stroke="#3b82f6" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+    <path d="M 210 194 L 240 194 L 240 238 L 210 238" fill="none" stroke="#10b981" stroke-width="2"/>
+    <line x1="240" y1="216" x2="280" y2="216" stroke="#10b981" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+    <line x1="210" y1="282" x2="280" y2="282" stroke="#f59e0b" stroke-width="2" marker-end="url(#arrowhead)"/>
   </g>
-  
-  <!-- Footer -->
-  <text x="400" y="372" text-anchor="middle" font-size="11" fill="#94a3b8">fasteval • Multi-turn conversation evaluation</text>
+
+  <g transform="translate(330, 100)">
+    <g filter="url(#shadow)">
+      <rect width="240" height="90" rx="12" fill="white" stroke="#3b82f6" stroke-width="1.5"/>
+      <text x="20" y="30" font-size="13" font-weight="700" fill="#1d4ed8">CONTEXT RETENTION</text>
+      <text x="20" y="52" font-size="12" fill="#475569">Long-term memory &amp; resolution</text>
+      <rect x="20" y="62" width="200" height="18" rx="4" fill="#0f172a"/>
+      <text x="30" y="75" font-family="monospace" font-size="10" fill="#a78bfa">@fe.context_retention<tspan fill="#f8fafc">(0.8)</tspan></text>
+    </g>
+
+    <g transform="translate(0, 105)" filter="url(#shadow)">
+      <rect width="240" height="90" rx="12" fill="white" stroke="#10b981" stroke-width="1.5"/>
+      <text x="20" y="30" font-size="13" font-weight="700" fill="#047857">CONSISTENCY</text>
+      <text x="20" y="52" font-size="12" fill="#475569">Avoidance of contradictions</text>
+      <rect x="20" y="62" width="200" height="18" rx="4" fill="#0f172a"/>
+      <text x="30" y="75" font-family="monospace" font-size="10" fill="#10b981">@fe.consistency<tspan fill="#f8fafc">(0.9)</tspan></text>
+    </g>
+
+    <g transform="translate(0, 210)" filter="url(#shadow)">
+      <rect width="240" height="60" rx="12" fill="white" stroke="#f59e0b" stroke-width="1.5"/>
+      <text x="20" y="25" font-size="13" font-weight="700" fill="#b45309">TOPIC DRIFT</text>
+      <rect x="20" y="34" width="200" height="18" rx="4" fill="#0f172a"/>
+      <text x="30" y="47" font-family="monospace" font-size="10" fill="#fbbf24">@fe.topic_drift<tspan fill="#f8fafc">(0.85)</tspan></text>
+    </g>
+  </g>
+
+  <g transform="translate(610, 100)" filter="url(#shadow)">
+    <rect width="240" height="300" rx="12" fill="white" stroke="#e2e8f0" stroke-width="1.5"/>
+    <text x="120" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#1e293b">METRIC SUMMARY</text>
+    <line x1="20" y1="40" x2="220" y2="40" stroke="#f1f5f9" stroke-width="2"/>
+
+    <g transform="translate(20, 60)">
+      <circle r="6" fill="#3b82f6"/>
+      <text x="15" y="4" font-size="12" font-weight="600" fill="#1e293b">Context Retention</text>
+      <text x="15" y="20" font-size="11" fill="#64748b">Remembers user intent turns</text>
+    </g>
+    <g transform="translate(20, 120)">
+      <circle r="6" fill="#10b981"/>
+      <text x="15" y="4" font-size="12" font-weight="600" fill="#1e293b">Consistency</text>
+      <text x="15" y="20" font-size="11" fill="#64748b">Verified non-contradiction</text>
+    </g>
+    <g transform="translate(20, 180)">
+      <circle r="6" fill="#f59e0b"/>
+      <text x="15" y="4" font-size="12" font-weight="600" fill="#1e293b">Topic Drift</text>
+      <text x="15" y="20" font-size="11" fill="#64748b">Detects task divergence</text>
+    </g>
+
+    <rect x="15" y="235" width="210" height="50" rx="8" fill="#f8fafc" stroke="#e2e8f0"/>
+    <text x="120" y="255" text-anchor="middle" font-size="10" font-weight="700" fill="#64748b">ARCHITECTURAL TIP</text>
+    <text x="120" y="272" text-anchor="middle" font-size="10" fill="#94a3b8">Stack all three for full QA.</text>
+  </g>
+
+  <text x="450" y="468" text-anchor="middle" font-size="11" fill="#94a3b8">fasteval • Multi-turn conversation evaluation standards • 2026</text>
 </svg>

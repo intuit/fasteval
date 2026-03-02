@@ -1,131 +1,78 @@
-<svg viewBox="0 0 800 460" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, -apple-system, sans-serif">
+<svg viewBox="0 0 900 520" xmlns="http://www.w3.org/2000/svg" font-family="Inter, system-ui, -apple-system, sans-serif">
   <defs>
-    <linearGradient id="tpE2EGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#8b5cf6"/>
-      <stop offset="100%" style="stop-color:#6d28d9"/>
-    </linearGradient>
-    <linearGradient id="tpIntGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#3b82f6"/>
-      <stop offset="100%" style="stop-color:#1d4ed8"/>
-    </linearGradient>
-    <linearGradient id="tpUnitGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#10b981"/>
-      <stop offset="100%" style="stop-color:#059669"/>
-    </linearGradient>
-    <filter id="tpShadow" x="-10%" y="-10%" width="120%" height="130%">
-      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-opacity="0.10"/>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-opacity="0.08"/>
     </filter>
-    <filter id="tpGlow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.08"/>
-    </filter>
-    <marker id="tpArrowUp" markerWidth="12" markerHeight="8" refX="6" refY="8" orient="auto">
-      <polygon points="6,0 12,8 0,8" fill="#94a3b8"/>
-    </marker>
   </defs>
 
-  <!-- Background -->
-  <rect width="800" height="460" fill="#f8fafc"/>
+  <rect width="900" height="520" fill="#f8fafc"/>
 
-  <!-- Title -->
-  <text x="400" y="36" text-anchor="middle" font-size="22" font-weight="700" fill="#1e293b">Testing Pyramid for Agents</text>
-  <text x="400" y="56" text-anchor="middle" font-size="12" fill="#64748b">Layered testing strategy with fasteval-langgraph</text>
+  <text x="450" y="45" text-anchor="middle" font-size="22" font-weight="700" fill="#1e293b">Testing Pyramid for Agents</text>
+  <text x="450" y="70" text-anchor="middle" font-size="14" fill="#64748b">Layered testing strategy with fasteval-langgraph</text>
 
-  <!-- Pyramid group -->
-  <g transform="translate(60, 80)">
-
-    <!-- Unit Tests layer (bottom) -->
-    <g filter="url(#tpShadow)">
-      <polygon points="115,195 555,195 580,310 90,310" fill="url(#tpUnitGrad)" rx="4"/>
-      <polygon points="115,195 555,195 580,310 90,310" fill="none" stroke="#059669" stroke-width="1.5" stroke-linejoin="round"/>
+  <g transform="translate(80, 100)">
+    
+    <g filter="url(#shadow)">
+      <path d="M 60 280 L 440 280 L 460 380 L 40 380 Z" fill="#10b981"/>
+      <text x="250" y="325" text-anchor="middle" font-size="16" font-weight="800" fill="white">UNIT TESTS</text>
+      <text x="250" y="345" text-anchor="middle" font-size="11" font-weight="600" fill="#d1fae5">SINGLE NODE / CONTROLLED STATE</text>
     </g>
-    <text x="335" y="245" text-anchor="middle" font-size="16" font-weight="700" fill="white">Unit Tests</text>
-    <text x="335" y="265" text-anchor="middle" font-size="11" fill="#d1fae5">Single node, controlled state</text>
 
-    <!-- Integration layer (middle) -->
-    <g filter="url(#tpShadow)">
-      <polygon points="195,100 475,100 555,195 115,195" fill="url(#tpIntGrad)"/>
-      <polygon points="195,100 475,100 555,195 115,195" fill="none" stroke="#1d4ed8" stroke-width="1.5" stroke-linejoin="round"/>
+    <g filter="url(#shadow)">
+      <path d="M 130 160 L 370 160 L 440 280 L 60 280 Z" fill="#3b82f6"/>
+      <text x="250" y="215" text-anchor="middle" font-size="16" font-weight="800" fill="white">INTEGRATION</text>
+      <text x="250" y="235" text-anchor="middle" font-size="11" font-weight="600" fill="#dbeafe">REAL NODES / MOCKED DEPS</text>
     </g>
-    <text x="335" y="145" text-anchor="middle" font-size="16" font-weight="700" fill="white">Integration</text>
-    <text x="335" y="165" text-anchor="middle" font-size="11" fill="#bfdbfe">Real nodes + mocked dependencies</text>
 
-    <!-- E2E layer (top) -->
-    <g filter="url(#tpShadow)">
-      <polygon points="335,10 475,100 195,100" fill="url(#tpE2EGrad)"/>
-      <polygon points="335,10 475,100 195,100" fill="none" stroke="#6d28d9" stroke-width="1.5" stroke-linejoin="round"/>
+    <g filter="url(#shadow)">
+      <path d="M 250 40 L 370 160 L 130 160 Z" fill="#6366f1"/>
+      <text x="250" y="105" text-anchor="middle" font-size="16" font-weight="800" fill="white">E2E</text>
+      <text x="250" y="125" text-anchor="middle" font-size="11" font-weight="600" fill="#e0e7ff">FULL GRAPH FLOW</text>
     </g>
-    <text x="335" y="65" text-anchor="middle" font-size="16" font-weight="700" fill="white">E2E</text>
-    <text x="335" y="82" text-anchor="middle" font-size="11" fill="#ddd6fe">Full flow</text>
 
+    <g transform="translate(-50, 40)">
+      <path d="M 0 340 L 0 0" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4 4"/>
+      <polygon points="-5,0 5,0 0,-10" fill="#94a3b8"/>
+      <text x="-15" y="170" text-anchor="middle" font-size="11" font-weight="800" fill="#94a3b8" transform="rotate(-90 -15 170)">REALISM &amp; COMPLEXITY</text>
+      
+      <polygon points="-5,340 5,340 0,350" fill="#94a3b8"/>
+      <text x="15" y="170" text-anchor="middle" font-size="11" font-weight="800" fill="#94a3b8" transform="rotate(-90 15 170)">EXECUTION SPEED</text>
+    </g>
   </g>
 
-  <!-- Right-side annotation cards -->
-  <g transform="translate(0, 80)">
-
-    <!-- E2E annotation -->
-    <g filter="url(#tpGlow)">
-      <rect x="600" y="10" width="185" height="68" rx="10" fill="white" stroke="#8b5cf6" stroke-width="1.5"/>
+  <g transform="translate(600, 140)">
+    <g filter="url(#shadow)">
+      <rect width="240" height="75" rx="12" fill="white" stroke="#6366f1" stroke-width="1.5"/>
+      <text x="15" y="25" font-size="11" font-weight="800" fill="#4338ca">API: .chat() / .session()</text>
+      <text x="15" y="45" font-size="12" fill="#1e293b" font-family="monospace">graph.invoke(input)</text>
+      <text x="15" y="62" font-size="10" font-style="italic" fill="#64748b">High confidence, highest cost.</text>
     </g>
-    <rect x="600" y="10" width="6" height="68" rx="3" fill="url(#tpE2EGrad)"/>
-    <text x="616" y="32" font-size="10" font-weight="700" fill="#6d28d9">API</text>
-    <text x="616" y="48" font-size="11" fill="#1e293b" font-family="ui-monospace, monospace">.chat() / .session()</text>
-    <text x="616" y="66" font-size="9" fill="#64748b">Realistic but slower</text>
 
-    <!-- Line from E2E to card -->
-    <line x1="470" y1="55" x2="598" y2="44" stroke="#8b5cf6" stroke-width="1.2" stroke-dasharray="4 3" opacity="0.5"/>
-
-    <!-- Integration annotation -->
-    <g filter="url(#tpGlow)">
-      <rect x="600" y="108" width="185" height="68" rx="10" fill="white" stroke="#3b82f6" stroke-width="1.5"/>
+    <g transform="translate(0, 100)" filter="url(#shadow)">
+      <rect width="240" height="75" rx="12" fill="white" stroke="#3b82f6" stroke-width="1.5"/>
+      <text x="15" y="25" font-size="11" font-weight="800" fill="#1d4ed8">API: .with_mocks()</text>
+      <text x="15" y="45" font-size="12" fill="#1e293b" font-family="monospace">graph.stream(state, config)</text>
+      <text x="15" y="62" font-size="10" font-style="italic" fill="#64748b">Controlled external side-effects.</text>
     </g>
-    <rect x="600" y="108" width="6" height="68" rx="3" fill="url(#tpIntGrad)"/>
-    <text x="616" y="130" font-size="10" font-weight="700" fill="#1d4ed8">API</text>
-    <text x="616" y="146" font-size="11" fill="#1e293b" font-family="ui-monospace, monospace">.mocked() / .with_mocks()</text>
-    <text x="616" y="164" font-size="9" fill="#64748b">Controlled external deps</text>
 
-    <!-- Line from Integration to card -->
-    <line x1="525" y1="147" x2="598" y2="142" stroke="#3b82f6" stroke-width="1.2" stroke-dasharray="4 3" opacity="0.5"/>
-
-    <!-- Unit Tests annotation -->
-    <g filter="url(#tpGlow)">
-      <rect x="600" y="218" width="185" height="68" rx="10" fill="white" stroke="#10b981" stroke-width="1.5"/>
+    <g transform="translate(0, 200)" filter="url(#shadow)">
+      <rect width="240" height="75" rx="12" fill="white" stroke="#10b981" stroke-width="1.5"/>
+      <text x="15" y="25" font-size="11" font-weight="800" fill="#047857">API: .node().run()</text>
+      <text x="15" y="45" font-size="12" fill="#1e293b" font-family="monospace">node_func(current_state)</text>
+      <text x="15" y="62" font-size="10" font-style="italic" fill="#64748b">Fast, deterministic, 80% coverage.</text>
     </g>
-    <rect x="600" y="218" width="6" height="68" rx="3" fill="url(#tpUnitGrad)"/>
-    <text x="616" y="240" font-size="10" font-weight="700" fill="#059669">API</text>
-    <text x="616" y="256" font-size="11" fill="#1e293b" font-family="ui-monospace, monospace">.node().run()</text>
-    <text x="616" y="274" font-size="9" fill="#64748b">Fast, deterministic</text>
-
-    <!-- Line from Unit Tests to card -->
-    <line x1="560" y1="252" x2="598" y2="252" stroke="#10b981" stroke-width="1.2" stroke-dasharray="4 3" opacity="0.5"/>
-
   </g>
 
-  <!-- Left-side vertical axis labels -->
-  <g transform="translate(30, 80)">
-    <!-- Speed arrow -->
-<!--    <line x1="22" y1="310" x2="22" y2="20" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#tpArrowUp)"/>-->
-    <text x="22" y="8" text-anchor="middle" font-size="9" font-weight="600" fill="#94a3b8" letter-spacing="1">REALISM</text>
+  <g transform="translate(140, 470)">
+    <rect width="180" height="30" rx="15" fill="#ecfdf5" stroke="#10b981"/>
+    <text x="90" y="20" text-anchor="middle" font-size="11" font-weight="700" fill="#047857">Most tests live here</text>
 
-    <!-- Bottom label -->
-    <polygon points="22,314 17,302 27,302" fill="#94a3b8"/>
-    <text x="22" y="330" text-anchor="middle" font-size="9" font-weight="600" fill="#94a3b8" letter-spacing="1">SPEED</text>
+    <rect x="220" width="180" height="30" rx="15" fill="#eff6ff" stroke="#3b82f6"/>
+    <text x="310" y="20" text-anchor="middle" font-size="11" font-weight="700" fill="#1d4ed8">Isolate external deps</text>
+
+    <rect x="440" width="180" height="30" rx="15" fill="#e0e7ff" stroke="#6366f1"/>
+    <text x="530" y="20" text-anchor="middle" font-size="11" font-weight="700" fill="#4338ca">Fewer, high-value flows</text>
   </g>
 
-  <!-- Bottom characteristic pills -->
-  <g transform="translate(100, 410)">
-    <!-- Unit pill -->
-    <rect x="0" y="0" width="170" height="32" rx="16" fill="#d1fae5" stroke="#10b981"/>
-    <circle cx="18" cy="16" r="6" fill="#10b981"/>
-    <text x="32" y="20" font-size="10" font-weight="600" fill="#047857">Most tests live here</text>
-
-    <!-- Integration pill -->
-    <rect x="210" y="0" width="190" height="32" rx="16" fill="#dbeafe" stroke="#3b82f6"/>
-    <circle cx="228" cy="16" r="6" fill="#3b82f6"/>
-    <text x="242" y="20" font-size="10" font-weight="600" fill="#1d4ed8">Isolate external deps</text>
-
-    <!-- E2E pill -->
-    <rect x="440" y="0" width="190" height="32" rx="16" fill="#ede9fe" stroke="#8b5cf6"/>
-    <circle cx="458" cy="16" r="6" fill="#8b5cf6"/>
-    <text x="472" y="20" font-size="10" font-weight="600" fill="#6d28d9">Fewer, high-value flows</text>
-  </g>
+  <text x="450" y="538" text-anchor="middle" font-size="11" fill="#94a3b8">FastEval Documentation • Agent Testing Pyramid • 2026 Standards</text>
 </svg>

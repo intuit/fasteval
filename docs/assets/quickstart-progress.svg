@@ -1,67 +1,63 @@
-<svg viewBox="0 0 900 160" xmlns="http://www.w3.org/2000/svg" font-family="Inter, system-ui, -apple-system, sans-serif">
+<svg viewBox="0 0 900 180" xmlns="http://www.w3.org/2000/svg" font-family="Inter, system-ui, -apple-system, sans-serif">
   <defs>
-    <filter id="progressShadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-opacity="0.08"/>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-opacity="0.08"/>
     </filter>
-
-    <style>
-      @keyframes progressPulse {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.1); }
-      }
-      .progress-active {
-        animation: progressPulse 2s ease-in-out infinite;
-        transform-origin: 290px 75px;
-      }
-    </style>
   </defs>
 
-  <rect width="900" height="160" rx="12" fill="#f8fafc"/>
+  <rect width="900" height="180" rx="12" fill="#f8fafc"/>
 
-  <rect x="740" y="15" width="130" height="30" rx="15" fill="#dcfce7" stroke="#86efac" stroke-width="1"/>
-  <text x="805" y="35" text-anchor="middle" font-size="13" font-weight="600" fill="#166534">⏱ 5 minutes</text>
-
-  <rect x="130" y="72" width="640" height="6" rx="3" fill="#e2e8f0"/>
-
-  <rect x="130" y="72" width="160" height="6" rx="3" fill="#10b981"/>
-
-  <g filter="url(#progressShadow)">
-    <circle cx="130" cy="75" r="22" fill="#10b981"/>
-    <text x="130" y="80" text-anchor="middle" font-size="14" font-weight="700" fill="white">1</text>
-
-    <text x="130" y="120" text-anchor="middle" font-size="15" font-weight="600" fill="#1e293b">Setup</text>
-    <text x="130" y="138" text-anchor="middle" font-size="13" fill="#64748b">Install &amp; configure</text>
+  <g transform="translate(740, 20)">
+    <rect width="130" height="30" rx="15" fill="#ecfdf5" stroke="#86efac" stroke-width="1"/>
+    <text x="65" y="20" text-anchor="middle" font-size="13" font-weight="700" fill="#166534">⏱ 5 MINUTES</text>
   </g>
 
-  <g filter="url(#progressShadow)">
-    <circle cx="290" cy="75" r="22" fill="#6366f1" class="progress-active"/>
-    <text x="290" y="80" text-anchor="middle" font-size="14" font-weight="700" fill="white">2</text>
+  <rect x="130" y="75" width="640" height="6" rx="3" fill="#e2e8f0"/>
+  <rect x="130" y="75" width="160" height="6" rx="3" fill="#10b981"/>
 
-    <text x="290" y="120" text-anchor="middle" font-size="15" font-weight="600" fill="#1e293b">Write</text>
-    <text x="290" y="138" text-anchor="middle" font-size="13" font-weight="500" fill="#6366f1">Create test file</text>
+  <g transform="translate(130, 78)">
+    <circle r="22" fill="#10b981" filter="url(#shadow)"/>
+    <text y="5" text-anchor="middle" font-size="14" font-weight="800" fill="white">1</text>
+    <g transform="translate(0, 45)" text-anchor="middle">
+      <text font-size="14" font-weight="700" fill="#1e293b">Setup</text>
+      <text y="18" font-size="12" fill="#64748b">Install SDK</text>
+    </g>
   </g>
 
-  <g filter="url(#progressShadow)">
-    <circle cx="450" cy="75" r="22" fill="white" stroke="#cbd5e1" stroke-width="2"/>
-    <text x="450" y="80" text-anchor="middle" font-size="14" font-weight="700" fill="#64748b">3</text>
-
-    <text x="450" y="120" text-anchor="middle" font-size="15" font-weight="600" fill="#64748b">Decorate</text>
-    <text x="450" y="138" text-anchor="middle" font-size="13" fill="#94a3b8">Add metrics</text>
+  <g transform="translate(290, 78)">
+    <circle r="22" fill="#4f46e5" filter="url(#shadow)"/>
+    <text y="5" text-anchor="middle" font-size="14" font-weight="800" fill="white">2</text>
+    <g transform="translate(0, 45)" text-anchor="middle">
+      <text font-size="14" font-weight="700" fill="#1e293b">Write</text>
+      <text y="18" font-size="12" font-weight="700" fill="#4f46e5">Create Test</text>
+    </g>
   </g>
 
-  <g filter="url(#progressShadow)">
-    <circle cx="610" cy="75" r="22" fill="white" stroke="#cbd5e1" stroke-width="2"/>
-    <text x="610" y="80" text-anchor="middle" font-size="14" font-weight="700" fill="#64748b">4</text>
-
-    <text x="610" y="120" text-anchor="middle" font-size="15" font-weight="600" fill="#64748b">Run</text>
-    <text x="610" y="138" text-anchor="middle" font-size="13" fill="#94a3b8">pytest</text>
+  <g transform="translate(450, 78)">
+    <circle r="22" fill="white" stroke="#cbd5e1" stroke-width="2" filter="url(#shadow)"/>
+    <text y="5" text-anchor="middle" font-size="14" font-weight="800" fill="#94a3b8">3</text>
+    <g transform="translate(0, 45)" text-anchor="middle">
+      <text font-size="14" font-weight="700" fill="#94a3b8">Decorate</text>
+      <text y="18" font-size="12" fill="#cbd5e1">Add Metrics</text>
+    </g>
   </g>
 
-  <g filter="url(#progressShadow)">
-    <circle cx="770" cy="75" r="22" fill="white" stroke="#cbd5e1" stroke-width="2"/>
-    <text x="770" y="80" text-anchor="middle" font-size="14" font-weight="700" fill="#64748b">5</text>
-
-    <text x="770" y="120" text-anchor="middle" font-size="15" font-weight="600" fill="#64748b">Ship</text>
-    <text x="770" y="138" text-anchor="middle" font-size="13" fill="#94a3b8">Deploy confident</text>
+  <g transform="translate(610, 78)">
+    <circle r="22" fill="white" stroke="#cbd5e1" stroke-width="2" filter="url(#shadow)"/>
+    <text y="5" text-anchor="middle" font-size="14" font-weight="800" fill="#94a3b8">4</text>
+    <g transform="translate(0, 45)" text-anchor="middle">
+      <text font-size="14" font-weight="700" fill="#94a3b8">Run</text>
+      <text y="18" font-size="12" fill="#cbd5e1">Pytest CLI</text>
+    </g>
   </g>
+
+  <g transform="translate(770, 78)">
+    <circle r="22" fill="white" stroke="#cbd5e1" stroke-width="2" filter="url(#shadow)"/>
+    <text y="5" text-anchor="middle" font-size="14" font-weight="800" fill="#94a3b8">5</text>
+    <g transform="translate(0, 45)" text-anchor="middle">
+      <text font-size="14" font-weight="700" fill="#94a3b8">Ship</text>
+      <text y="18" font-size="12" fill="#cbd5e1">Deploy CI/CD</text>
+    </g>
+  </g>
+
 </svg>
