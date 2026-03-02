@@ -1,133 +1,98 @@
-<svg viewBox="0 0 800 480" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, -apple-system, sans-serif">
+<svg viewBox="0 0 900 520" xmlns="http://www.w3.org/2000/svg" font-family="Inter, system-ui, -apple-system, sans-serif">
   <defs>
-    <linearGradient id="dscCsvGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#3b82f6"/>
-      <stop offset="100%" style="stop-color:#1d4ed8"/>
-    </linearGradient>
-    <linearGradient id="dscConvGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#8b5cf6"/>
-      <stop offset="100%" style="stop-color:#6d28d9"/>
-    </linearGradient>
-    <linearGradient id="dscTraceGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#10b981"/>
-      <stop offset="100%" style="stop-color:#059669"/>
-    </linearGradient>
-    <linearGradient id="dscQuestionGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#f59e0b"/>
-      <stop offset="100%" style="stop-color:#d97706"/>
-    </linearGradient>
-    <filter id="dscShadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-opacity="0.12"/>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-opacity="0.08"/>
     </filter>
-    <marker id="dscArrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
       <polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/>
     </marker>
   </defs>
-  
-  <!-- Background -->
-  <rect width="800" height="480" fill="#f8fafc"/>
-  
-  <!-- Title -->
-  <text x="400" y="35" text-anchor="middle" font-size="22" font-weight="700" fill="#1e293b">Choosing Your Data Source</text>
-  <text x="400" y="55" text-anchor="middle" font-size="12" fill="#64748b">Decision tree for selecting the right test data approach</text>
-  
-  <!-- Starting Question -->
-  <g filter="url(#dscShadow)">
-    <polygon points="400,85 530,130 400,175 270,130" fill="url(#dscQuestionGrad)"/>
-    <text x="400" y="125" text-anchor="middle" font-size="12" font-weight="600" fill="white">What are you</text>
-    <text x="400" y="142" text-anchor="middle" font-size="12" font-weight="600" fill="white">testing?</text>
+
+  <rect width="900" height="520" fill="#f8fafc"/>
+
+  <text x="450" y="45" text-anchor="middle" font-size="22" font-weight="700" fill="#1e293b">Choosing Your Data Source</text>
+  <text x="450" y="70" text-anchor="middle" font-size="14" fill="#64748b">Decision tree for selecting the right test data approach</text>
+
+  <g filter="url(#shadow)">
+    <path d="M 450 90 L 580 135 L 450 180 L 320 135 Z" fill="#f59e0b"/>
+    <text x="450" y="130" text-anchor="middle" font-size="13" font-weight="700" fill="white">WHAT ARE YOU</text>
+    <text x="450" y="148" text-anchor="middle" font-size="13" font-weight="700" fill="white">TESTING?</text>
   </g>
-  
-  <!-- Three branches going down -->
-  <line x1="300" y1="145" x2="140" y2="200" stroke="#64748b" stroke-width="2" marker-end="url(#dscArrow)"/>
-  <line x1="400" y1="175" x2="400" y2="200" stroke="#64748b" stroke-width="2" marker-end="url(#dscArrow)"/>
-  <line x1="500" y1="145" x2="660" y2="200" stroke="#64748b" stroke-width="2" marker-end="url(#dscArrow)"/>
-  
-  <!-- Labels on branches -->
-  <text x="200" y="165" font-size="10" fill="#64748b" font-weight="500">Known test cases</text>
-  <text x="200" y="178" font-size="10" fill="#64748b" font-weight="500">Golden datasets</text>
-  
-  <text x="410" y="190" font-size="10" fill="#64748b" font-weight="500">Multi-turn</text>
-  <text x="410" y="202" font-size="10" fill="#64748b" font-weight="500">conversations</text>
-  
-  <text x="560" y="165" font-size="10" fill="#64748b" font-weight="500">Real user</text>
-  <text x="560" y="178" font-size="10" fill="#64748b" font-weight="500">interactions</text>
-  
-  <!-- CSV Branch -->
-  <g filter="url(#dscShadow)">
-    <rect x="40" y="210" width="200" height="240" rx="12" fill="white" stroke="#3b82f6" stroke-width="2"/>
-    
-    <!-- Header -->
-    <rect x="40" y="210" width="200" height="50" rx="12" fill="url(#dscCsvGrad)"/>
-    <rect x="40" y="248" width="200" height="12" fill="url(#dscCsvGrad)"/>
-    <text x="140" y="232" text-anchor="middle" font-size="14" font-weight="700" fill="white">CSV Files</text>
-    <text x="140" y="250" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.9)">@fe.csv("data.csv")</text>
-    
-    <!-- Content -->
-    <text x="55" y="285" font-size="11" font-weight="600" fill="#1e293b">Best For:</text>
-    <text x="55" y="302" font-size="10" fill="#475569">- Regression testing</text>
-    <text x="55" y="317" font-size="10" fill="#475569">- CI/CD pipelines</text>
-    <text x="55" y="332" font-size="10" fill="#475569">- Curated examples</text>
-    
-    <text x="55" y="355" font-size="11" font-weight="600" fill="#1e293b">Pros:</text>
-    <text x="55" y="372" font-size="10" fill="#059669">+ Version controlled</text>
-    <text x="55" y="387" font-size="10" fill="#059669">+ Reproducible</text>
-    <text x="55" y="402" font-size="10" fill="#059669">+ Fast to run</text>
-    
-    <text x="55" y="425" font-size="11" font-weight="600" fill="#1e293b">Volume:</text>
-    <text x="55" y="442" font-size="10" fill="#475569">10-1000+ test cases</text>
+
+  <g stroke="#94a3b8" stroke-width="2" fill="none">
+    <path d="M 320 135 Q 150 135 150 210" marker-end="url(#arrowhead)"/>
+    <path d="M 450 180 L 450 210" marker-end="url(#arrowhead)"/>
+    <path d="M 580 135 Q 750 135 750 210" marker-end="url(#arrowhead)"/>
   </g>
-  
-  <!-- Conversation Branch -->
-  <g filter="url(#dscShadow)">
-    <rect x="300" y="210" width="200" height="240" rx="12" fill="white" stroke="#8b5cf6" stroke-width="2"/>
-    
-    <!-- Header -->
-    <rect x="300" y="210" width="200" height="50" rx="12" fill="url(#dscConvGrad)"/>
-    <rect x="300" y="248" width="200" height="12" fill="url(#dscConvGrad)"/>
-    <text x="400" y="232" text-anchor="middle" font-size="14" font-weight="700" fill="white">Conversations</text>
-    <text x="400" y="250" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.9)">@fe.conversation([...])</text>
-    
-    <!-- Content -->
-    <text x="315" y="285" font-size="11" font-weight="600" fill="#1e293b">Best For:</text>
-    <text x="315" y="302" font-size="10" fill="#475569">- Chatbot testing</text>
-    <text x="315" y="317" font-size="10" fill="#475569">- Context retention</text>
-    <text x="315" y="332" font-size="10" fill="#475569">- Dialogue flows</text>
-    
-    <text x="315" y="355" font-size="11" font-weight="600" fill="#1e293b">Pros:</text>
-    <text x="315" y="372" font-size="10" fill="#059669">+ Tests memory</text>
-    <text x="315" y="387" font-size="10" fill="#059669">+ Multi-turn logic</text>
-    <text x="315" y="402" font-size="10" fill="#059669">+ Built-in history</text>
-    
-    <text x="315" y="425" font-size="11" font-weight="600" fill="#1e293b">Turns:</text>
-    <text x="315" y="442" font-size="10" fill="#475569">2-20 turns per test</text>
+
+  <g font-size="11" font-weight="600" fill="#64748b">
+    <text x="200" y="125" text-anchor="middle">Golden Datasets</text>
+    <text x="460" y="198">Multi-turn Dialogues</text>
+    <text x="700" y="125" text-anchor="middle">Real User Traffic</text>
   </g>
-  
-  <!-- Traces Branch -->
-  <g filter="url(#dscShadow)">
-    <rect x="560" y="210" width="200" height="240" rx="12" fill="white" stroke="#10b981" stroke-width="2"/>
+
+  <g transform="translate(45, 210)" filter="url(#shadow)">
+    <rect width="220" height="260" rx="12" fill="white" stroke="#3b82f6" stroke-width="1.5"/>
+    <rect width="220" height="45" rx="12" fill="#eff6ff"/>
+    <rect y="30" width="220" height="15" fill="#eff6ff"/>
+    <text x="110" y="28" text-anchor="middle" font-size="14" font-weight="700" fill="#1d4ed8">CSV / JSON Files</text>
+    <text x="110" y="65" text-anchor="middle" font-size="11" font-family="monospace" fill="#3b82f6">@fe.dataset("data.csv")</text>
     
-    <!-- Header -->
-    <rect x="560" y="210" width="200" height="50" rx="12" fill="url(#dscTraceGrad)"/>
-    <rect x="560" y="248" width="200" height="12" fill="url(#dscTraceGrad)"/>
-    <text x="660" y="232" text-anchor="middle" font-size="14" font-weight="700" fill="white">Production Traces</text>
-    <text x="660" y="250" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.9)">@fe.traces()</text>
-    
-    <!-- Content -->
-    <text x="575" y="285" font-size="11" font-weight="600" fill="#1e293b">Best For:</text>
-    <text x="575" y="302" font-size="10" fill="#475569">- Quality monitoring</text>
-    <text x="575" y="317" font-size="10" fill="#475569">- Finding edge cases</text>
-    <text x="575" y="332" font-size="10" fill="#475569">- Drift detection</text>
-    
-    <text x="575" y="355" font-size="11" font-weight="600" fill="#1e293b">Pros:</text>
-    <text x="575" y="372" font-size="10" fill="#059669">+ Real user data</text>
-    <text x="575" y="387" font-size="10" fill="#059669">+ Catches unknowns</text>
-    <text x="575" y="402" font-size="10" fill="#059669">+ Continuous eval</text>
-    
-    <text x="575" y="425" font-size="11" font-weight="600" fill="#1e293b">Frequency:</text>
-    <text x="575" y="442" font-size="10" fill="#475569">Daily/weekly sampling</text>
+    <g transform="translate(20, 90)">
+      <text font-size="12" font-weight="700" fill="#1e293b">BEST FOR</text>
+      <text y="20" font-size="11" fill="#475569">• Regression Testing</text>
+      <text y="36" font-size="11" fill="#475569">• CI/CD Pipelines</text>
+      
+      <text y="65" font-size="12" font-weight="700" fill="#1e293b">PROS</text>
+      <text y="85" font-size="11" fill="#059669">• Version Controlled</text>
+      <text y="101" font-size="11" fill="#059669">• Highly Reproducible</text>
+      
+      <text y="130" font-size="12" font-weight="700" fill="#1e293b">VOLUME</text>
+      <text y="150" font-size="11" fill="#475569">10 - 1,000+ Cases</text>
+    </g>
   </g>
-  
-  <!-- Footer -->
-  <text x="400" y="470" text-anchor="middle" font-size="11" fill="#94a3b8">fasteval • Data Source Selection Guide</text>
+
+  <g transform="translate(340, 210)" filter="url(#shadow)">
+    <rect width="220" height="260" rx="12" fill="white" stroke="#8b5cf6" stroke-width="1.5"/>
+    <rect width="220" height="45" rx="12" fill="#f5f3ff"/>
+    <rect y="30" width="220" height="15" fill="#f5f3ff"/>
+    <text x="110" y="28" text-anchor="middle" font-size="14" font-weight="700" fill="#6d28d9">Conversations</text>
+    <text x="110" y="65" text-anchor="middle" font-size="11" font-family="monospace" fill="#8b5cf6">@fe.conversation([...])</text>
+    
+    <g transform="translate(20, 90)">
+      <text font-size="12" font-weight="700" fill="#1e293b">BEST FOR</text>
+      <text y="20" font-size="11" fill="#475569">• Chatbot Interaction</text>
+      <text y="36" font-size="11" fill="#475569">• Context Retention</text>
+      
+      <text y="65" font-size="12" font-weight="700" fill="#1e293b">PROS</text>
+      <text y="85" font-size="11" fill="#059669">• Tests Agent Memory</text>
+      <text y="101" font-size="11" fill="#059669">• Multi-turn Logic</text>
+      
+      <text y="130" font-size="12" font-weight="700" fill="#1e293b">TURNS</text>
+      <text y="150" font-size="11" fill="#475569">2 - 20 Turns / Test</text>
+    </g>
+  </g>
+
+  <g transform="translate(635, 210)" filter="url(#shadow)">
+    <rect width="220" height="260" rx="12" fill="white" stroke="#10b981" stroke-width="1.5"/>
+    <rect width="220" height="45" rx="12" fill="#ecfdf5"/>
+    <rect y="30" width="220" height="15" fill="#ecfdf5"/>
+    <text x="110" y="28" text-anchor="middle" font-size="14" font-weight="700" fill="#047857">Production Traces</text>
+    <text x="110" y="65" text-anchor="middle" font-size="11" font-family="monospace" fill="#10b981">@fe.traces(sample=0.1)</text>
+    
+    <g transform="translate(20, 90)">
+      <text font-size="12" font-weight="700" fill="#1e293b">BEST FOR</text>
+      <text y="20" font-size="11" fill="#475569">• Quality Monitoring</text>
+      <text y="36" font-size="11" fill="#475569">• Finding Edge Cases</text>
+      
+      <text y="65" font-size="12" font-weight="700" fill="#1e293b">PROS</text>
+      <text y="85" font-size="11" fill="#059669">• Real-world Intent</text>
+      <text y="101" font-size="11" fill="#059669">• Detects User Drift</text>
+      
+      <text y="130" font-size="12" font-weight="700" fill="#1e293b">FREQUENCY</text>
+      <text y="150" font-size="11" fill="#475569">Continuous Sampling</text>
+    </g>
+  </g>
+
+  <text x="450" y="508" text-anchor="middle" font-size="11" fill="#94a3b8">fasteval • Data Source Selection Guide • Architectural Standards 2026</text>
 </svg>

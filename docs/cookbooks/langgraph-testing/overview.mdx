@@ -1,0 +1,324 @@
+---
+title: Testing LangGraph Agents
+description: End-to-end guide to evaluating LangGraph agents with fasteval-langgraph
+order: 1
+sidebar:
+  - title: Overview
+    anchor: overview
+  - title: Sample Agent
+    anchor: sample-langgraph-agent
+  - title: First Evaluation
+    anchor: your-first-evaluation
+  - title: Tool Trajectory Testing
+    anchor: tool-trajectory-testing
+  - title: Combining Metrics
+    anchor: combining-tool-and-output-metrics
+  - title: Quick Navigation
+    anchor: quick-navigation
+---
+
+# Testing LangGraph Agents [Open in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/overview.ipynb)
+
+This cookbook shows how to evaluate LangGraph agents using `fasteval-langgraph` -- a test harness that wraps any compiled `StateGraph` and feeds results directly into fasteval decorators.
+
+## Overview
+
+Instead of manually invoking your graph, extracting messages, and parsing tool calls, the harness gives you a clean API:
+
+```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/overview.ipynb#scrollTo=overview_example)
+from fasteval_langgraph import harness
+import fasteval as fe
+
+graph = harness(compiled_agent)
+result = await graph.chat("What's the weather in Paris?")
+
+fe.score(
+    actual_output=result.response,
+    expected_output="The weather in Paris is...",
+    input="What's the weather in Paris?",
+)
+```
+
+The harness handles thread management, state filtering, trace capture, and auto-detection of `MessagesState` vs plain `TypedDict` graphs.
+
+### Key Features
+
+| Feature | Description |
+|---------|-------------|
+| **`.chat()`** | Send a single message, get back `ChatResult` with response, state, and trace |
+| **`.session()`** | Multi-turn conversations with shared thread state |
+| **`.node()`** | Execute a single node in isolation |
+| **`.mock()`** | Replace nodes with fakes for isolated testing |
+| **Auto-detection** | Automatically adapts to `MessagesState` or plain `TypedDict` graphs |
+| **Trace capture** | Full per-node execution trace via streaming |
+
+### Installation
+
+```bash
+pip install fasteval-langgraph
+```
+
+This installs `fasteval-core`, `langgraph`, and `langchain_core` as dependencies.
+
+## Sample LangGraph Agent
+
+Here's a multi-node support agent that classifies user intent and routes to different backends:
+
+```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/overview.ipynb#scrollTo=sample_agent)
+from langgraph.graph import StateGraph, END, START
+from langgraph.graph.message import MessagesState
+from langgraph.checkpoint.memory import MemorySaver
+from langgraph.types import Command
+from langchain_core.messages import AIMessage, HumanMessage
+
+class SupportState(MessagesState):
+    intent: str
+    docs: list
+    plan: str
+
+def classifier(state: SupportState) -> Command:
+    last_msg = state["messages"][-1].content
+    if "troubleshoot" in last_msg.lower():
+        intent = "TROUBLESHOOTING"
+    else:
+        intent = "FAQ"
+    return Command(
+        update={"intent": intent},
+        goto="rag" if intent == "FAQ" else "planner",
+    )
+
+def rag(state: SupportState) -> Command:
+    return Command(
+        update={"docs": [f"Retrieved docs for: {state['intent']}"]},
+        goto="responder",
+    )
+
+def planner(state: SupportState) -> Command:
+    return Command(
+        update={"plan": f"Step-by-step plan for: {state['intent']}"},
+        goto="responder",
+    )
+
+def responder(state: SupportState) -> dict:
+    context = state.get("docs") or [state.get("plan", "")]
+    return {
+        "messages": [AIMessage(content=f"Here's your answer based on: {context[0]}")],
+    }
+
+def build_support_agent():
+    builder = StateGraph(SupportState)
+    builder.add_node("classifier", classifier)
+    builder.add_node("rag", rag)
+    builder.add_node("planner", planner)
+    builder.add_node("responder", responder)
+    builder.add_edge(START, "classifier")
+    builder.add_edge("responder", END)
+    return builder.compile(checkpointer=MemorySaver())
+
+agent = build_support_agent()
+```
+
+## Your First Evaluation
+
+Wrap the compiled graph with `harness()` and use `.chat()` to send messages:
+
+```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/overview.ipynb#scrollTo=first_evaluation)
+from fasteval_langgraph import harness
+import fasteval as fe
+
+graph = harness(agent)
+
+@fe.correctness(threshold=0.7)
+@fe.relevance(threshold=0.7)
+async def test_faq_response():
+    result = await graph.chat("What is OAuth?")
+
+    # ChatResult gives you everything
+    print(f"Response: {result.response}")
+    print(f"Nodes ran: {result.nodes_ran}")
+    print(f"State: {result.state}")
+
+    fe.score(
+        actual_output=result.response,
+        expected_output="OAuth is an authorization framework...",
+        input="What is OAuth?",
+    )
+```
+
+The `ChatResult` contains:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `response` | `str` | Last AI message content |
+| `state` | `dict` | Filtered state snapshot (messages excluded by default) |
+| `trace` | `List[NodeStep]` | Per-node execution trace in order |
+| `nodes_ran` | `List[str]` | Node names in execution order |
+
+## Tool Trajectory Testing
+
+Use the harness to test that your agent follows the correct tool trajectory. The `ChatResult.trace` and `nodes_ran` fields make it easy to verify routing.
+
+### Verifying Node Routes
+
+```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/overview.ipynb#scrollTo=route_verification)
+@fe.correctness(threshold=0.7)
+async def test_faq_route():
+    """Verify FAQ queries route through classifier -> rag -> responder."""
+    result = await graph.chat("What is OAuth?")
+
+    assert "classifier" in result.nodes_ran
+    assert "rag" in result.nodes_ran
+    assert "responder" in result.nodes_ran
+    assert "planner" not in result.nodes_ran
+
+    fe.score(
+        actual_output=result.response,
+        expected_output="Information about OAuth",
+        input="What is OAuth?",
+    )
+
+
+@fe.correctness(threshold=0.7)
+async def test_troubleshoot_route():
+    """Verify troubleshooting queries route through planner."""
+    result = await graph.chat("I need to troubleshoot my login issue")
+
+    assert "classifier" in result.nodes_ran
+    assert "planner" in result.nodes_ran
+    assert "rag" not in result.nodes_ran
+
+    fe.score(
+        actual_output=result.response,
+        expected_output="Step-by-step troubleshooting plan",
+        input="I need to troubleshoot my login issue",
+    )
+```
+
+### Tool Call Accuracy with Harness
+
+When your agent uses LangChain tools, extract tool calls from the trace and evaluate them:
+
+```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/overview.ipynb#scrollTo=tool_call_accuracy)
+from fasteval.models import ExpectedTool, ToolCall
+
+@fe.tool_call_accuracy(threshold=0.9)
+async def test_tool_usage():
+    """Verify the agent calls the right tools."""
+    result = await graph.chat("What's the weather in London?")
+
+    # Extract tool calls from the trace
+    tool_calls = []
+    for step in result.trace:
+        for msg in step.updates.get("messages", []):
+            if hasattr(msg, "tool_calls") and msg.tool_calls:
+                for tc in msg.tool_calls:
+                    tool_calls.append(ToolCall(name=tc["name"], arguments=tc["args"]))
+
+    expected_tools = [ExpectedTool(name="get_weather", args={"city": "London"})]
+
+    fe.score(
+        actual_output=result.response,
+        tool_calls=tool_calls,
+        expected_tools=expected_tools,
+        input="What's the weather in London?",
+    )
+```
+
+### Tool Sequence Verification
+
+```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/overview.ipynb#scrollTo=tool_sequence)
+@fe.tool_sequence(threshold=0.9)
+async def test_multi_step_tool_order():
+    """Verify tools are called in the correct order."""
+    result = await graph.chat(
+        "Search for Tokyo's population, then calculate 10% of it"
+    )
+
+    tool_calls = []
+    for step in result.trace:
+        for msg in step.updates.get("messages", []):
+            if hasattr(msg, "tool_calls") and msg.tool_calls:
+                for tc in msg.tool_calls:
+                    tool_calls.append(ToolCall(name=tc["name"], arguments=tc["args"]))
+
+    expected_tools = [
+        ExpectedTool(name="search_web"),
+        ExpectedTool(name="calculate"),
+    ]
+
+    fe.score(
+        actual_output=result.response,
+        tool_calls=tool_calls,
+        expected_tools=expected_tools,
+        input="Search for Tokyo's population, then calculate 10% of it",
+    )
+```
+
+## Combining Tool and Output Metrics
+
+Stack multiple decorators to evaluate both tool usage AND response quality in a single test:
+
+```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/overview.ipynb#scrollTo=combined_metrics)
+@fe.tool_call_accuracy(threshold=0.9)
+@fe.tool_args_match(threshold=0.8)
+@fe.correctness(threshold=0.8)
+@fe.relevance(threshold=0.7)
+async def test_complete_agent_behavior():
+    """Evaluate tool trajectory and output quality together."""
+    result = await graph.chat("What is OAuth and how does it work?")
+
+    tool_calls = []
+    for step in result.trace:
+        for msg in step.updates.get("messages", []):
+            if hasattr(msg, "tool_calls") and msg.tool_calls:
+                for tc in msg.tool_calls:
+                    tool_calls.append(ToolCall(name=tc["name"], arguments=tc["args"]))
+
+    expected_tools = [ExpectedTool(name="search_web", args={"query": "OAuth"})]
+
+    fe.score(
+        actual_output=result.response,
+        expected_output="OAuth is an open standard for access delegation...",
+        tool_calls=tool_calls,
+        expected_tools=expected_tools,
+        input="What is OAuth and how does it work?",
+    )
+```
+
+## Running Tests
+
+```bash
+# Run all LangGraph tests
+pytest tests/test_agent.py -v
+
+# Skip human review in CI
+pytest tests/test_agent.py --no-interactive
+
+# Run with specific markers
+pytest -m "agent" -v
+```
+
+### Expected Output
+
+```
+test_agent.py::test_faq_response PASSED
+test_agent.py::test_faq_route PASSED
+test_agent.py::test_troubleshoot_route PASSED
+test_agent.py::test_complete_agent_behavior PASSED
+
+Evaluation Results:
+  tool_call_accuracy: 1.00 (threshold: 0.90) PASSED
+  tool_args_match: 0.92 (threshold: 0.80) PASSED
+  correctness: 0.85 (threshold: 0.80) PASSED
+  relevance: 0.90 (threshold: 0.70) PASSED
+```
+
+## Quick Navigation
+
+| Page | Description | Time |
+|------|-------------|------|
+| [Harness Basics](/docs/cookbooks/langgraph-testing/harness-basics) | Deep dive into `.chat()`, `ChatResult`, hooks, and graph introspection | 10 min |
+| [Multi-turn Sessions](/docs/cookbooks/langgraph-testing/sessions) | `.session()`, conversation metrics, interrupt/resume | 10 min |
+| [Node Testing and Mocking](/docs/cookbooks/langgraph-testing/node-mocking) | `.node().run()`, `mock()`, isolated testing patterns | 10 min |
+
+Or jump to the [fasteval-langgraph plugin docs](/docs/plugins/langgraph/overview) for the full API reference.

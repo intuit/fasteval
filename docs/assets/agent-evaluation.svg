@@ -1,122 +1,101 @@
-<svg viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, -apple-system, sans-serif">
+<svg viewBox="0 0 900 540" xmlns="http://www.w3.org/2000/svg" font-family="Inter, system-ui, -apple-system, sans-serif">
   <defs>
-    <linearGradient id="agentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#6366f1"/>
-      <stop offset="100%" style="stop-color:#4f46e5"/>
-    </linearGradient>
-    <linearGradient id="toolGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#f59e0b"/>
-      <stop offset="100%" style="stop-color:#d97706"/>
-    </linearGradient>
-    <linearGradient id="evalBoxGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#10b981"/>
-      <stop offset="100%" style="stop-color:#059669"/>
-    </linearGradient>
-    <filter id="shadow5" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="4" stdDeviation="5" flood-opacity="0.12"/>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-opacity="0.08"/>
     </filter>
-    <marker id="arrow5" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
       <polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/>
     </marker>
   </defs>
-  
-  <!-- Background -->
-  <rect width="800" height="400" fill="#f8fafc"/>
-  
-  <!-- Title -->
-  <text x="400" y="35" text-anchor="middle" font-size="22" font-weight="700" fill="#1e293b">Agent Tool Trajectory Evaluation</text>
-  
-  <!-- Agent Box -->
-  <g filter="url(#shadow5)">
-    <rect x="50" y="70" width="180" height="100" rx="12" fill="url(#agentGrad)"/>
-    <text x="140" y="105" text-anchor="middle" font-size="16" font-weight="600" fill="white">LangGraph Agent</text>
-    <text x="140" y="130" text-anchor="middle" font-size="11" fill="rgba(255,255,255,0.8)">Receives user query</text>
-    <text x="140" y="150" text-anchor="middle" font-size="11" fill="rgba(255,255,255,0.8)">Decides which tools</text>
-  </g>
-  
-  <!-- Arrow to Tool Calls -->
-  <line x1="230" y1="120" x2="280" y2="120" stroke="#64748b" stroke-width="2" marker-end="url(#arrow5)"/>
-  
-  <!-- Tool Calls Section -->
-  <g filter="url(#shadow5)">
-    <rect x="290" y="60" width="200" height="120" rx="12" fill="white" stroke="#e2e8f0" stroke-width="2"/>
-    <text x="390" y="85" text-anchor="middle" font-size="14" font-weight="600" fill="#1e293b">Tool Calls</text>
-    
-    <!-- Tool 1 -->
-    <g>
-      <rect x="305" y="95" width="80" height="35" rx="6" fill="url(#toolGrad)"/>
-      <text x="345" y="108" text-anchor="middle" font-size="9" font-weight="500" fill="white">search_web</text>
-      <text x="345" y="122" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.8)">query: "..."</text>
+
+  <rect width="900" height="540" fill="#f8fafc"/>
+
+  <text x="450" y="45" text-anchor="middle" font-size="22" font-weight="700" fill="#1e293b">Agent Tool Trajectory Evaluation</text>
+  <text x="450" y="68" text-anchor="middle" font-size="14" fill="#64748b">Analyzing sequential tool-calling logic and argument precision</text>
+
+  <g transform="translate(50, 110)">
+    <g filter="url(#shadow)">
+      <rect width="240" height="160" rx="12" fill="white" stroke="#c7d2fe" stroke-width="1.5"/>
+      <rect width="240" height="40" rx="12" fill="#eff6ff"/>
+      <rect y="30" width="240" height="10" fill="#eff6ff"/>
+      <text x="120" y="26" text-anchor="middle" font-size="14" font-weight="700" fill="#4f46e5">LangGraph Agent</text>
+      
+      <text x="120" y="75" text-anchor="middle" font-size="12" fill="#475569">Receives user query</text>
+      <text x="120" y="93" text-anchor="middle" font-size="12" fill="#475569">Decides tool trajectory</text>
+      <path d="M 80 120 L 160 120" stroke="#e2e8f0" stroke-width="1"/>
+      <text x="120" y="140" text-anchor="middle" font-size="11" font-weight="600" fill="#94a3b8">PLANNING PHASE</text>
     </g>
-    
-    <!-- Tool 2 -->
-    <g>
-      <rect x="395" y="95" width="80" height="35" rx="6" fill="url(#toolGrad)"/>
-      <text x="435" y="108" text-anchor="middle" font-size="9" font-weight="500" fill="white">calculate</text>
-      <text x="435" y="122" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.8)">expr: "15*8"</text>
+
+    <line x1="240" y1="80" x2="280" y2="80" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+    <g transform="translate(280, 0)" filter="url(#shadow)">
+      <rect width="240" height="160" rx="12" fill="white" stroke="#e2e8f0" stroke-width="1.5"/>
+      <text x="120" y="26" text-anchor="middle" font-size="14" font-weight="700" fill="#1e293b">Tool Trajectory</text>
+      
+      <rect x="15" y="45" width="210" height="100" rx="8" fill="#0f172a"/>
+      <text x="30" y="70" font-family="monospace" font-size="12" fill="#a78bfa">search_web<tspan fill="#f8fafc">(</tspan><tspan fill="#fbbf24">"..."</tspan><tspan fill="#f8fafc">)</tspan></text>
+      <line x1="40" y1="85" x2="40" y2="105" stroke="#475569" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+      <text x="50" y="100" font-family="monospace" font-size="10" fill="#64748b">next</text>
+      <text x="30" y="130" font-family="monospace" font-size="12" fill="#a78bfa">calculate<tspan fill="#f8fafc">(</tspan><tspan fill="#fbbf24">"15*8"</tspan><tspan fill="#f8fafc">)</tspan></text>
     </g>
-    
-    <!-- Sequence indicator -->
-    <line x1="345" y1="145" x2="380" y2="145" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow5)"/>
-    <text x="362" y="160" text-anchor="middle" font-size="8" fill="#64748b">sequence</text>
-  </g>
-  
-  <!-- Arrow to Evaluation -->
-  <line x1="490" y1="120" x2="530" y2="120" stroke="#64748b" stroke-width="2" marker-end="url(#arrow5)"/>
-  
-  <!-- Evaluation Section -->
-  <g filter="url(#shadow5)">
-    <rect x="540" y="50" width="210" height="140" rx="12" fill="url(#evalBoxGrad)"/>
-    <text x="645" y="80" text-anchor="middle" font-size="14" font-weight="600" fill="white">Evaluation Metrics</text>
-    <line x1="560" y1="92" x2="730" y2="92" stroke="rgba(255,255,255,0.3)"/>
-    
-    <!-- Metrics -->
-    <g>
-      <rect x="555" y="105" width="90" height="35" rx="4" fill="rgba(255,255,255,0.2)"/>
-      <text x="600" y="120" text-anchor="middle" font-size="9" fill="white">tool_call_accuracy</text>
-      <text x="600" y="133" text-anchor="middle" font-size="12" font-weight="700" fill="white">0.95</text>
-    </g>
-    
-    <g>
-      <rect x="655" y="105" width="90" height="35" rx="4" fill="rgba(255,255,255,0.2)"/>
-      <text x="700" y="120" text-anchor="middle" font-size="9" fill="white">tool_sequence</text>
-      <text x="700" y="133" text-anchor="middle" font-size="12" font-weight="700" fill="white">1.00</text>
-    </g>
-    
-    <g>
-      <rect x="605" y="148" width="90" height="35" rx="4" fill="rgba(255,255,255,0.2)"/>
-      <text x="650" y="163" text-anchor="middle" font-size="9" fill="white">tool_args_match</text>
-      <text x="650" y="176" text-anchor="middle" font-size="12" font-weight="700" fill="white">0.88</text>
+
+    <line x1="520" y1="80" x2="560" y2="80" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+    <g transform="translate(560, 0)" filter="url(#shadow)">
+      <rect width="240" height="160" rx="12" fill="white" stroke="#bbf7d0" stroke-width="1.5"/>
+      <rect width="240" height="40" rx="12" fill="#ecfdf5"/>
+      <rect y="30" width="240" height="10" fill="#ecfdf5"/>
+      <text x="120" y="26" text-anchor="middle" font-size="14" font-weight="700" fill="#047857">Evaluation Results</text>
+      
+      <g transform="translate(20, 55)">
+        <text y="15" font-size="12" fill="#475569">Call Accuracy</text>
+        <text x="200" y="15" text-anchor="end" font-size="13" font-weight="700" fill="#10b981">0.95</text>
+        <rect y="25" width="200" height="4" rx="2" fill="#f1f5f9"/>
+        <rect y="25" width="190" height="4" rx="2" fill="#10b981"/>
+
+        <text y="50" font-size="12" fill="#475569">Sequence</text>
+        <text x="200" y="50" text-anchor="end" font-size="13" font-weight="700" fill="#10b981">1.00</text>
+        <rect y="60" width="200" height="4" rx="2" fill="#f1f5f9"/>
+        <rect y="60" width="200" height="4" rx="2" fill="#10b981"/>
+
+        <text y="85" font-size="12" fill="#475569">Args Match</text>
+        <text x="200" y="85" text-anchor="end" font-size="13" font-weight="700" fill="#f59e0b">0.88</text>
+        <rect y="95" width="200" height="4" rx="2" fill="#f1f5f9"/>
+        <rect y="95" width="176" height="4" rx="2" fill="#f59e0b"/>
+      </g>
     </g>
   </g>
-  
-  <!-- Evaluation Dimensions Info -->
-  <text x="400" y="220" text-anchor="middle" font-size="14" font-weight="600" fill="#1e293b">What Each Metric Evaluates</text>
-  
-  <g filter="url(#shadow5)">
-    <rect x="50" y="240" width="220" height="100" rx="8" fill="white" stroke="#3b82f6" stroke-width="2"/>
-    <text x="160" y="265" text-anchor="middle" font-size="12" font-weight="600" fill="#1d4ed8">Tool Call Accuracy</text>
-    <text x="160" y="285" text-anchor="middle" font-size="10" fill="#64748b">Did the agent call the</text>
-    <text x="160" y="300" text-anchor="middle" font-size="10" fill="#64748b">RIGHT tools for the task?</text>
-    <text x="160" y="325" text-anchor="middle" font-size="9" font-style="italic" fill="#94a3b8">Expected: [search_web, calculate]</text>
+
+  <text x="450" y="320" text-anchor="middle" font-size="14" font-weight="700" fill="#1e293b">METRIC DEFINITIONS</text>
+
+  <g transform="translate(50, 345)">
+    <g filter="url(#shadow)">
+      <rect width="240" height="130" rx="12" fill="white" stroke="#3b82f6" stroke-width="1.5"/>
+      <text x="120" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#1d4ed8">Tool Call Accuracy</text>
+      <text x="120" y="55" text-anchor="middle" font-size="12" fill="#64748b">Selection Validity</text>
+      <text x="20" y="85" font-size="11" fill="#475569">Verifies if the agent selected</text>
+      <text x="20" y="103" font-size="11" fill="#475569">the ground-truth tools required</text>
+      <text x="20" y="121" font-size="11" fill="#475569">to resolve the specific intent.</text>
+    </g>
+
+    <g transform="translate(280, 0)" filter="url(#shadow)">
+      <rect width="240" height="130" rx="12" fill="white" stroke="#8b5cf6" stroke-width="1.5"/>
+      <text x="120" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#6d28d9">Tool Sequence</text>
+      <text x="120" y="55" text-anchor="middle" font-size="12" fill="#64748b">Logical Flow</text>
+      <text x="20" y="85" font-size="11" fill="#475569">Validates the order of calls.</text>
+      <text x="20" y="103" font-size="11" fill="#475569">Essential for multi-step tasks</text>
+      <text x="20" y="121" font-size="11" fill="#475569">(e.g., Search before Calculate).</text>
+    </g>
+
+    <g transform="translate(560, 0)" filter="url(#shadow)">
+      <rect width="240" height="130" rx="12" fill="white" stroke="#f59e0b" stroke-width="1.5"/>
+      <text x="120" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#b45309">Tool Args Match</text>
+      <text x="120" y="55" text-anchor="middle" font-size="12" fill="#64748b">Parameter Precision</text>
+      <text x="20" y="85" font-size="11" fill="#475569">Deep-compares JSON arguments</text>
+      <text x="20" y="103" font-size="11" fill="#475569">passed to tools against</text>
+      <text x="20" y="121" font-size="11" fill="#475569">expected schema and values.</text>
+    </g>
   </g>
-  
-  <g filter="url(#shadow5)">
-    <rect x="290" y="240" width="220" height="100" rx="8" fill="white" stroke="#8b5cf6" stroke-width="2"/>
-    <text x="400" y="265" text-anchor="middle" font-size="12" font-weight="600" fill="#6d28d9">Tool Sequence</text>
-    <text x="400" y="285" text-anchor="middle" font-size="10" fill="#64748b">Did the agent call tools in</text>
-    <text x="400" y="300" text-anchor="middle" font-size="10" fill="#64748b">the RIGHT ORDER?</text>
-    <text x="400" y="325" text-anchor="middle" font-size="9" font-style="italic" fill="#94a3b8">Expected: search → calculate</text>
-  </g>
-  
-  <g filter="url(#shadow5)">
-    <rect x="530" y="240" width="220" height="100" rx="8" fill="white" stroke="#f59e0b" stroke-width="2"/>
-    <text x="640" y="265" text-anchor="middle" font-size="12" font-weight="600" fill="#d97706">Tool Args Match</text>
-    <text x="640" y="285" text-anchor="middle" font-size="10" fill="#64748b">Did the agent pass correct</text>
-    <text x="640" y="300" text-anchor="middle" font-size="10" fill="#64748b">ARGUMENTS to each tool?</text>
-    <text x="640" y="325" text-anchor="middle" font-size="9" font-style="italic" fill="#94a3b8">Expected: {query: "population"}</text>
-  </g>
-  
-  <!-- Footer -->
-  <text x="400" y="375" text-anchor="middle" font-size="11" fill="#94a3b8">fasteval • Comprehensive Agent Evaluation</text>
+
+  <text x="450" y="528" text-anchor="middle" font-size="11" fill="#94a3b8">fasteval • Comprehensive Agent Evaluation • 2026 Standards</text>
 </svg>

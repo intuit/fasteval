@@ -1,0 +1,288 @@
+---
+title: Harness Basics
+description: Deep dive into the fasteval-langgraph harness API, ChatResult, hooks, and graph introspection
+order: 2
+sidebar:
+  - title: Wrapping a Graph
+    anchor: wrapping-a-graph
+  - title: ChatResult
+    anchor: inspecting-chatresult
+  - title: Auto-Detection
+    anchor: auto-detection
+  - title: Custom Hooks
+    anchor: custom-hooks
+  - title: Graph Introspection
+    anchor: graph-introspection
+  - title: Tool Trajectory via Harness
+    anchor: tool-trajectory-via-harness
+---
+
+# Harness Basics [Open in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/harness-basics.ipynb)
+
+This page covers the `fasteval-langgraph` harness API in detail: wrapping graphs, inspecting results, configuring hooks, and evaluating tool trajectories.
+
+## Wrapping a Graph
+
+The `harness()` function wraps any compiled `StateGraph` for testing:
+
+```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/harness-basics.ipynb#scrollTo=wrap_messages_graph)
+from fasteval_langgraph import harness
+from langgraph.graph import StateGraph, START, END
+from langgraph.graph.message import MessagesState
+from langgraph.checkpoint.memory import MemorySaver
+from langchain_core.messages import AIMessage
+
+class EchoState(MessagesState):
+    call_count: int
+
+def echo(state: EchoState) -> dict:
+    last_msg = state["messages"][-1].content
+    return {
+        "messages": [AIMessage(content=f"Echo: {last_msg}")],
+        "call_count": state.get("call_count", 0) + 1,
+    }
+
+builder = StateGraph(EchoState)
+builder.add_node("echo", echo)
+builder.add_edge(START, "echo")
+builder.add_edge("echo", END)
+compiled = builder.compile(checkpointer=MemorySaver())
+
+graph = harness(compiled)
+result = await graph.chat("Hello world")
+print(result.response)  # "Echo: Hello world"
+```
+
+Each `.chat()` call creates a **new thread** automatically, so calls are isolated:
+
+```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/harness-basics.ipynb#scrollTo=new_thread_per_chat)
+r1 = await graph.chat("First")
+r2 = await graph.chat("Second")
+# Both have call_count=1 — fresh thread each time
+assert r1.state["call_count"] == 1
+assert r2.state["call_count"] == 1
+```
+
+### Plain TypedDict Graphs
+
+The harness also works with graphs that don't use `MessagesState`:
+
+```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/harness-basics.ipynb#scrollTo=wrap_plain_graph)
+from typing import TypedDict
+
+class CalcState(TypedDict):
+    input: str
+    result: str
+
+def calc(state: CalcState) -> dict:
+    return {"result": f"Calculated: {state['input']}"}
+
+builder = StateGraph(CalcState)
+builder.add_node("calc", calc)
+builder.add_edge(START, "calc")
+builder.add_edge("calc", END)
+calc_compiled = builder.compile(checkpointer=MemorySaver())
+
+calc_graph = harness(calc_compiled)
+result = await calc_graph.chat("5 + 3")
+print(result.response)  # "{'input': '5 + 3', 'result': 'Calculated: 5 + 3'}"
+```
+
+## Inspecting ChatResult
+
+Every `.chat()` call returns a `ChatResult` with four fields:
+
+```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/harness-basics.ipynb#scrollTo=inspect_chat_result)
+result = await graph.chat("Hello")
+
+# The AI response (extracted by output_fn)
+print(result.response)    # "Echo: Hello"
+
+# Filtered state snapshot (messages excluded for MessagesState graphs)
+print(result.state)       # {"call_count": 1}
+
+# Per-node execution trace
+for step in result.trace:
+    print(f"  {step.node}: {step.updates}")
+
+# Node names in execution order
+print(result.nodes_ran)   # ["echo"]
+```
+
+### Trace with Multi-Node Graphs
+
+For graphs with multiple nodes, the trace shows the full execution path:
+
+```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/harness-basics.ipynb#scrollTo=trace_multi_node)
+result = await router_graph.chat("What is OAuth?")
+print(result.nodes_ran)
+# ["classifier", "rag", "responder"]
+
+for step in result.trace:
+    print(f"{step.node}: {step.updates}")
+# classifier: {"intent": "FAQ"}
+# rag: {"docs": ["Retrieved docs for: FAQ"]}
+# responder: {"messages": [AIMessage(content="...")]}
+```
+
+## Auto-Detection
+
+The harness automatically detects whether your graph uses `MessagesState` or a plain `TypedDict` and configures itself accordingly:
+
+| Behavior | MessagesState | Plain TypedDict |
+|----------|:---:|:---:|
+| `input_fn` | Wraps message as `HumanMessage` | Sets `{"input": msg}` |
+| `output_fn` | Extracts last `AIMessage.content` | `str(state)` |
+| `state_filter` | Excludes `messages` key | Identity (all keys) |
+
+```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/harness-basics.ipynb#scrollTo=auto_detection)
+# MessagesState graph
+msg_graph = harness(echo_compiled)
+assert msg_graph.has_messages_state is True
+
+# Plain TypedDict graph
+plain_graph = harness(calc_compiled)
+assert plain_graph.has_messages_state is False
+```
+
+## Custom Hooks
+
+Override any auto-detected behavior with custom hooks:
+
+### input_fn
+
+Controls how a string message becomes graph input:
+
+```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/harness-basics.ipynb#scrollTo=custom_input_fn)
+graph = harness(
+    compiled,
+    input_fn=lambda msg: {"messages": [HumanMessage(content=msg)], "metadata": {"source": "test"}},
+)
+```
+
+### output_fn
+
+Controls how the final state becomes a response string:
+
+```python
+graph = harness(
+    compiled,
+    output_fn=lambda state: state.get("result", "No result"),
+)
+```
+
+### state_filter
+
+Controls which state keys appear in `ChatResult.state`:
+
+```python
+graph = harness(
+    compiled,
+    state_filter=lambda state: {k: v for k, v in state.items() if k != "internal_debug"},
+)
+```
+
+### config_factory and context_factory
+
+Inject runtime configuration and context:
+
+```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/harness-basics.ipynb#scrollTo=custom_hooks)
+graph = harness(
+    compiled,
+    config_factory=lambda tid: {
+        "configurable": {"thread_id": tid, "model": "gpt-4o"},
+    },
+    context_factory=lambda: {"user_id": "test-user-123"},
+)
+```
+
+### Per-call overrides
+
+Both `.chat()` and session `.chat()` accept per-call config and context overrides that deep-merge with factory defaults:
+
+```python
+result = await graph.chat(
+    "Hello",
+    config={"configurable": {"temperature": 0.0}},
+    context={"debug": True},
+)
+```
+
+## Graph Introspection
+
+The harness exposes useful properties for assertions and debugging:
+
+```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/harness-basics.ipynb#scrollTo=graph_introspection)
+graph = harness(router_compiled)
+
+# All user-defined node names (excludes internal __start__, __end__)
+print(graph.nodes)
+# {"classifier", "rag", "planner", "responder"}
+
+# Whether the graph uses MessagesState
+print(graph.has_messages_state)  # True
+
+# Entry point node
+print(graph.entry)  # "classifier"
+```
+
+## Tool Trajectory via Harness
+
+When your agent uses tools, combine the harness with fasteval's tool metrics. Here's the complete pattern:
+
+```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/harness-basics.ipynb#scrollTo=tool_trajectory)
+from fasteval.models import ExpectedTool, ToolCall
+
+@fe.tool_call_accuracy(threshold=0.9)
+@fe.tool_args_match(threshold=0.85)
+async def test_weather_tool():
+    result = await graph.chat("What's the weather in London?")
+
+    # Extract tool calls from the trace
+    tool_calls = []
+    for step in result.trace:
+        for msg in step.updates.get("messages", []):
+            if hasattr(msg, "tool_calls") and msg.tool_calls:
+                for tc in msg.tool_calls:
+                    tool_calls.append(ToolCall(name=tc["name"], arguments=tc["args"]))
+
+    fe.score(
+        actual_output=result.response,
+        tool_calls=tool_calls,
+        expected_tools=[
+            ExpectedTool(name="get_weather", args={"city": "London"}),
+        ],
+        input="What's the weather in London?",
+    )
+```
+
+### Argument Matching with Fuzzy Search
+
+For search queries where exact matching is too strict, use fuzzy matching:
+
+```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/harness-basics.ipynb#scrollTo=fuzzy_args_match)
+@fe.tool_args_match(threshold=0.8, fuzzy=True)
+async def test_search_args():
+    result = await graph.chat("Find recent news about climate change")
+
+    tool_calls = extract_tool_calls(result)
+
+    fe.score(
+        actual_output=result.response,
+        tool_calls=tool_calls,
+        expected_tools=[
+            ExpectedTool(name="search_web", args={"query": "climate change news"}),
+        ],
+        input="Find recent news about climate change",
+    )
+```
+
+## Running Tests
+
+```bash
+# Run with pytest
+pytest test_harness.py -v
+
+# Skip human review in CI
+pytest test_harness.py --no-interactive
+```

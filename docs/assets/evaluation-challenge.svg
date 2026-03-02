@@ -1,124 +1,78 @@
-<svg viewBox="0 0 850 340" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, -apple-system, sans-serif">
+<svg viewBox="0 0 900 460" xmlns="http://www.w3.org/2000/svg" font-family="Inter, system-ui, -apple-system, sans-serif">
   <defs>
-    <linearGradient id="challengeRed" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#fecaca"/>
-      <stop offset="100%" style="stop-color:#fee2e2"/>
-    </linearGradient>
-    <linearGradient id="challengeGreen" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#bbf7d0"/>
-      <stop offset="100%" style="stop-color:#dcfce7"/>
-    </linearGradient>
-    <linearGradient id="challengeAccent" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#6366f1"/>
-      <stop offset="100%" style="stop-color:#4f46e5"/>
-    </linearGradient>
-    <filter id="challengeShadow" x="-10%" y="-10%" width="120%" height="120%">
-      <feDropShadow dx="0" dy="3" stdDeviation="5" flood-opacity="0.1"/>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-opacity="0.08"/>
     </filter>
-    <marker id="challengeArrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
       <polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/>
     </marker>
   </defs>
-  
-  <!-- Background -->
-  <rect width="850" height="340" fill="#f8fafc"/>
-  
-  <!-- Title -->
-  <text x="425" y="30" text-anchor="middle" font-size="18" font-weight="700" fill="#1e293b">The Evaluation Challenge</text>
-  
-  <!-- VS Divider -->
-  <line x1="425" y1="55" x2="425" y2="320" stroke="#e2e8f0" stroke-width="2" stroke-dasharray="6 4"/>
-  <circle cx="425" cy="175" r="20" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="2"/>
-  <text x="425" y="180" text-anchor="middle" font-size="12" font-weight="700" fill="#64748b">VS</text>
-  
-  <!-- LEFT SIDE: Before (Manual/Traditional) -->
-  <g transform="translate(20, 50)">
-    <!-- Header -->
-    <rect x="0" y="0" width="380" height="35" rx="8" ry="8" fill="#fef2f2"/>
-    <circle cx="20" cy="17" r="8" fill="#ef4444"/>
-    <text x="20" y="21" text-anchor="middle" font-size="10" fill="white">✗</text>
-    <text x="40" y="23" font-size="14" font-weight="600" fill="#991b1b">Before: Traditional Approaches</text>
-    
-    <!-- Problem boxes -->
-    <!-- String Matching -->
-    <g transform="translate(0, 50)">
-      <rect width="180" height="70" rx="8" fill="url(#challengeRed)" filter="url(#challengeShadow)"/>
-      <text x="15" y="25" font-size="11" font-weight="600" fill="#991b1b">String Matching</text>
-      <text x="15" y="42" font-size="9" fill="#7f1d1d">assert "42" == response</text>
-      <text x="15" y="58" font-size="8" fill="#b91c1c">✗ "The answer is 42" fails</text>
+
+  <rect width="900" height="460" fill="#f8fafc"/>
+
+  <text x="450" y="45" text-anchor="middle" font-size="22" font-weight="700" fill="#1e293b">The Evaluation Challenge</text>
+  <text x="450" y="70" text-anchor="middle" font-size="14" fill="#64748b">Moving from rigid assertions to semantic intelligence</text>
+
+  <line x1="450" y1="100" x2="450" y2="400" stroke="#e2e8f0" stroke-width="2" stroke-dasharray="8 4"/>
+  <circle cx="450" cy="250" r="22" fill="white" stroke="#e2e8f0" stroke-width="2"/>
+  <text x="450" y="255" text-anchor="middle" font-size="13" font-weight="800" fill="#94a3b8">VS</text>
+
+  <g transform="translate(40, 100)">
+    <rect width="380" height="40" rx="8" fill="#fef2f2" stroke="#fecaca" stroke-width="1"/>
+    <text x="20" y="25" font-size="14" font-weight="700" fill="#991b1b">BEFORE: Rigid &amp; Manual</text>
+
+    <g transform="translate(0, 55)">
+      <g filter="url(#shadow)">
+        <rect width="180" height="85" rx="12" fill="white" stroke="#fecaca" stroke-width="1.5"/>
+        <text x="15" y="28" font-size="13" font-weight="700" fill="#991b1b">String Matching</text>
+        <text x="15" y="48" font-size="11" font-family="monospace" fill="#475569">assert result == "42"</text>
+        <text x="15" y="68" font-size="11" font-weight="600" fill="#ef4444">Fails on formatting</text>
+      </g>
+      <g transform="translate(200, 0)" filter="url(#shadow)">
+        <rect width="180" height="85" rx="12" fill="white" stroke="#fecaca" stroke-width="1.5"/>
+        <text x="15" y="28" font-size="13" font-weight="700" fill="#991b1b">Regex Patterns</text>
+        <text x="15" y="48" font-size="11" font-family="monospace" fill="#475569">re.match(r"^\d+$", ...)</text>
+        <text x="15" y="68" font-size="11" font-weight="600" fill="#ef4444">Brittle &amp; unscalable</text>
+      </g>
+      <g transform="translate(0, 100)" filter="url(#shadow)">
+        <rect width="180" height="85" rx="12" fill="white" stroke="#fecaca" stroke-width="1.5"/>
+        <text x="15" y="28" font-size="13" font-weight="700" fill="#991b1b">Manual Review</text>
+        <text x="15" y="48" font-size="11" fill="#475569">Human reads outputs</text>
+        <text x="15" y="68" font-size="11" font-weight="600" fill="#ef4444">Prohibitively expensive</text>
+      </g>
+      <g transform="translate(200, 100)" filter="url(#shadow)">
+        <rect width="180" height="85" rx="12" fill="white" stroke="#fecaca" stroke-width="1.5"/>
+        <text x="15" y="28" font-size="13" font-weight="700" fill="#991b1b">Paid Annotation</text>
+        <text x="15" y="48" font-size="11" fill="#475569">External labeling</text>
+        <text x="15" y="68" font-size="11" font-weight="600" fill="#ef4444">High latency (days)</text>
+      </g>
     </g>
-    
-    <!-- Manual Review -->
-    <g transform="translate(195, 50)">
-      <rect width="180" height="70" rx="8" fill="url(#challengeRed)" filter="url(#challengeShadow)"/>
-      <text x="15" y="25" font-size="11" font-weight="600" fill="#991b1b">Manual Review</text>
-      <text x="15" y="42" font-size="9" fill="#7f1d1d">Human reads each output</text>
-      <text x="15" y="58" font-size="8" fill="#b91c1c">✗ $1,500/mo for 1% coverage</text>
-    </g>
-    
-    <!-- Regex -->
-    <g transform="translate(0, 135)">
-      <rect width="180" height="70" rx="8" fill="url(#challengeRed)" filter="url(#challengeShadow)"/>
-      <text x="15" y="25" font-size="11" font-weight="600" fill="#991b1b">Regex Patterns</text>
-      <text x="15" y="42" font-size="9" fill="#7f1d1d">re.match(pattern, text)</text>
-      <text x="15" y="58" font-size="8" fill="#b91c1c">✗ Brittle, breaks on new formats</text>
-    </g>
-    
-    <!-- Human Annotation -->
-    <g transform="translate(195, 135)">
-      <rect width="180" height="70" rx="8" fill="url(#challengeRed)" filter="url(#challengeShadow)"/>
-      <text x="15" y="25" font-size="11" font-weight="600" fill="#991b1b">Human Annotation</text>
-      <text x="15" y="42" font-size="9" fill="#7f1d1d">Paid annotators grade</text>
-      <text x="15" y="58" font-size="8" fill="#b91c1c">✗ Days latency, inconsistent</text>
-    </g>
-    
-    <!-- Summary stats -->
-    <rect x="0" y="220" width="380" height="45" rx="8" fill="#fef2f2" stroke="#fecaca"/>
-    <text x="15" y="240" font-size="10" fill="#991b1b">⏱ Latency: 24-48 hours</text>
-    <text x="15" y="255" font-size="10" fill="#991b1b">💰 Cost: $0.10-$1.00/judgment</text>
-    <text x="200" y="240" font-size="10" fill="#991b1b">📊 Coverage: 1-5%</text>
-    <text x="200" y="255" font-size="10" fill="#991b1b">🎯 Consistency: Low</text>
   </g>
-  
-  <!-- RIGHT SIDE: After (fasteval) -->
-  <g transform="translate(450, 50)">
-    <!-- Header -->
-    <rect x="0" y="0" width="380" height="35" rx="8" ry="8" fill="#f0fdf4"/>
-    <circle cx="20" cy="17" r="8" fill="#22c55e"/>
-    <text x="20" y="21" text-anchor="middle" font-size="10" fill="white">✓</text>
-    <text x="40" y="23" font-size="14" font-weight="600" fill="#166534">After: fasteval</text>
-    
-    <!-- Solution box -->
-    <g transform="translate(0, 50)">
-      <rect width="380" height="155" rx="12" fill="white" stroke="#86efac" stroke-width="2" filter="url(#challengeShadow)"/>
+
+  <g transform="translate(480, 100)">
+    <rect width="380" height="40" rx="8" fill="#ecfdf5" stroke="#86efac" stroke-width="1"/>
+    <text x="20" y="25" font-size="14" font-weight="700" fill="#047857">AFTER: fasteval</text>
+
+    <g transform="translate(0, 55)" filter="url(#shadow)">
+      <rect width="380" height="235" rx="12" fill="white" stroke="#86efac" stroke-width="2"/>
       
-      <!-- Code example -->
-      <rect x="15" y="15" width="350" height="95" rx="8" fill="#0f172a"/>
-      <text x="30" y="35" font-family="monospace" font-size="10" fill="#94a3b8">import fasteval as fe</text>
-      <text x="30" y="55" font-family="monospace" font-size="10" fill="#a78bfa">@fe.correctness</text>
-      <text x="118" y="55" font-family="monospace" font-size="10" fill="#fbbf24">(threshold=0.8)</text>
-      <text x="30" y="75" font-family="monospace" font-size="10" fill="#60a5fa">def</text>
-      <text x="55" y="75" font-family="monospace" font-size="10" fill="#f8fafc">test_qa():</text>
-      <text x="50" y="95" font-family="monospace" font-size="10" fill="#f8fafc">fe.score(response, </text>
-      <text x="168" y="95" font-family="monospace" font-size="10" fill="#fbbf24">"42"</text>
-      <text x="188" y="95" font-family="monospace" font-size="10" fill="#f8fafc">)</text>
-      
-      <!-- Benefits -->
-      <text x="30" y="130" font-size="10" fill="#166534">✓ "The answer is 42" passes — semantic understanding</text>
-      <text x="30" y="145" font-size="10" fill="#166534">✓ Runs in seconds, not days</text>
+      <rect x="15" y="15" width="350" height="120" rx="8" fill="#0f172a"/>
+      <g transform="translate(30, 40)" font-family="monospace" font-size="12">
+        <text y="0"><tspan fill="#a78bfa">@fe.correctness</tspan><tspan fill="#fbbf24">(threshold=0.8)</tspan></text>
+        <text y="22"><tspan fill="#60a5fa">def</tspan> <tspan fill="#f8fafc">test_qa():</tspan></text>
+        <text y="44"><tspan fill="#475569">  # "The answer is 42" will pass here</tspan></text>
+        <text y="66"><tspan fill="#f8fafc">  fe.score(response, </tspan><tspan fill="#fbbf24">"42"</tspan><tspan fill="#f8fafc">)</tspan></text>
+      </g>
+
+      <g transform="translate(25, 155)">
+        <text font-size="13" font-weight="700" fill="#059669">Semantic Grading</text>
+        <text y="18" font-size="12" fill="#475569">Understands intent, not just characters.</text>
+        
+        <text y="45" font-size="13" font-weight="700" fill="#059669">CI/CD Native</text>
+        <text y="63" font-size="12" fill="#475569">Automated quality gate for every PR.</text>
+      </g>
     </g>
-    
-    <!-- Summary stats -->
-    <rect x="0" y="220" width="380" height="45" rx="8" fill="#f0fdf4" stroke="#86efac"/>
-    <text x="15" y="240" font-size="10" fill="#166534">⏱ Latency: Seconds</text>
-    <text x="15" y="255" font-size="10" fill="#166534">💰 Cost: $0.001-$0.01/eval</text>
-    <text x="200" y="240" font-size="10" fill="#166534">📊 Coverage: 100%</text>
-    <text x="200" y="255" font-size="10" fill="#166534">🎯 Consistency: High</text>
   </g>
-  
-  <!-- Bottom comparison arrow -->
-  <g transform="translate(325, 310)">
-    <rect x="0" y="0" width="200" height="24" rx="12" fill="url(#challengeAccent)"/>
-    <text x="100" y="16" text-anchor="middle" font-size="10" font-weight="600" fill="white">100x faster • 100x cheaper</text>
-  </g>
+
+  <text x="450" y="448" text-anchor="middle" font-size="11" fill="#94a3b8">FastEval Documentation • Evaluation Standards 2026</text>
 </svg>

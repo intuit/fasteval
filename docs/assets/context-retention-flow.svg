@@ -1,148 +1,107 @@
-<svg viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, -apple-system, sans-serif">
+<svg viewBox="0 0 900 580" xmlns="http://www.w3.org/2000/svg" font-family="Inter, system-ui, -apple-system, sans-serif">
   <defs>
-    <linearGradient id="crfUserGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#3b82f6"/>
-      <stop offset="100%" style="stop-color:#1d4ed8"/>
-    </linearGradient>
-    <linearGradient id="crfBotGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#8b5cf6"/>
-      <stop offset="100%" style="stop-color:#6d28d9"/>
-    </linearGradient>
-    <linearGradient id="crfMemoryGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#10b981"/>
-      <stop offset="100%" style="stop-color:#059669"/>
-    </linearGradient>
-    <linearGradient id="crfEvalGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#f59e0b"/>
-      <stop offset="100%" style="stop-color:#d97706"/>
-    </linearGradient>
-    <filter id="crfShadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="4" stdDeviation="5" flood-opacity="0.12"/>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-opacity="0.08"/>
     </filter>
-    <marker id="crfArrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
       <polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/>
     </marker>
   </defs>
-  
-  <!-- Background -->
-  <rect width="800" height="400" fill="#f8fafc"/>
-  
-  <!-- Title -->
-  <text x="400" y="32" text-anchor="middle" font-size="22" font-weight="700" fill="#1e293b">Context Retention in Conversations</text>
-  <text x="400" y="52" text-anchor="middle" font-size="12" fill="#64748b">Testing if the bot remembers information from earlier turns</text>
-  
-  <!-- Conversation turns -->
-  <!-- Turn 1 -->
-  <g transform="translate(40, 75)">
-    <text x="0" y="0" font-size="11" font-weight="600" fill="#64748b">Turn 1</text>
-    
-    <!-- User message -->
-    <g filter="url(#crfShadow)">
-      <rect x="0" y="10" width="200" height="40" rx="8" fill="url(#crfUserGrad)"/>
-      <text x="100" y="35" text-anchor="middle" font-size="10" fill="white">👤 "My name is Alice"</text>
+
+  <rect width="900" height="580" fill="#f8fafc"/>
+
+  <text x="450" y="45" text-anchor="middle" font-size="22" font-weight="700" fill="#1e293b">Context Retention in Conversations</text>
+  <text x="450" y="70" text-anchor="middle" font-size="14" fill="#64748b">Testing if the bot remembers information from earlier turns</text>
+
+  <g transform="translate(50, 110)">
+    <g transform="translate(0, 0)">
+      <text x="0" y="0" font-size="13" font-weight="700" fill="#64748b">TURN 1</text>
+      <g transform="translate(0, 15)" filter="url(#shadow)">
+        <rect width="240" height="45" rx="8" fill="white" stroke="#c7d2fe" stroke-width="1.5"/>
+        <text x="12" y="18" font-size="11" font-weight="700" fill="#4f46e5">USER</text>
+        <text x="12" y="34" font-size="12" fill="#334155">"My name is Alice"</text>
+      </g>
+      <g transform="translate(30, 70)" filter="url(#shadow)">
+        <rect width="240" height="45" rx="8" fill="white" stroke="#ddd6fe" stroke-width="1.5"/>
+        <text x="12" y="18" font-size="11" font-weight="700" fill="#7c3aed">BOT</text>
+        <text x="12" y="34" font-size="12" fill="#334155">"Nice to meet you, Alice!"</text>
+      </g>
+      <rect x="280" y="45" width="100" height="45" rx="6" fill="#ecfdf5" stroke="#86efac" stroke-dasharray="4 2"/>
+      <text x="330" y="63" text-anchor="middle" font-size="11" font-weight="700" fill="#059669">STORED</text>
+      <text x="330" y="78" text-anchor="middle" font-size="10" fill="#059669">name=Alice</text>
     </g>
-    
-    <!-- Bot response -->
-    <g filter="url(#crfShadow)">
-      <rect x="30" y="55" width="200" height="40" rx="8" fill="url(#crfBotGrad)"/>
-      <text x="130" y="80" text-anchor="middle" font-size="10" fill="white">🤖 "Nice to meet you, Alice!"</text>
-    </g>
-    
-    <!-- Memory stored indicator -->
-    <rect x="240" y="30" width="75" height="50" rx="6" fill="#dcfce7" stroke="#10b981" stroke-dasharray="4,2"/>
-    <text x="277" y="50" text-anchor="middle" font-size="9" font-weight="600" fill="#059669">💾 Store</text>
-    <text x="277" y="68" text-anchor="middle" font-size="8" fill="#059669">name=Alice</text>
-  </g>
-  
-  <!-- Arrow to Turn 2 -->
-  <line x1="355" y1="120" x2="395" y2="120" stroke="#10b981" stroke-width="2" stroke-dasharray="6,3" marker-end="url(#crfArrow)"/>
-  
-  <!-- Turn 2 -->
-  <g transform="translate(420, 75)">
-    <text x="0" y="0" font-size="11" font-weight="600" fill="#64748b">Turn 2</text>
-    
-    <!-- User message -->
-    <g filter="url(#crfShadow)">
-      <rect x="0" y="10" width="220" height="40" rx="8" fill="url(#crfUserGrad)"/>
-      <text x="110" y="35" text-anchor="middle" font-size="10" fill="white">👤 "I ordered product #12345"</text>
-    </g>
-    
-    <!-- Bot response -->
-    <g filter="url(#crfShadow)">
-      <rect x="30" y="55" width="220" height="40" rx="8" fill="url(#crfBotGrad)"/>
-      <text x="140" y="80" text-anchor="middle" font-size="10" fill="white">🤖 "I'll help with order #12345"</text>
-    </g>
-    
-    <!-- Memory stored indicator -->
-    <rect x="260" y="30" width="85" height="50" rx="6" fill="#dcfce7" stroke="#10b981" stroke-dasharray="4,2"/>
-    <text x="302" y="50" text-anchor="middle" font-size="9" font-weight="600" fill="#059669">💾 Store</text>
-    <text x="302" y="68" text-anchor="middle" font-size="8" fill="#059669">order=#12345</text>
-  </g>
-  
-  <!-- Turn 3 - Test Turn -->
-  <g transform="translate(185, 195)">
-    <text x="0" y="0" font-size="11" font-weight="600" fill="#f59e0b">Turn 3 (Test)</text>
-    
-    <!-- User message -->
-    <g filter="url(#crfShadow)">
-      <rect x="0" y="10" width="200" height="40" rx="8" fill="url(#crfUserGrad)"/>
-      <text x="100" y="35" text-anchor="middle" font-size="10" fill="white">👤 "What's my name again?"</text>
-    </g>
-    
-    <!-- Bot response - being evaluated -->
-    <g filter="url(#crfShadow)">
-      <rect x="30" y="55" width="220" height="40" rx="8" fill="white" stroke="#f59e0b" stroke-width="2"/>
-      <rect x="30" y="55" width="220" height="40" rx="8" fill="url(#crfBotGrad)" opacity="0.9"/>
-      <text x="140" y="80" text-anchor="middle" font-size="10" fill="white">🤖 "Your name is Alice"</text>
-    </g>
-    
-    <!-- Memory retrieval -->
-    <line x1="-30" y1="75" x2="-70" y2="50" stroke="#10b981" stroke-width="2" stroke-dasharray="4,2"/>
-    <rect x="-180" y="20" width="100" height="55" rx="6" fill="url(#crfMemoryGrad)"/>
-    <text x="-130" y="42" text-anchor="middle" font-size="9" font-weight="600" fill="white">📚 History</text>
-    <text x="-130" y="58" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.9)">name=Alice</text>
-    <text x="-130" y="70" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.9)">order=#12345</text>
-  </g>
-  
-  <!-- Evaluation box -->
-  <g filter="url(#crfShadow)" transform="translate(450, 195)">
-    <rect x="0" y="0" width="300" height="110" rx="10" fill="white" stroke="#f59e0b" stroke-width="2"/>
-    <rect x="0" y="0" width="300" height="35" rx="10" fill="url(#crfEvalGrad)"/>
-    <rect x="0" y="23" width="300" height="12" fill="url(#crfEvalGrad)"/>
-    <text x="150" y="25" text-anchor="middle" font-size="11" font-weight="600" fill="white">🔍 Context Retention Check</text>
-    
-    <text x="15" y="55" font-size="10" fill="#475569">Question references earlier context:</text>
-    <text x="20" y="72" font-size="9" fill="#059669">"name" recalled "Alice"</text>
-    <text x="20" y="87" font-size="9" fill="#475569">Bot correctly retained user's name</text>
-    <text x="15" y="102" font-size="10" font-weight="600" fill="#10b981">Score: 1.0 Pass</text>
-  </g>
-  
-  <!-- What is being tested -->
-  <g transform="translate(40, 320)">
-    <rect x="0" y="0" width="720" height="65" rx="8" fill="#f1f5f9" stroke="#e2e8f0"/>
-    <text x="360" y="20" text-anchor="middle" font-size="11" font-weight="600" fill="#475569">What Context Retention Evaluates</text>
-    
-    <g transform="translate(30, 35)">
-      <rect x="0" y="0" width="140" height="22" rx="4" fill="#dbeafe"/>
-      <text x="70" y="15" text-anchor="middle" font-size="9" fill="#1d4ed8">Pronoun resolution</text>
-    </g>
-    
-    <g transform="translate(185, 35)">
-      <rect x="0" y="0" width="140" height="22" rx="4" fill="#ede9fe"/>
-      <text x="70" y="15" text-anchor="middle" font-size="9" fill="#6d28d9">Name/ID callbacks</text>
-    </g>
-    
-    <g transform="translate(340, 35)">
-      <rect x="0" y="0" width="140" height="22" rx="4" fill="#dcfce7"/>
-      <text x="70" y="15" text-anchor="middle" font-size="9" fill="#059669">Reference to past info</text>
-    </g>
-    
-    <g transform="translate(495, 35)">
-      <rect x="0" y="0" width="160" height="22" rx="4" fill="#fef3c7"/>
-      <text x="80" y="15" text-anchor="middle" font-size="9" fill="#92400e">Multi-turn consistency</text>
+
+    <line x1="390" y1="70" x2="420" y2="70" stroke="#cbd5e1" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+    <g transform="translate(420, 0)">
+      <text x="0" y="0" font-size="13" font-weight="700" fill="#64748b">TURN 2</text>
+      <g transform="translate(0, 15)" filter="url(#shadow)">
+        <rect width="240" height="45" rx="8" fill="white" stroke="#c7d2fe" stroke-width="1.5"/>
+        <text x="12" y="18" font-size="11" font-weight="700" fill="#4f46e5">USER</text>
+        <text x="12" y="34" font-size="12" fill="#334155">"I ordered product #12345"</text>
+      </g>
+      <g transform="translate(30, 70)" filter="url(#shadow)">
+        <rect width="240" height="45" rx="8" fill="white" stroke="#ddd6fe" stroke-width="1.5"/>
+        <text x="12" y="18" font-size="11" font-weight="700" fill="#7c3aed">BOT</text>
+        <text x="12" y="34" font-size="12" fill="#334155">"I'll help with order #12345"</text>
+      </g>
+      <rect x="280" y="45" width="100" height="45" rx="6" fill="#ecfdf5" stroke="#86efac" stroke-dasharray="4 2"/>
+      <text x="330" y="63" text-anchor="middle" font-size="11" font-weight="700" fill="#059669">STORED</text>
+      <text x="330" y="78" text-anchor="middle" font-size="10" fill="#059669">order=#12345</text>
     </g>
   </g>
-  
-  <!-- Footer -->
-  <text x="400" y="395" text-anchor="middle" font-size="11" fill="#94a3b8">fasteval • context_retention Metric</text>
+
+  <g transform="translate(50, 290)">
+    <g transform="translate(0, 0)">
+      <text x="0" y="0" font-size="13" font-weight="700" fill="#b45309">TURN 3 (EVALUATION)</text>
+      <g transform="translate(0, 15)" filter="url(#shadow)">
+        <rect width="240" height="45" rx="8" fill="white" stroke="#c7d2fe" stroke-width="1.5"/>
+        <text x="12" y="18" font-size="11" font-weight="700" fill="#4f46e5">USER</text>
+        <text x="12" y="34" font-size="12" fill="#334155">"What is my name again?"</text>
+      </g>
+      <g transform="translate(30, 70)" filter="url(#shadow)">
+        <rect width="240" height="45" rx="8" fill="white" stroke="#f59e0b" stroke-width="2"/>
+        <text x="12" y="18" font-size="11" font-weight="700" fill="#b45309">BOT RESPONSE</text>
+        <text x="12" y="34" font-size="12" fill="#334155">"Your name is Alice"</text>
+      </g>
+      
+      <path d="M 0 115 Q -30 115 -30 60 Q -30 15 0 15" fill="none" stroke="#10b981" stroke-width="1.5" stroke-dasharray="4 4"/>
+      <text x="-40" y="65" text-anchor="middle" font-size="10" font-weight="600" fill="#059669" transform="rotate(-90 -40 65)">RETRIEVAL</text>
+    </g>
+
+    <g transform="translate(380, 15)" filter="url(#shadow)">
+      <rect width="420" height="120" rx="12" fill="white" stroke="#fcd34d" stroke-width="1.5"/>
+      <rect width="420" height="35" rx="12" fill="#fffbeb"/>
+      <rect y="25" width="420" height="10" fill="#fffbeb"/>
+      <text x="210" y="22" text-anchor="middle" font-size="13" font-weight="700" fill="#92400e">CONTEXT RETENTION METRIC</text>
+      
+      <text x="20" y="55" font-size="12" font-weight="600" fill="#475569">Analysis:</text>
+      <text x="20" y="75" font-size="12" fill="#475569">• Question references historical context ("name")</text>
+      <text x="20" y="93" font-size="12" fill="#475569">• Bot correctly identified stored value "Alice" from Turn 1</text>
+      
+      <rect x="330" y="48" width="70" height="30" rx="6" fill="#ecfdf5" stroke="#10b981"/>
+      <text x="365" y="68" text-anchor="middle" font-size="14" font-weight="800" fill="#059669">1.0 PASS</text>
+    </g>
+  </g>
+
+  <g transform="translate(50, 460)">
+    <rect width="800" height="70" rx="12" fill="white" stroke="#e2e8f0" stroke-width="1.5" filter="url(#shadow)"/>
+    <text x="400" y="22" text-anchor="middle" font-size="11" font-weight="700" fill="#94a3b8" letter-spacing="0.05em">EVALUATION CRITERIA</text>
+    
+    <g transform="translate(20, 35)">
+      <rect width="180" height="25" rx="6" fill="#eff6ff"/>
+      <text x="90" y="16" text-anchor="middle" font-size="11" fill="#1d4ed8">Pronoun resolution</text>
+      
+      <rect x="190" width="180" height="25" rx="6" fill="#f5f3ff"/>
+      <text x="280" y="16" text-anchor="middle" font-size="11" fill="#6d28d9">Name/ID callbacks</text>
+      
+      <rect x="380" width="180" height="25" rx="6" fill="#ecfdf5"/>
+      <text x="470" y="16" text-anchor="middle" font-size="11" fill="#047857">Past info reference</text>
+      
+      <rect x="570" width="190" height="25" rx="6" fill="#fffbeb"/>
+      <text x="665" y="16" text-anchor="middle" font-size="11" fill="#b45309">Multi-turn consistency</text>
+    </g>
+  </g>
+
+  <text x="450" y="568" text-anchor="middle" font-size="11" fill="#94a3b8">fasteval • context_retention Metric • Architectural Standards 2026</text>
 </svg>

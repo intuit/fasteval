@@ -1,5 +1,15 @@
 {
   "title": "Cookbooks",
   "icon": "book",
-  "order": 4
+  "order": 4,
+  "items": [
+    "rag-pipeline",
+    "langgraph-testing",
+    "multi-turn-chatbot",
+    "ci-cd-setup",
+    "prompt-regression",
+    "custom-domain-metrics",
+    "batch-evaluation",
+    "production-monitoring"
+  ]
 }

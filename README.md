@@ -1,6 +1,9 @@
 # fasteval
 
-[![PyPI version](https://img.shields.io/pypi/v/fasteval-core.svg)](https://pypi.org/project/fasteval-core/)
+[![fasteval-core](https://img.shields.io/pypi/v/fasteval-core.svg?label=fasteval-core&cacheSeconds=60)](https://pypi.org/project/fasteval-core/)
+[![fasteval-langgraph](https://img.shields.io/pypi/v/fasteval-langgraph.svg?label=fasteval-langgraph&cacheSeconds=60)](https://pypi.org/project/fasteval-langgraph/)
+[![fasteval-langfuse](https://img.shields.io/pypi/v/fasteval-langfuse.svg?label=fasteval-langfuse&cacheSeconds=60)](https://pypi.org/project/fasteval-langfuse/)
+[![fasteval-observe](https://img.shields.io/pypi/v/fasteval-observe.svg?label=fasteval-observe&cacheSeconds=60)](https://pypi.org/project/fasteval-observe/)
 ![Python versions](https://img.shields.io/badge/python-3.10_|_3.11_|_3.12_|_3.13_|_3.14-blue?logo=python)
 [![CI](https://github.com/intuit/fasteval/actions/workflows/ci.yml/badge.svg)](https://github.com/intuit/fasteval/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)

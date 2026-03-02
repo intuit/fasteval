@@ -1,111 +1,89 @@
-<svg viewBox="0 0 850 410" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, -apple-system, sans-serif">
+<svg viewBox="0 0 900 540" xmlns="http://www.w3.org/2000/svg" font-family="Inter, system-ui, -apple-system, sans-serif">
   <defs>
-    <linearGradient id="testHRGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#6366f1"/>
-      <stop offset="100%" style="stop-color:#4f46e5"/>
-    </linearGradient>
-    <linearGradient id="autoHRGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#3b82f6"/>
-      <stop offset="100%" style="stop-color:#1d4ed8"/>
-    </linearGradient>
-    <linearGradient id="humanHRGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#f59e0b"/>
-      <stop offset="100%" style="stop-color:#d97706"/>
-    </linearGradient>
-    <linearGradient id="combineHRGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#10b981"/>
-      <stop offset="100%" style="stop-color:#059669"/>
-    </linearGradient>
-    <filter id="shadowHR" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-opacity="0.12"/>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-opacity="0.08"/>
     </filter>
-    <marker id="arrowHR" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
       <polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/>
     </marker>
   </defs>
-  
-  <!-- Background -->
-  <rect width="850" height="410" fill="#f8fafc"/>
-  
-  <!-- Title -->
-  <text x="425" y="35" text-anchor="middle" font-size="22" font-weight="700" fill="#1e293b">Human Review Flow</text>
-  
-  <!-- Step 1: Test Runs -->
-  <g filter="url(#shadowHR)">
-    <rect x="30" y="60" width="150" height="80" rx="12" fill="url(#testHRGrad)"/>
-    <text x="105" y="90" text-anchor="middle" font-size="12" font-weight="600" fill="white">Test Runs</text>
-    <text x="105" y="110" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.8)">LLM generates</text>
-    <text x="105" y="125" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.8)">response</text>
+
+  <rect width="900" height="540" fill="#f8fafc"/>
+
+  <text x="450" y="45" text-anchor="middle" font-size="22" font-weight="700" fill="#1e293b">Human Review Flow</text>
+  <text x="450" y="70" text-anchor="middle" font-size="14" fill="#64748b">Validating subjective AI quality through interactive human-in-the-loop scoring</text>
+
+  <g transform="translate(52, 110)">
+    <g filter="url(#shadow)">
+      <rect width="160" height="90" rx="12" fill="white" stroke="#c7d2fe" stroke-width="1.5"/>
+      <rect width="160" height="32" rx="12" fill="#eff6ff"/>
+      <rect y="22" width="160" height="10" fill="#eff6ff"/>
+      <text x="80" y="21" text-anchor="middle" font-size="13" font-weight="700" fill="#4f46e5">1. TEST RUNS</text>
+      <text x="80" y="58" text-anchor="middle" font-size="12" fill="#475569">LLM generates</text>
+      <text x="80" y="76" text-anchor="middle" font-size="12" fill="#475569">response</text>
+    </g>
+
+    <line x1="160" y1="45" x2="212" y2="45" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+    <g transform="translate(212, 0)" filter="url(#shadow)">
+      <rect width="160" height="90" rx="12" fill="white" stroke="#cbd5e1" stroke-width="1.5"/>
+      <rect width="160" height="32" rx="12" fill="#f1f5f9"/>
+      <rect y="22" width="160" height="10" fill="#f1f5f9"/>
+      <text x="80" y="21" text-anchor="middle" font-size="13" font-weight="700" fill="#334155">2. AUTO METRICS</text>
+      <text x="80" y="58" text-anchor="middle" font-size="12" fill="#475569">Correctness &amp;</text>
+      <text x="80" y="76" text-anchor="middle" font-size="12" fill="#475569">Relevance</text>
+    </g>
+
+    <line x1="372" y1="45" x2="424" y2="45" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+    <g transform="translate(424, 0)" filter="url(#shadow)">
+      <rect width="160" height="90" rx="12" fill="white" stroke="#fcd34d" stroke-width="2"/>
+      <rect width="160" height="32" rx="12" fill="#fffbeb"/>
+      <rect y="22" width="160" height="10" fill="#fffbeb"/>
+      <text x="80" y="21" text-anchor="middle" font-size="13" font-weight="700" fill="#b45309">3. HUMAN REVIEW</text>
+      <text x="80" y="58" text-anchor="middle" font-size="12" fill="#475569">Interactive</text>
+      <text x="80" y="76" text-anchor="middle" font-size="12" fill="#475569">CLI Scoring</text>
+    </g>
+
+    <line x1="584" y1="45" x2="636" y2="45" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+    <g transform="translate(636, 0)" filter="url(#shadow)">
+      <rect width="160" height="90" rx="12" fill="white" stroke="#86efac" stroke-width="1.5"/>
+      <rect width="160" height="32" rx="12" fill="#ecfdf5"/>
+      <rect y="22" width="160" height="10" fill="#ecfdf5"/>
+      <text x="80" y="21" text-anchor="middle" font-size="13" font-weight="700" fill="#059669">4. FINAL RESULT</text>
+      <text x="80" y="70" text-anchor="middle" font-size="18" font-weight="800" fill="#10b981">PASS</text>
+    </g>
   </g>
-  
-  <!-- Arrow 1 -->
-  <line x1="180" y1="100" x2="220" y2="100" stroke="#64748b" stroke-width="2" marker-end="url(#arrowHR)"/>
-  
-  <!-- Step 2: Auto Metrics -->
-  <g filter="url(#shadowHR)">
-    <rect x="230" y="60" width="170" height="80" rx="12" fill="url(#autoHRGrad)"/>
-    <text x="315" y="90" text-anchor="middle" font-size="12" font-weight="600" fill="white">Auto Metrics Run</text>
-    <text x="315" y="110" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.8)">correctness, relevance</text>
-    <text x="315" y="125" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.8)">toxicity, etc.</text>
+
+  <g transform="translate(60, 240)" filter="url(#shadow)">
+    <rect width="780" height="250" rx="12" fill="#0f172a"/>
+    <rect width="780" height="32" rx="12" fill="#1e293b"/>
+    <rect y="20" width="780" height="12" fill="#1e293b"/>
+    <circle cx="20" cy="16" r="5" fill="#ef4444"/>
+    <circle cx="36" cy="16" r="5" fill="#f59e0b"/>
+    <circle cx="52" cy="16" r="5" fill="#22c55e"/>
+    <text x="390" y="21" text-anchor="middle" font-size="11" font-weight="600" fill="#94a3b8">Interactive Human Review Prompt</text>
+
+    <g transform="translate(25, 60)" font-family="monospace" font-size="12">
+      <text y="0" fill="#fbbf24">══════════════════════════════════════════</text>
+      <text y="20" font-weight="700" fill="#fbbf24">HUMAN REVIEW REQUESTED</text>
+      <text y="40" fill="#fbbf24">══════════════════════════════════════════</text>
+      
+      <text y="70" fill="#94a3b8">User Request:</text>
+      <text x="120" y="70" fill="#f8fafc">"What is the capital of France?"</text>
+      
+      <text y="90" fill="#94a3b8">Agent Response:</text>
+      <text x="120" y="90" fill="#f8fafc">"The capital of France is Paris."</text>
+      
+      <text y="120" fill="#94a3b8">Auto-Metrics:</text>
+      <text x="120" y="120" fill="#10b981">PASS (correctness: 0.92, toxicity: 0.98)</text>
+      
+      <text y="150" fill="#60a5fa">Question: Is this response helpful?</text>
+      <text y="170" fill="#fbbf24">Score [1-5] or [p]ass/[f]ail/[s]kip: _</text>
+
+    </g>
   </g>
-  
-  <!-- Arrow 2 -->
-  <line x1="400" y1="100" x2="440" y2="100" stroke="#64748b" stroke-width="2" marker-end="url(#arrowHR)"/>
-  
-  <!-- Step 3: Human Review (highlighted, slightly larger) -->
-  <g filter="url(#shadowHR)">
-    <rect x="450" y="55" width="200" height="90" rx="12" fill="url(#humanHRGrad)"/>
-    <text x="550" y="85" text-anchor="middle" font-size="13" font-weight="700" fill="white">Human Review</text>
-    <line x1="470" y1="95" x2="630" y2="95" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
-    <text x="550" y="115" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.9)">Interactive prompt</text>
-    <text x="550" y="132" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.8)">Score [1-5] / p / f / s</text>
-  </g>
-  
-  <!-- Arrow 3 -->
-  <line x1="650" y1="100" x2="690" y2="100" stroke="#64748b" stroke-width="2" marker-end="url(#arrowHR)"/>
-  
-  <!-- Step 4: Final Result (same height as others) -->
-  <g filter="url(#shadowHR)">
-    <rect x="700" y="60" width="130" height="80" rx="12" fill="url(#combineHRGrad)"/>
-    <text x="765" y="88" text-anchor="middle" font-size="12" font-weight="600" fill="white">Final Result</text>
-    <text x="765" y="115" text-anchor="middle" font-size="22" font-weight="700" fill="white">✓</text>
-    <text x="765" y="132" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.9)">PASS</text>
-  </g>
-  
-  <!-- Terminal UI Mockup -->
-  <g filter="url(#shadowHR)">
-    <rect x="50" y="160" width="750" height="210" rx="10" fill="#1e293b"/>
-    
-    <!-- Terminal header -->
-    <rect x="50" y="160" width="750" height="25" rx="10" ry="10" fill="#374151"/>
-    <rect x="50" y="175" width="750" height="10" fill="#374151"/>
-    <circle cx="70" cy="172" r="5" fill="#ef4444"/>
-    <circle cx="88" cy="172" r="5" fill="#f59e0b"/>
-    <circle cx="106" cy="172" r="5" fill="#22c55e"/>
-    <text x="425" y="176" text-anchor="middle" font-size="10" fill="#9ca3af">Human Review Prompt</text>
-    
-    <!-- Terminal content -->
-    <text x="70" y="208" font-family="monospace" font-size="10" fill="#f59e0b">════════════════════════════════════════════════════════════════</text>
-    <text x="70" y="225" font-family="monospace" font-size="10" fill="#f59e0b">HUMAN REVIEW REQUESTED</text>
-    <text x="70" y="242" font-family="monospace" font-size="10" fill="#f59e0b">════════════════════════════════════════════════════════════════</text>
-    
-    <text x="70" y="265" font-family="monospace" font-size="10" fill="#9ca3af">User:</text>
-    <text x="130" y="265" font-family="monospace" font-size="10" fill="#f8fafc">"What is the capital of France?"</text>
-    
-    <text x="70" y="285" font-family="monospace" font-size="10" fill="#9ca3af">Actual:</text>
-    <text x="130" y="285" font-family="monospace" font-size="10" fill="#f8fafc">"The capital of France is Paris."</text>
-    
-    <text x="70" y="308" font-family="monospace" font-size="10" fill="#9ca3af">Auto-metrics:</text>
-    <text x="170" y="308" font-family="monospace" font-size="10" fill="#22c55e">✓ correctness 0.92</text>
-    <text x="330" y="308" font-family="monospace" font-size="10" fill="#22c55e">✓ toxicity 0.98</text>
-    
-    <text x="70" y="330" font-family="monospace" font-size="10" fill="#60a5fa">Question: Is this response helpful?</text>
-    <text x="70" y="348" font-family="monospace" font-size="10" fill="#f59e0b">Score [1-5] or [p]ass/[f]ail/[s]kip: </text>
-    <rect x="290" y="338" width="2" height="13" fill="#f59e0b">
-      <animate attributeName="opacity" values="1;0;1" dur="0.7s" repeatCount="indefinite"/>
-    </rect>
-  </g>
-  
-  <!-- Footer -->
-  <text x="425" y="398" text-anchor="middle" font-size="11" fill="#94a3b8">fasteval • Human-in-the-loop evaluation for subjective quality</text>
+
+  <text x="450" y="528" text-anchor="middle" font-size="11" fill="#94a3b8">FastEval Documentation • Human-in-the-loop Evaluation • 2026 Standards</text>
 </svg>

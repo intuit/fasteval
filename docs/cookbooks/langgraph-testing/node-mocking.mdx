@@ -1,0 +1,292 @@
+---
+title: Node Testing and Mocking
+description: Test individual nodes in isolation and mock dependencies with the fasteval-langgraph harness
+order: 4
+sidebar:
+  - title: Single Node Execution
+    anchor: single-node-execution
+  - title: NodeResult
+    anchor: inspecting-noderesult
+  - title: Mocking Nodes
+    anchor: mocking-nodes
+  - title: Mocking Patterns
+    anchor: three-mocking-patterns
+  - title: Dynamic Mocks
+    anchor: dynamic-mocks
+  - title: Mocks with Metrics
+    anchor: combining-mocks-with-fasteval-metrics
+  - title: When to Mock
+    anchor: when-to-mock-vs-test-end-to-end
+---
+
+# Node Testing and Mocking [Open in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/node-mocking.ipynb)
+
+This page covers isolated node testing and mocking patterns with the `fasteval-langgraph` harness: running single nodes, replacing nodes with fakes, and combining mocks with fasteval metrics.
+
+## Single Node Execution
+
+Use `.node("name").run(**state)` to execute a single node without running the full graph:
+
+```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/node-mocking.ipynb#scrollTo=single_node_run)
+from fasteval_langgraph import harness
+from langchain_core.messages import HumanMessage
+
+graph = harness(router_compiled)
+
+# Run the classifier node in isolation
+result = await graph.node("classifier").run(
+    messages=[HumanMessage(content="What is OAuth?")]
+)
+
+print(result.node_name)     # "classifier"
+print(result.updates)       # {"intent": "FAQ"}
+print(result.goto)          # "rag"
+print(result.execution_time_ms)  # e.g., 0.5
+```
+
+### Testing Routing Logic
+
+Node execution is ideal for testing routing decisions in isolation:
+
+```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/node-mocking.ipynb#scrollTo=test_routing)
+# FAQ classification
+faq_result = await graph.node("classifier").run(
+    messages=[HumanMessage(content="What is OAuth?")]
+)
+assert faq_result.updates["intent"] == "FAQ"
+assert faq_result.goto == "rag"
+
+# Troubleshooting classification
+ts_result = await graph.node("classifier").run(
+    messages=[HumanMessage(content="I need to troubleshoot this")]
+)
+assert ts_result.updates["intent"] == "TROUBLESHOOTING"
+assert ts_result.goto == "planner"
+```
+
+### Nodes with AI Response
+
+If a node produces an `AIMessage`, the response is extracted:
+
+```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/node-mocking.ipynb#scrollTo=node_with_response)
+result = await graph.node("responder").run(
+    messages=[HumanMessage(content="Test")],
+    docs=["some retrieved document"],
+)
+print(result.response)  # "Answer: some retrieved document"
+```
+
+### Error Handling
+
+Requesting a non-existent node raises a clear error:
+
+```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/node-mocking.ipynb#scrollTo=node_error)
+try:
+    await graph.node("nonexistent").run(x=1)
+except ValueError as e:
+    print(e)  # "Node 'nonexistent' not found. Available: classifier, planner, rag, responder"
+```
+
+## Inspecting NodeResult
+
+`NodeResult` is a Pydantic model with five fields:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `node_name` | `str` | Name of the node that was executed |
+| `updates` | `dict` | State updates returned by the node |
+| `goto` | `Optional[str]` | Routing target from `Command`, if any |
+| `response` | `Optional[str]` | AI message content, if any |
+| `execution_time_ms` | `float` | Execution time in milliseconds |
+
+```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/node-mocking.ipynb#scrollTo=inspect_node_result)
+result = await graph.node("classifier").run(
+    messages=[HumanMessage(content="Hello")]
+)
+
+print(f"Node: {result.node_name}")
+print(f"Updates: {result.updates}")
+print(f"Goto: {result.goto}")
+print(f"Response: {result.response}")
+print(f"Time: {result.execution_time_ms:.2f}ms")
+```
+
+## Mocking Nodes
+
+The harness provides a fluent mocking API to replace nodes with fakes. Use `mock()` to create a `NodeMock`:
+
+```python
+from fasteval_langgraph import mock
+
+# Static mock: returns fixed state updates and routes to a target
+mock("rag").updates({"docs": ["mocked document"]}).goto("responder")
+
+# Dynamic mock: runs a function to compute the result
+mock("analyzer").fn(lambda state: {"verdict": "OK"}).goto("END")
+```
+
+## Three Mocking Patterns
+
+### 1. In-place: `graph.mock()`
+
+Mutates the harness directly. Simple but requires manual cleanup:
+
+```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/node-mocking.ipynb#scrollTo=mock_in_place)
+graph = harness(router_compiled)
+
+# Apply mock
+graph.mock("rag").updates({"docs": ["in-place mock"]}).goto("responder")
+
+result = await graph.chat("What is OAuth?")
+assert "in-place mock" in str(result.state.get("docs", []))
+
+# Clean up
+graph.reset_mocks()
+```
+
+### 2. Immutable copy: `graph.with_mocks()`
+
+Returns a new harness with mocks applied. The original is unchanged:
+
+```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/node-mocking.ipynb#scrollTo=mock_with_mocks)
+graph = harness(router_compiled)
+
+test_graph = graph.with_mocks(
+    mock("rag").updates({"docs": ["mocked doc"]}).goto("responder"),
+)
+
+result = await test_graph.chat("What is OAuth?")
+assert "mocked doc" in str(result.state.get("docs", []))
+
+# Original is unaffected
+test_graph.reset_mocks()
+original_result = await graph.chat("What is OAuth?")
+assert "mocked doc" not in str(original_result.state.get("docs", []))
+```
+
+### 3. Scoped context manager: `graph.mocked()`
+
+Applies mocks for the duration of a `with` block, then automatically restores:
+
+```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/node-mocking.ipynb#scrollTo=mock_context_manager)
+graph = harness(router_compiled)
+
+with graph.mocked(
+    mock("rag").updates({"docs": ["scoped mock"]}).goto("responder"),
+):
+    result = await graph.chat("What is OAuth?")
+    assert "scoped mock" in str(result.state.get("docs", []))
+
+# Mocks automatically restored
+result2 = await graph.chat("What is OAuth?")
+assert "scoped mock" not in str(result2.state.get("docs", []))
+```
+
+### Comparison
+
+| Pattern | Cleanup | Original modified? | Best for |
+|---------|---------|:---:|----------|
+| `graph.mock()` | Manual `reset_mocks()` | Yes | Quick prototyping |
+| `graph.with_mocks()` | Manual `reset_mocks()` on copy | No | Fixture-based testing |
+| `graph.mocked()` | Automatic | Temporarily | Test functions |
+
+## Dynamic Mocks
+
+Use `.fn()` to compute mock results dynamically based on the input state:
+
+```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/node-mocking.ipynb#scrollTo=dynamic_mocks)
+with graph.mocked(
+    mock("rag")
+    .fn(lambda state: {"docs": [f"dynamic doc for {state.get('intent', '?')}"]})
+    .goto("responder"),
+):
+    result = await graph.chat("What is OAuth?")
+    print(result.state.get("docs"))
+    # ["dynamic doc for FAQ"]
+```
+
+The handler can also return routing information:
+
+```python
+def smart_mock(state):
+    intent = state.get("intent", "")
+    if intent == "FAQ":
+        return {"updates": {"docs": ["faq docs"]}, "goto": "responder"}
+    else:
+        return {"updates": {"plan": "troubleshoot plan"}, "goto": "responder"}
+
+with graph.mocked(mock("rag").fn(smart_mock)):
+    result = await graph.chat("What is OAuth?")
+```
+
+### Mock Validation
+
+Attempting to mock a non-existent node raises a clear error:
+
+```python
+try:
+    graph.with_mocks(mock("nonexistent").updates({"x": 1}))
+except ValueError as e:
+    print(e)
+    # "Cannot mock node 'nonexistent': not found in graph. Available nodes: classifier, planner, rag, responder"
+```
+
+## Combining Mocks with fasteval Metrics
+
+The real power of mocking is isolating the node under test while using fasteval to evaluate its output:
+
+```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/node-mocking.ipynb#scrollTo=mocks_with_metrics)
+import fasteval as fe
+
+@fe.correctness(threshold=0.7)
+async def test_responder_with_mocked_rag():
+    """Test the responder node with controlled RAG output."""
+    with graph.mocked(
+        mock("rag")
+        .updates({"docs": ["OAuth is an open standard for access delegation"]})
+        .goto("responder"),
+    ):
+        result = await graph.chat("What is OAuth?")
+
+        fe.score(
+            actual_output=result.response,
+            expected_output="OAuth is an authorization framework for access delegation",
+            input="What is OAuth?",
+        )
+```
+
+### Testing a Single Node with Metrics
+
+Combine `.node().run()` with fasteval decorators:
+
+```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/node-mocking.ipynb#scrollTo=node_with_metrics)
+@fe.correctness(threshold=0.7)
+async def test_classifier_accuracy():
+    """Verify the classifier correctly identifies FAQ vs troubleshooting."""
+    result = await graph.node("classifier").run(
+        messages=[HumanMessage(content="What is OAuth?")]
+    )
+
+    fe.score(
+        actual_output=result.updates.get("intent", ""),
+        expected_output="FAQ",
+        input="What is OAuth?",
+    )
+```
+
+## When to Mock vs Test End-to-End
+
+| Situation | Approach |
+|-----------|----------|
+| Testing routing logic | `.node().run()` — no mocks needed |
+| Testing one node with controlled inputs | `.mocked()` the upstream nodes |
+| Testing the full agent flow | No mocks — use `.chat()` or `.session()` |
+| Flaky external dependencies (APIs, DBs) | Mock the node that calls them |
+| Expensive LLM calls in CI | Mock the LLM node, test the rest |
+| Verifying integration between nodes | Mock non-essential nodes, keep the ones under test |
+
+### Testing Pyramid for Agents
+
+![Testing Pyramid for Agents](/docs/assets/testing-pyramid-agents.svg)
+
+Start with node-level unit tests (fast, deterministic), add integration tests with mocks (controlled external deps), and top off with end-to-end tests (realistic but slower).

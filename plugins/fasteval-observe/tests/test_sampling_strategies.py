@@ -204,11 +204,11 @@ class TestTokenBudgetSamplingStrategy:
             base_rate=0.1,
         )
 
-        samples = [strategy.should_sample("test_func", (), {}, {}) for _ in range(100)]
+        samples = [strategy.should_sample("test_func", (), {}, {}) for _ in range(1000)]
 
         # Should be approximately 10%
         rate = sum(samples) / len(samples)
-        assert 0.05 <= rate <= 0.2
+        assert 0.07 <= rate <= 0.13
 
     def test_high_cost_sampling(self):
         """Should sample high-cost calls more frequently."""

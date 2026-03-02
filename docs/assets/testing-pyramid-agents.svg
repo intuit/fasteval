@@ -1,0 +1,78 @@
+<svg viewBox="0 0 900 520" xmlns="http://www.w3.org/2000/svg" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-opacity="0.08"/>
+    </filter>
+  </defs>
+
+  <rect width="900" height="520" fill="#f8fafc"/>
+
+  <text x="450" y="45" text-anchor="middle" font-size="22" font-weight="700" fill="#1e293b">Testing Pyramid for Agents</text>
+  <text x="450" y="70" text-anchor="middle" font-size="14" fill="#64748b">Layered testing strategy with fasteval-langgraph</text>
+
+  <g transform="translate(80, 100)">
+    
+    <g filter="url(#shadow)">
+      <path d="M 60 280 L 440 280 L 460 380 L 40 380 Z" fill="#10b981"/>
+      <text x="250" y="325" text-anchor="middle" font-size="16" font-weight="800" fill="white">UNIT TESTS</text>
+      <text x="250" y="345" text-anchor="middle" font-size="11" font-weight="600" fill="#d1fae5">SINGLE NODE / CONTROLLED STATE</text>
+    </g>
+
+    <g filter="url(#shadow)">
+      <path d="M 130 160 L 370 160 L 440 280 L 60 280 Z" fill="#3b82f6"/>
+      <text x="250" y="215" text-anchor="middle" font-size="16" font-weight="800" fill="white">INTEGRATION</text>
+      <text x="250" y="235" text-anchor="middle" font-size="11" font-weight="600" fill="#dbeafe">REAL NODES / MOCKED DEPS</text>
+    </g>
+
+    <g filter="url(#shadow)">
+      <path d="M 250 40 L 370 160 L 130 160 Z" fill="#6366f1"/>
+      <text x="250" y="105" text-anchor="middle" font-size="16" font-weight="800" fill="white">E2E</text>
+      <text x="250" y="125" text-anchor="middle" font-size="11" font-weight="600" fill="#e0e7ff">FULL GRAPH FLOW</text>
+    </g>
+
+    <g transform="translate(-50, 40)">
+      <path d="M 0 340 L 0 0" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4 4"/>
+      <polygon points="-5,0 5,0 0,-10" fill="#94a3b8"/>
+      <text x="-15" y="170" text-anchor="middle" font-size="11" font-weight="800" fill="#94a3b8" transform="rotate(-90 -15 170)">REALISM &amp; COMPLEXITY</text>
+      
+      <polygon points="-5,340 5,340 0,350" fill="#94a3b8"/>
+      <text x="15" y="170" text-anchor="middle" font-size="11" font-weight="800" fill="#94a3b8" transform="rotate(-90 15 170)">EXECUTION SPEED</text>
+    </g>
+  </g>
+
+  <g transform="translate(600, 140)">
+    <g filter="url(#shadow)">
+      <rect width="240" height="75" rx="12" fill="white" stroke="#6366f1" stroke-width="1.5"/>
+      <text x="15" y="25" font-size="11" font-weight="800" fill="#4338ca">API: .chat() / .session()</text>
+      <text x="15" y="45" font-size="12" fill="#1e293b" font-family="monospace">graph.invoke(input)</text>
+      <text x="15" y="62" font-size="10" font-style="italic" fill="#64748b">High confidence, highest cost.</text>
+    </g>
+
+    <g transform="translate(0, 100)" filter="url(#shadow)">
+      <rect width="240" height="75" rx="12" fill="white" stroke="#3b82f6" stroke-width="1.5"/>
+      <text x="15" y="25" font-size="11" font-weight="800" fill="#1d4ed8">API: .with_mocks()</text>
+      <text x="15" y="45" font-size="12" fill="#1e293b" font-family="monospace">graph.stream(state, config)</text>
+      <text x="15" y="62" font-size="10" font-style="italic" fill="#64748b">Controlled external side-effects.</text>
+    </g>
+
+    <g transform="translate(0, 200)" filter="url(#shadow)">
+      <rect width="240" height="75" rx="12" fill="white" stroke="#10b981" stroke-width="1.5"/>
+      <text x="15" y="25" font-size="11" font-weight="800" fill="#047857">API: .node().run()</text>
+      <text x="15" y="45" font-size="12" fill="#1e293b" font-family="monospace">node_func(current_state)</text>
+      <text x="15" y="62" font-size="10" font-style="italic" fill="#64748b">Fast, deterministic, 80% coverage.</text>
+    </g>
+  </g>
+
+  <g transform="translate(140, 470)">
+    <rect width="180" height="30" rx="15" fill="#ecfdf5" stroke="#10b981"/>
+    <text x="90" y="20" text-anchor="middle" font-size="11" font-weight="700" fill="#047857">Most tests live here</text>
+
+    <rect x="220" width="180" height="30" rx="15" fill="#eff6ff" stroke="#3b82f6"/>
+    <text x="310" y="20" text-anchor="middle" font-size="11" font-weight="700" fill="#1d4ed8">Isolate external deps</text>
+
+    <rect x="440" width="180" height="30" rx="15" fill="#e0e7ff" stroke="#6366f1"/>
+    <text x="530" y="20" text-anchor="middle" font-size="11" font-weight="700" fill="#4338ca">Fewer, high-value flows</text>
+  </g>
+
+  <text x="450" y="538" text-anchor="middle" font-size="11" fill="#94a3b8">FastEval Documentation • Agent Testing Pyramid • 2026 Standards</text>
+</svg>
