@@ -23,13 +23,7 @@ sidebar:
 
 fasteval's evaluation flow consists of five distinct stages that transform your test into a quality assessment:
 
-```
-┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐
-│ DECORATE │ -> │   TEST   │ -> │  SCORE   │ -> │ EVALUATE │ -> │  RESULT  │
-│          │    │          │    │          │    │          │    │          │
-│ @fe.xxx  │    │ Call LLM │    │ fe.score │    │ LLM Judge│    │ PASS/FAIL│
-└──────────┘    └──────────┘    └──────────┘    └──────────┘    └──────────┘
-```
+![Evaluation Pipeline Steps](docs/assets/evaluation-pipeline-steps.svg)
 
 Each stage has a specific responsibility, creating a clean separation between your application logic and evaluation logic.
 
