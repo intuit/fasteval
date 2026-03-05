@@ -60,13 +60,13 @@ The integration has two main workflows that correspond to the two halves of the 
 Langfuse offers built-in "LLM-as-a-Judge" evaluators that run within their cloud infrastructure. Here is how they compare to fasteval:
 
 | Feature | fasteval Integration | Langfuse Native Evaluators |
-| :--- | :--- | :--- |
-| **Execution Environment** | **Local / CI** — runs in your pytest suite | **Cloud** — runs in Langfuse infrastructure |
+|---------|----------------------|----------------------------|
+| **Execution Environment** | **Local / CI** - runs in your pytest suite | **Cloud** - runs in Langfuse infrastructure |
 | **Control** | Full control over judge model, provider, and prompts | Managed by Langfuse (with some customization) |
-| **CI/CD Integration** | **Direct** — tests fail the build if quality drops | **Async** — webhooks or polling required |
+| **CI/CD Integration** | **Direct** - tests fail the build if quality drops | **Async** - webhooks or polling required |
 | **Metric Variety** | **30+ metrics** (RAG, conversation, tool usage, vision, audio) | Core set of evaluators |
-| **Metric Stacking** | Combine deterministic (`@fe.regex`, `@fe.json`) + LLM metrics | Mostly LLM-based |
-| **Custom Metrics** | `@fe.criteria("Is the tone professional?")` | Template-based customization |
+| **Metric Stacking** | Combine deterministic and LLM metrics | Mostly LLM-based |
+| **Custom Metrics** | Custom criteria via `fe.criteria()` | Template-based customization |
 | **Cost** | You pay your LLM provider directly | Usage-based pricing from Langfuse |
 
 **Best Practice:** Use both. Use **Langfuse native evaluators** for lightweight, real-time monitoring on every trace. Use **fasteval** for deep-dive analysis, complex metric stacks, and rigorous regression testing in CI/CD.
@@ -147,7 +147,7 @@ def pytest_configure(config):
 ### Configuration Reference
 
 | Parameter | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
+|-----------|------|---------|-------------|
 | `public_key` | `str` | `$LANGFUSE_PUBLIC_KEY` | Langfuse public key |
 | `secret_key` | `str` | `$LANGFUSE_SECRET_KEY` | Langfuse secret key |
 | `host` | `str` | `$LANGFUSE_HOST` or `https://cloud.langfuse.com` | API host URL |
@@ -206,7 +206,7 @@ After running, go to **Langfuse > Traces** and you will see `fasteval_correctnes
 Now that you are set up, dive into the evaluation loop:
 
 | Page | What You Will Learn |
-| :--- | :--- |
+|------|---------------------|
 | [**Basic Trace Evaluation**](./basic-trace-evaluation) | Fetch and evaluate production traces, stack metrics, handle missing data, view scores in Langfuse |
 | [**Sampling Strategies**](./sampling-strategies) | All 5 strategies, cost optimization, scheduling patterns, GitHub Actions automation |
 | [**Dataset Regression Testing**](./dataset-regression-testing) | Golden datasets, Langfuse Experiments, A/B testing, promoting traces, CI/CD gates |

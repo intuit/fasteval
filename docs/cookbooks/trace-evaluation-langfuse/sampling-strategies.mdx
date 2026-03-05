@@ -34,7 +34,7 @@ Evaluating 100% of production traffic is expensive and slow. **Sampling** gives 
 Every metric evaluation requires one LLM judge call. The costs compound quickly:
 
 | Daily Traces | Metrics | Judge Calls/Day | GPT-4o-mini Cost | GPT-4o Cost |
-| :--- | :--- | :--- | :--- | :--- |
+|--------------|---------|-----------------|------------------|-------------|
 | 1,000 | 1 | 1,000 | ~$0.30 | ~$5 |
 | 1,000 | 3 | 3,000 | ~$0.90 | ~$15 |
 | 10,000 | 3 | 30,000 | ~$9 | ~$150 |
@@ -73,9 +73,9 @@ from fasteval_langfuse.sampling import (
 Randomly selects `sample_size` traces from the fetched set. Use `seed` for reproducible runs.
 
 | Parameter | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
+|-----------|------|---------|-------------|
 | `sample_size` | `int` | Required | Number of traces to evaluate |
-| `seed` | `int \| None` | `None` | Random seed for reproducibility |
+| `seed` | `int` or `None` | `None` | Random seed for reproducibility |
 
 ```python
 @fe.correctness(threshold=0.8)
@@ -101,7 +101,7 @@ def test_production_quality(trace_id, input, output, context, metadata):
 Groups traces by a metadata key and samples evenly from each group, preventing the most active segment from dominating.
 
 | Parameter | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
+|-----------|------|---------|-------------|
 | `strata_key` | `str` | Required | Metadata key to group by (supports dot notation: `metadata.user_type`) |
 | `samples_per_stratum` | `int` | Required | Number of traces to sample per group |
 
@@ -132,11 +132,11 @@ If a group has fewer traces than `samples_per_stratum`, all traces from that gro
 Oversamples traces with low existing scores (e.g., user ratings) and undersamples high-scoring traces. This is the most cost-effective strategy for finding and understanding failures.
 
 | Parameter | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
+|-----------|------|---------|-------------|
 | `score_name` | `str` | Required | Langfuse score name to sample by (e.g., `user_rating`) |
 | `low_score_threshold` | `float` | Required | Scores below this are "low" |
-| `low_score_rate` | `float` | Required | Fraction of low-score traces to include (0.0–1.0) |
-| `high_score_rate` | `float` | Required | Fraction of high-score traces to include (0.0–1.0) |
+| `low_score_rate` | `float` | Required | Fraction of low-score traces to include (0.0 - 1.0) |
+| `high_score_rate` | `float` | Required | Fraction of high-score traces to include (0.0 - 1.0) |
 
 ```python
 @fe.relevance(threshold=0.7)
@@ -169,8 +169,8 @@ def test_low_rated_interactions(trace_id, input, output, context, metadata):
 Uses exponential decay so that newer traces are much more likely to be selected than older ones.
 
 | Parameter | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
-| `decay_factor` | `float` | Required | Decay rate (0.0–1.0). Higher = stronger recency bias. |
+|-----------|------|---------|-------------|
+| `decay_factor` | `float` | Required | Decay rate (0.0 - 1.0). Higher = stronger recency bias. |
 
 ```python
 @fe.correctness(threshold=0.8)
@@ -315,10 +315,10 @@ jobs:
 ## Cost Optimization
 
 | Lever | Impact | Example |
-| :--- | :--- | :--- |
-| **Reduce sample size** | Linear | 200 → 50 traces = 75% savings |
-| **Fewer metrics** | Linear | 5 → 2 metrics = 60% savings |
-| **Cheaper judge model** | ~10x | GPT-4o → GPT-4o-mini |
+|-------|--------|---------|
+| **Reduce sample size** | Linear | 200 to 50 traces = 75% savings |
+| **Fewer metrics** | Linear | 5 to 2 metrics = 60% savings |
+| **Cheaper judge model** | ~10x | GPT-4o to GPT-4o-mini |
 | **Score-based sampling** | ~20x | 100% failures + 5% successes |
 | **Hourly/nightly split** | ~5x | Lightweight hourly, deep nightly |
 

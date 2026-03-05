@@ -75,7 +75,7 @@ def test_agent_quality(input, expected_output):
 ### Decorator Parameters
 
 | Parameter | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
+|-----------|------|---------|-------------|
 | `name` | `str` | Required | Name of the Langfuse dataset |
 | `version` | `str` | `None` | Pin to a specific dataset version for reproducibility |
 
@@ -110,9 +110,9 @@ This gives you a clear answer to: "Did the new version actually improve quality?
 The test function receives these parameters from the dataset item:
 
 | Parameter | Type | Description |
-| :--- | :--- | :--- |
-| `input` | `str \| dict` | The input from the dataset item |
-| `expected_output` | `str \| dict \| None` | The expected correct output |
+|-----------|------|-------------|
+| `input` | `str` or `dict` | The input from the dataset item |
+| `expected_output` | `str`, `dict`, or `None` | The expected correct output |
 | `item_id` | `str` | Unique ID of the dataset item |
 | `metadata` | `dict` | Full item metadata |
 
@@ -208,7 +208,7 @@ pytest test_regression.py -v
 After running both tests, go to **Langfuse > Datasets > qa-golden-set > Experiments**. You will see two columns — `test_baseline_v1` and `test_candidate_v2` — with scores and deltas for every dataset item.
 
 | Dataset Item | `test_baseline_v1` | `test_candidate_v2` | Delta |
-| :--- | :--- | :--- | :--- |
+|--------------|--------------------|-----------------------|-------|
 | "What's your refund policy?" | 0.45 FAIL | 0.92 PASS | +0.47 |
 | "How do I reset my password?" | 0.88 PASS | 0.91 PASS | +0.03 |
 | "Configure webhooks?" | 0.72 FAIL | 0.85 PASS | +0.13 |

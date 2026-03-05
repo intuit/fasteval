@@ -82,12 +82,12 @@ Scores pushed to Langfuse with prefix "fasteval_"
 The test function receives these parameters, automatically extracted from the Langfuse trace:
 
 | Parameter | Type | Description | Extraction Logic |
-| :--- | :--- | :--- | :--- |
+|-----------|------|-------------|------------------|
 | `trace_id` | `str` | Unique trace identifier | `trace.id` |
-| `input` | `str` | User query or prompt | Auto-extracted from `trace.input` — handles strings and dicts with keys: `query`, `input`, `prompt`, `message`, `question` |
-| `output` | `str` | AI response | Auto-extracted from `trace.output` — handles strings and dicts with keys: `response`, `output`, `answer`, `completion`, `result` |
-| `context` | `str \| None` | Retrieved documents (RAG) | Extracted from metadata keys: `context`, `retrieved_docs`, `documents`, `retrieval_context`, `docs` |
-| `metadata` | `dict` | Full trace metadata | `trace.metadata` — everything else lives here |
+| `input` | `str` | User query or prompt | Auto-extracted from `trace.input` - handles strings and dicts with keys: `query`, `input`, `prompt`, `message`, `question` |
+| `output` | `str` | AI response | Auto-extracted from `trace.output` - handles strings and dicts with keys: `response`, `output`, `answer`, `completion`, `result` |
+| `context` | `str` or `None` | Retrieved documents (RAG) | Extracted from metadata keys: `context`, `retrieved_docs`, `documents`, `retrieval_context`, `docs` |
+| `metadata` | `dict` | Full trace metadata | `trace.metadata` - everything else lives here |
 
 You only need to declare the parameters you use. If you don't need `context`, leave it out of the signature:
 
@@ -112,7 +112,7 @@ If the value is already a string, it is used directly.
 Control which traces are fetched using `@langfuse_traces`:
 
 | Parameter | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
+|-----------|------|---------|-------------|
 | `project` | `str` | Config default | Langfuse project name |
 | `filter_tags` | `list[str]` | `None` | Only fetch traces with ALL these tags |
 | `time_range` | `str` | `None` | Relative (`last_1h`, `last_24h`, `last_7d`) or absolute (`"2026-03-01 to 2026-03-05"`) |
@@ -186,7 +186,7 @@ Apply multiple metric decorators to evaluate different quality dimensions on the
 ### Common Combinations
 
 | Use Case | Metrics | Cost per Trace |
-| :--- | :--- | :--- |
+|----------|---------|----------------|
 | General quality | `correctness` + `relevance` | 2 judge calls |
 | RAG pipeline | `faithfulness` + `answer_correctness` + `contextual_precision` | 3 judge calls |
 | Safety-critical | `correctness` + `toxicity` + `bias` | 3 judge calls |
@@ -221,7 +221,7 @@ def test_api_responses(trace_id, input, output, metadata):
 For Retrieval-Augmented Generation applications, use specialized metrics that assess both retrieval and generation quality:
 
 | Metric | What It Measures | Requires |
-| :--- | :--- | :--- |
+|--------|-----------------|----------|
 | `faithfulness` | Is the response grounded in the retrieved context? | `context` |
 | `answer_correctness` | Does the response correctly answer the question? | `expected_output` (optional) |
 | `contextual_precision` | Are the retrieved documents relevant to the question? | `context` |
@@ -283,10 +283,10 @@ When `auto_push_scores=True` (the default), fasteval pushes evaluation results b
 For each evaluated trace, these scores are created:
 
 | Score Name | Value Range | Description |
-| :--- | :--- | :--- |
-| `fasteval_correctness` | 0.0 – 1.0 | Individual metric score |
-| `fasteval_faithfulness` | 0.0 – 1.0 | Individual metric score |
-| `fasteval_aggregate` | 0.0 – 1.0 | Average of all metric scores |
+|------------|-------------|-------------|
+| `fasteval_correctness` | 0.0 - 1.0 | Individual metric score |
+| `fasteval_faithfulness` | 0.0 - 1.0 | Individual metric score |
+| `fasteval_aggregate` | 0.0 - 1.0 | Average of all metric scores |
 
 Each score also includes the **judge's reasoning** in the comment field, explaining why the score was given.
 
