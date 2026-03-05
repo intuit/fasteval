@@ -1,0 +1,212 @@
+---
+title: Evaluating Langfuse Traces - Overview
+description: Complete guide to building a quality evaluation pipeline with fasteval and Langfuse
+order: 1
+sidebar:
+  - title: The Evaluation Loop
+    anchor: the-evaluation-loop
+  - title: Architecture
+    anchor: architecture
+  - title: fasteval vs Native Evaluators
+    anchor: fasteval-vs-native-evaluators
+  - title: Prerequisites
+    anchor: prerequisites
+  - title: Installation
+    anchor: installation
+  - title: Configuration
+    anchor: configuration
+  - title: Verifying the Connection
+    anchor: verifying-the-connection
+  - title: Quick Start
+    anchor: quick-start
+  - title: Next Steps
+    anchor: next-steps
+---
+
+# Evaluating Langfuse Traces [Open in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langfuse-trace-evaluation/overview.ipynb)
+
+This cookbook guides you through building a complete quality evaluation pipeline using **fasteval** and **Langfuse**. By connecting production observability with systematic evaluation, you can detect quality issues early, build regression tests from real failures, and deploy with confidence.
+
+## The Evaluation Loop
+
+Effective LLM engineering requires a continuous feedback loop between production and development. This cookbook covers the full cycle:
+
+![Evaluation Loop](docs/assets/langfuse-evaluation-loop.svg)
+
+1.  **Online Evaluation (Traces)**: Monitor production quality by evaluating a sample of live traffic.
+    *   *Goal:* Detect regressions and identify failure modes in the wild.
+    *   *Tool:* `@langfuse_traces` decorator.
+2.  **Identify Issues**: Find low-quality traces in Langfuse (e.g., filter by `fasteval_correctness < 0.7`).
+3.  **Build Datasets**: Promote problematic or high-quality traces into curated golden datasets.
+4.  **Offline Evaluation (Datasets)**: Regression-test new agent versions against these golden sets.
+    *   *Goal:* Ensure fixes work and don't break existing functionality.
+    *   *Tool:* `@langfuse_dataset` decorator.
+5.  **Deploy with Confidence**: Use dataset tests as automated CI/CD gates before shipping.
+
+This loop ties the four pages of this cookbook into a cohesive narrative. Each failure you catch in production becomes a permanent test case that prevents the same issue from recurring.
+
+## Architecture
+
+The integration has two main workflows that correspond to the two halves of the evaluation loop:
+
+![Integration Architecture](docs/assets/langfuse-integration-architecture.svg)
+
+**Online (Trace Evaluation)** — `@langfuse_traces` fetches production traces, extracts parameters, runs LLM-as-judge metrics, and pushes scores back to Langfuse.
+
+**Offline (Dataset Evaluation)** — `@langfuse_dataset` fetches golden dataset items, runs your agent on each input, evaluates with LLM-as-judge metrics, and links results to Langfuse Experiments for side-by-side comparison.
+
+## fasteval vs. Native Evaluators
+
+Langfuse offers built-in "LLM-as-a-Judge" evaluators that run within their cloud infrastructure. Here is how they compare to fasteval:
+
+| Feature | fasteval Integration | Langfuse Native Evaluators |
+| :--- | :--- | :--- |
+| **Execution Environment** | **Local / CI** — runs in your pytest suite | **Cloud** — runs in Langfuse infrastructure |
+| **Control** | Full control over judge model, provider, and prompts | Managed by Langfuse (with some customization) |
+| **CI/CD Integration** | **Direct** — tests fail the build if quality drops | **Async** — webhooks or polling required |
+| **Metric Variety** | **30+ metrics** (RAG, conversation, tool usage, vision, audio) | Core set of evaluators |
+| **Metric Stacking** | Combine deterministic (`@fe.regex`, `@fe.json`) + LLM metrics | Mostly LLM-based |
+| **Custom Metrics** | `@fe.criteria("Is the tone professional?")` | Template-based customization |
+| **Cost** | You pay your LLM provider directly | Usage-based pricing from Langfuse |
+
+**Best Practice:** Use both. Use **Langfuse native evaluators** for lightweight, real-time monitoring on every trace. Use **fasteval** for deep-dive analysis, complex metric stacks, and rigorous regression testing in CI/CD.
+
+## Prerequisites
+
+To follow this cookbook, you need:
+
+1.  A **Langfuse project** ([cloud](https://cloud.langfuse.com) or [self-hosted](https://langfuse.com/docs/deployment/self-host)) with some existing traces.
+2.  **API Keys** from Langfuse Settings > API Keys:
+    *   `LANGFUSE_PUBLIC_KEY` — authenticates reads (traces, datasets).
+    *   `LANGFUSE_SECRET_KEY` — authenticates writes (scores).
+3.  An **LLM Provider Key** (e.g., `OPENAI_API_KEY`) for the fasteval judge models.
+
+## Installation
+
+Install the core library and the Langfuse plugin:
+
+```bash
+pip install fasteval-core fasteval-langfuse
+```
+
+Verify the installation:
+
+```python
+import fasteval as fe
+import fasteval_langfuse
+
+print(f"fasteval:          {fe.__version__}")
+print(f"fasteval-langfuse: {fasteval_langfuse.__version__}")
+```
+
+## Configuration
+
+You can configure the integration using environment variables, code, or both.
+
+### Option 1: Environment Variables (Recommended for CI/CD)
+
+Set these in your `.env` file, CI/CD secrets, or shell profile:
+
+```bash
+export LANGFUSE_PUBLIC_KEY="pk-lf-..."
+export LANGFUSE_SECRET_KEY="sk-lf-..."
+export LANGFUSE_HOST="https://cloud.langfuse.com"  # or your self-hosted URL
+export OPENAI_API_KEY="sk-..."
+```
+
+### Option 2: Code Configuration
+
+For full control, use `configure_langfuse` at the start of your test session. In a pytest project, this typically goes in `conftest.py`:
+
+```python
+# conftest.py
+from fasteval_langfuse import configure_langfuse, LangfuseConfig
+
+def pytest_configure(config):
+    """Configure the Langfuse integration for all tests."""
+    configure_langfuse(LangfuseConfig(
+        # Credentials (optional if env vars are set)
+        public_key="pk-lf-...",
+        secret_key="sk-lf-...",
+        host="https://cloud.langfuse.com",
+
+        # Project Settings
+        default_project="production",
+
+        # Score Reporting
+        auto_push_scores=True,         # Push evaluation results back to Langfuse
+        score_name_prefix="fasteval_", # Prefix for score names (e.g., "fasteval_correctness")
+        retry_on_failure=True,         # Retry score pushes on network errors
+
+        # Performance
+        batch_size=50,                 # Fetch traces in batches
+        max_parallel_evals=5,          # Concurrent evaluations
+    ))
+```
+
+### Configuration Reference
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `public_key` | `str` | `$LANGFUSE_PUBLIC_KEY` | Langfuse public key |
+| `secret_key` | `str` | `$LANGFUSE_SECRET_KEY` | Langfuse secret key |
+| `host` | `str` | `$LANGFUSE_HOST` or `https://cloud.langfuse.com` | API host URL |
+| `default_project` | `str` | `None` | Default project to filter traces |
+| `auto_push_scores` | `bool` | `True` | Push scores back to Langfuse |
+| `score_name_prefix` | `str` | `"fasteval_"` | Prefix for score names |
+| `batch_size` | `int` | `50` | Traces per API fetch batch |
+| `max_parallel_evals` | `int` | `5` | Concurrent evaluation threads |
+| `retry_on_failure` | `bool` | `True` | Retry on transient network errors |
+
+## Verifying the Connection
+
+Before running evaluations, confirm that your credentials work:
+
+```python
+from langfuse import Langfuse
+
+langfuse = Langfuse()
+
+try:
+    projects = langfuse.client.projects.get()
+    print(f"Connected! Projects: {[p.name for p in projects.data]}")
+except Exception as e:
+    print(f"Connection failed: {e}")
+```
+
+## Quick Start
+
+Here is a minimal end-to-end example that fetches 3 recent traces, evaluates them for correctness, and pushes scores back to Langfuse:
+
+```python
+# test_quick_start.py
+import fasteval as fe
+from fasteval_langfuse import langfuse_traces
+
+@fe.correctness(threshold=0.7)
+@langfuse_traces(
+    time_range="last_24h",
+    limit=3,
+)
+def test_production_sample(trace_id, input, output, context, metadata):
+    """Evaluate a small sample of recent traces."""
+    fe.score(output, input=input)
+```
+
+Run it:
+
+```bash
+pytest test_quick_start.py -v
+```
+
+After running, go to **Langfuse > Traces** and you will see `fasteval_correctness` and `fasteval_aggregate` scores on the evaluated traces.
+
+## Next Steps
+
+Now that you are set up, dive into the evaluation loop:
+
+| Page | What You Will Learn |
+| :--- | :--- |
+| [**Basic Trace Evaluation**](./basic-trace-evaluation) | Fetch and evaluate production traces, stack metrics, handle missing data, view scores in Langfuse |
+| [**Sampling Strategies**](./sampling-strategies) | All 5 strategies, cost optimization, scheduling patterns, GitHub Actions automation |
+| [**Dataset Regression Testing**](./dataset-regression-testing) | Golden datasets, Langfuse Experiments, A/B testing, promoting traces, CI/CD gates |

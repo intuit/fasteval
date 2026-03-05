@@ -127,13 +127,37 @@ class LangfuseClient:
             comment=comment,
         )
 
+    def fetch_dataset_raw(
+        self,
+        name: str,
+        version: Optional[str] = None,
+    ) -> List[Any]:
+        """
+        Return native Langfuse DatasetItemClient objects.
+
+        Preserves the original SDK objects so callers can use item.run()
+        to create linked traces in Langfuse Experiments.
+
+        Args:
+            name: Dataset name
+            version: Optional dataset version
+
+        Returns:
+            List of DatasetItemClient objects
+        """
+        dataset = self._client.get_dataset(name)
+        items = dataset.items
+        if version:
+            items = [item for item in items if item.version == version]
+        return items
+
     def fetch_dataset(
         self,
         name: str,
         version: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """
-        Fetch dataset items from Langfuse.
+        Fetch dataset items from Langfuse as dictionaries.
 
         Args:
             name: Dataset name
@@ -142,13 +166,7 @@ class LangfuseClient:
         Returns:
             List of dataset item dictionaries
         """
-        dataset = self._client.get_dataset(name)
-
-        # Filter by version if specified
-        items = dataset.items
-        if version:
-            items = [item for item in items if item.version == version]
-
+        items = self.fetch_dataset_raw(name=name, version=version)
         return [self._dataset_item_to_dict(item) for item in items]
 
     def _trace_to_dict(self, trace: Any) -> Dict[str, Any]:
