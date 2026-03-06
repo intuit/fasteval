@@ -171,8 +171,13 @@ class TestDatasetExperimentsIntegration:
             root_span = item._root_span
             score_calls = root_span.score_trace.call_args_list
 
-            assert call(name="fasteval_correctness", value=0.9, comment="Good answer") in score_calls
-            assert call(name="fasteval_relevance", value=0.8, comment=None) in score_calls
+            assert (
+                call(name="fasteval_correctness", value=0.9, comment="Good answer")
+                in score_calls
+            )
+            assert (
+                call(name="fasteval_relevance", value=0.8, comment=None) in score_calls
+            )
             assert call(name="fasteval_aggregate", value=0.85) in score_calls
 
     @patch("fasteval.core.scoring.get_last_score_result")

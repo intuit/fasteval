@@ -299,7 +299,9 @@ def _execute_dataset_evaluation(
     raw_items = client.fetch_dataset_raw(name=name, version=version)
     run_name = f"fasteval-{func.__name__}-{datetime.now().isoformat()}"
 
-    print(f"\nEvaluating {len(raw_items)} items from dataset '{name}' (run: {run_name})\n")
+    print(
+        f"\nEvaluating {len(raw_items)} items from dataset '{name}' (run: {run_name})\n"
+    )
 
     for item in raw_items:
         with item.run(run_name=run_name) as root_span:
