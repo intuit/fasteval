@@ -8,7 +8,7 @@ order: 4
 
 ## EvalInput
 
-Input data for evaluation.
+The input data for evaluation.
 
 ```python
 from fasteval import EvalInput
@@ -37,7 +37,7 @@ eval_input = EvalInput(
 
 ## EvalResult
 
-Result of an evaluation.
+Returned after evaluation. `passed` is `True` only if all metrics passed.
 
 ```python
 result.passed  # bool
@@ -46,7 +46,7 @@ result.metric_results  # List[MetricResult]
 
 ## MetricResult
 
-Result of a single metric.
+Result from a single metric evaluation.
 
 ```python
 metric_result.metric_name  # str
@@ -58,7 +58,7 @@ metric_result.reasoning  # str
 
 ## MetricConfig
 
-Configuration for a metric.
+Configures a metric for use with the Evaluator API.
 
 ```python
 from fasteval import MetricConfig

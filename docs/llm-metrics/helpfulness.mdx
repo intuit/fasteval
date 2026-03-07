@@ -15,7 +15,7 @@ sidebar:
 
 # Helpfulness Metric
 
-The helpfulness metric evaluates the practical utility of responses. Beyond just being correct, it measures whether the response actually helps the user accomplish their goal with actionable, applicable information.
+A response can be correct, coherent, and complete — and still useless. Helpfulness measures whether the response actually helps someone accomplish their goal. Does it give actionable, practical information, or just restate the question in fancier words?
 
 ## Quick Example
 
@@ -49,11 +49,7 @@ The LLM judge evaluates practical utility:
 
 ### What Gets Evaluated
 
-1. **Actionability**: Does the response provide actionable information?
-2. **Practical Value**: Would this actually help someone with the query?
-3. **Applicability**: Is the information practical and applicable?
-4. **Anticipation**: Does it anticipate follow-up needs?
-5. **Appropriate Detail**: Is the level of detail right for the user's needs?
+The judge looks at whether the response provides actionable information — things the user can actually do. It checks practical value (would this genuinely help?), applicability (is the advice relevant to their situation?), and whether it anticipates follow-up needs. The level of detail matters too. Too shallow and it's useless; too deep and it's overwhelming.
 
 ## Practical Examples
 
@@ -115,26 +111,11 @@ Evaluation Results:
 
 ## Choosing Your Threshold
 
-| Use Case | Suggested Threshold |
-|----------|---------------------|
-| General Q&A | 0.6 - 0.7 |
-| Technical support | 0.7 - 0.8 |
-| Customer-facing responses | 0.8 - 0.85 |
-| Critical support scenarios | 0.85+ |
+General Q&A is fine at 0.6-0.7. Technical support should hit 0.7-0.8 since users come with specific problems. Customer-facing responses need 0.8-0.85 — a bad support answer is worse than no answer. For critical support scenarios, aim for 0.85 or above.
 
 ## When to Use Helpfulness
 
-**Good for:**
-- How-to questions
-- Troubleshooting guides
-- Customer support responses
-- Recommendation queries
-- Decision support
-
-**Consider alternatives for:**
-- Factual accuracy — use `@fe.correctness()`
-- Educational depth — use `@fe.completeness()`
-- Safety concerns — use `@fe.toxicity()` or `@fe.bias()`
+Helpfulness is the right metric for how-to questions, troubleshooting guides, customer support responses, recommendation queries, and decision support. If you're checking factual accuracy, use `@fe.correctness()`. For educational depth, `@fe.completeness()` is a better fit. Safety concerns call for `@fe.toxicity()` or `@fe.bias()`.
 
 ## Combining with Other Metrics
 
@@ -161,3 +142,5 @@ def test_tech_support():
     response = my_llm(query)
     fe.score(response, input=query)
 ```
+
+In practice, helpfulness paired with correctness is the most common stack we see for support use cases. You want answers that are both right and actually useful.

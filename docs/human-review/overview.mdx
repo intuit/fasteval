@@ -21,7 +21,7 @@ sidebar:
 
 # Human Review
 
-The `@fe.human_review` decorator enables interactive evaluation where a human reviewer can score responses during test runs. This is essential for subjective quality assessments that automated metrics can't fully capture.
+Some things automated metrics just can't judge. The `@fe.human_review` decorator drops an interactive prompt into your test run so a human reviewer can score responses on the spot — perfect for subjective quality assessments.
 
 ![Human Review Flow](docs/assets/human-review-flow.svg)
 
@@ -56,7 +56,7 @@ Auto-metrics:
   ✓ correctness        0.92 / 0.80
 
 Question: Is this response helpful and accurate?
-Score [1-5] or [p]ass/[f]ail/[s]kip: 
+Score [1-5] or [p]ass/[f]ail/[s]kip:
 ```
 
 ## Scoring Options
@@ -113,7 +113,7 @@ Auto-metrics:
   ✓ context_retention  0.92 / 0.80
 
 Question: Is context maintained correctly?
-Score [1-5] or [p]ass/[f]ail/[s]kip: 
+Score [1-5] or [p]ass/[f]ail/[s]kip:
 ```
 
 ## Configuration Options
@@ -134,7 +134,7 @@ Score [1-5] or [p]ass/[f]ail/[s]kip:
 
 ## CI/CD Mode
 
-In automated pipelines, human review is automatically skipped. You can explicitly disable it:
+In automated pipelines, human review gets automatically skipped. You can also disable it explicitly.
 
 ### Using pytest flag
 
@@ -167,7 +167,7 @@ else:
 def test_with_human_review():
     response = agent(query)
     result = fe.score(response, expected)
-    
+
     # Access human review data
     if result.human_review:
         print(f"Human score: {result.human_review.score}")
@@ -177,10 +177,4 @@ def test_with_human_review():
 
 ## Best Practices
 
-1. **Use specific prompts** - "Is this response factually accurate?" is better than "Is this good?"
-
-2. **Combine with auto-metrics** - Use human review to validate edge cases, not replace automation
-
-3. **Set appropriate thresholds** - Higher thresholds for critical evaluations
-
-4. **Make required=False for CI** - Unless you want builds to fail when skipped
+Write specific prompts. "Is this response factually accurate?" tells the reviewer exactly what to look for — "Is this good?" doesn't. We recommend using human review to validate edge cases rather than replace automated metrics; it's a complement, not a substitute. Set higher thresholds for critical evaluations where quality really matters. And unless you want CI builds to fail when reviews are skipped, keep `required=False`.

@@ -23,27 +23,15 @@ sidebar:
 
 ## Understanding Dataset Evaluation
 
-While trace evaluation assesses live production data, dataset evaluation tests your LLM against curated input-output pairs. This distinction is fundamental to a comprehensive evaluation strategy.
+Trace evaluation looks at live production data. Dataset evaluation is different — it tests your LLM against curated input-output pairs where you know the right answer.
 
 ### The Role of Datasets
 
-Datasets serve purposes that production traces cannot:
+Datasets give you things production traces can't. They're a controlled environment with known inputs and expected outputs, so you can objectively measure: given this exact query, does the agent produce something acceptable? Production traces don't have that ground truth.
 
-**Controlled Testing Environment**
+They're also reproducible. The same dataset produces the same test cases every run. Refactor a prompt or swap a model, and you can measure the exact impact. Production traces shift constantly, making clean before/after comparisons hard.
 
-Datasets contain known inputs with expected outputs. This enables objective measurement: given this exact query, does the agent produce an acceptable response? Production traces lack this ground truth—you're evaluating responses without knowing what the "right" answer should be.
-
-**Reproducibility**
-
-The same dataset produces the same test cases across runs. When you refactor a prompt or upgrade a model, you can measure the exact impact by running against the same dataset. Production traces constantly change, making before/after comparisons imprecise.
-
-**Edge Case Coverage**
-
-Production data reflects typical usage. Datasets let you intentionally include edge cases, adversarial inputs, and rare scenarios that matter but occur infrequently in production.
-
-**Pre-Deployment Gates**
-
-Datasets enable automated quality gates. Before deploying a new agent version, require that it passes evaluation against a golden dataset. This catches regressions before they affect users.
+Beyond that, datasets let you deliberately include edge cases — adversarial inputs, rare scenarios, weird formatting — that matter but barely show up in real traffic. And they work as automated deployment gates: require your agent to pass the golden dataset before it ships.
 
 ### When to Use Datasets vs. Traces
 
@@ -84,20 +72,13 @@ def test_qa_quality(input, expected_output):
 
 ### How It Works
 
-1. The decorator connects to Langfuse and fetches the specified dataset
-2. For each item in the dataset, your test function is called
-3. Dataset fields are passed as keyword arguments—declare only what you need
-4. fasteval metrics evaluate your agent's response against the expected output
-5. pytest reports pass/fail based on aggregate scores
+The decorator connects to Langfuse and fetches the specified dataset. For each item, your test function gets called with dataset fields passed as keyword arguments — declare only what you need. fasteval metrics evaluate your agent's response against the expected output, and pytest reports pass/fail based on aggregate scores.
 
 ## Working with Dataset Items
 
 ### Standard Dataset Fields
 
-Langfuse datasets have two standard fields:
-
-- **`input`**: The test query or input to your agent
-- **`expected_output`**: The reference answer to compare against
+Langfuse datasets have two standard fields: **`input`** (the test query) and **`expected_output`** (the reference answer).
 
 ```python
 @langfuse_dataset(name="qa-golden-set")
@@ -108,7 +89,7 @@ def test_basic(input, expected_output):
 
 ### Accessing Item Metadata
 
-Dataset items can include custom metadata. Declare metadata fields as function parameters to access them:
+Dataset items can carry custom metadata. Just declare the fields as function parameters:
 
 ```python
 @langfuse_dataset(name="qa-golden-set")
@@ -122,11 +103,11 @@ def test_with_metadata(input, expected_output, difficulty, category, language):
     }
     """
     response = my_agent(input)
-    
+
     # Use metadata for conditional logic or logging
     if difficulty == "hard":
         print(f"Testing hard {category} question")
-    
+
     fe.score(response, expected_output, input=input)
 ```
 
@@ -139,7 +120,7 @@ Include `item_id` to get the dataset item's unique identifier:
 def test_with_tracking(item_id, input, expected_output):
     response = my_agent(input)
     result = fe.score(response, expected_output, input=input)
-    
+
     # Track specific failures
     if result.aggregate_score < 0.7:
         print(f"Failed item: {item_id}, score: {result.aggregate_score}")
@@ -147,7 +128,7 @@ def test_with_tracking(item_id, input, expected_output):
 
 ### Handling Optional Fields
 
-Declare only the parameters you need. The decorator passes available fields and ignores missing ones:
+Declare only what you need. The decorator passes available fields and skips missing ones:
 
 ```python
 # Minimal: just input (no expected output)
@@ -165,11 +146,11 @@ def test_full(item_id, input, expected_output, context, difficulty, category):
 
 ## A/B Testing Workflows
 
-A/B testing with datasets provides controlled comparison between different configurations.
+Datasets make controlled A/B comparisons straightforward — same inputs, different configurations.
 
 ### Comparing Prompt Versions
 
-Test two prompt strategies against the same dataset:
+Test two prompting strategies against the same dataset:
 
 ```python
 # test_prompt_comparison.py
@@ -184,9 +165,9 @@ def test_chain_of_thought_prompt(input, expected_output):
     """Evaluate chain-of-thought prompting strategy."""
     prompt = f"""
     Think through this step-by-step before answering:
-    
+
     Question: {input}
-    
+
     First, identify what information is needed.
     Then, reason through the answer.
     Finally, provide a clear response.
@@ -206,7 +187,7 @@ def test_direct_prompt(input, expected_output):
     fe.score(response, expected_output, input=input)
 ```
 
-Run both tests:
+Run both:
 
 ```bash
 pytest test_prompt_comparison.py -v
@@ -230,7 +211,7 @@ Winner: test_chain_of_thought_prompt (+5.3% improvement)
 
 ### Comparing Models
 
-Evaluate different LLM providers or model versions:
+Evaluate different providers or model versions:
 
 ```python
 @fe.correctness(threshold=0.85)
@@ -286,11 +267,11 @@ def teardown_module():
     """Generate comparison report after all tests."""
     with open("ab_results.json", "w") as f:
         json.dump(results, f, indent=2)
-    
+
     # Calculate summary statistics
     a_scores = [r["score"] for r in results.get("variant_a", [])]
     b_scores = [r["score"] for r in results.get("variant_b", [])]
-    
+
     print(f"\n=== A/B Test Summary ===")
     print(f"Variant A: avg={sum(a_scores)/len(a_scores):.3f}")
     print(f"Variant B: avg={sum(b_scores)/len(b_scores):.3f}")
@@ -298,11 +279,11 @@ def teardown_module():
 
 ## Regression Testing
 
-Regression testing ensures new changes don't degrade quality on known-good inputs.
+Regression testing makes sure new changes don't break what already works.
 
 ### Pre-Deployment Validation
 
-Create a mandatory test that must pass before deployment:
+A mandatory test that blocks deployment on failure:
 
 ```python
 # test_regression.py
@@ -315,12 +296,12 @@ import fasteval as fe
 def test_pre_deployment(input, expected_output, category):
     """
     Critical regression tests. Must pass before any deployment.
-    
+
     Categories include: factual, safety, edge-cases, multi-turn
     """
     response = production_agent(input)
     result = fe.score(response, expected_output, input=input)
-    
+
     # Log failures for investigation
     if result.aggregate_score < 0.9:
         print(f"REGRESSION: {category} question failed")
@@ -329,7 +310,7 @@ def test_pre_deployment(input, expected_output, category):
         print(f"  Got: {response[:100]}...")
 ```
 
-Integrate into CI/CD:
+Wire it into CI/CD:
 
 ```yaml
 # .github/workflows/deploy.yml
@@ -343,7 +324,7 @@ jobs:
         env:
           LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
           LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
-  
+
   deploy:
     needs: regression-test  # Block deployment if regression tests fail
     runs-on: ubuntu-latest
@@ -374,26 +355,9 @@ def test_with_new_cases(input, expected_output):
 
 ### Dataset Design Principles
 
-**Representativeness**
+**Start with real usage.** Analyze production traces to identify common query types, then make sure your dataset covers them. Include edge cases deliberately — ambiguous queries, multi-step reasoning, domain jargon, adversarial inputs, empty or malformed inputs. These matter but barely show up in real traffic.
 
-Include examples that reflect actual usage patterns. Analyze production traces to identify common query types, then ensure your dataset covers them proportionally.
-
-**Edge Case Coverage**
-
-Intentionally include difficult cases:
-- Ambiguous queries
-- Multi-step reasoning
-- Domain-specific terminology
-- Adversarial inputs (prompt injection attempts)
-- Empty or malformed inputs
-
-**Ground Truth Quality**
-
-Expected outputs must be unambiguously correct. Ambiguous reference answers lead to noisy evaluation signals.
-
-**Manageable Size**
-
-Start small (50–100 items) and expand based on needs. Large datasets cost more to evaluate and take longer to curate properly.
+**Keep expected outputs unambiguous.** Vague reference answers produce noisy evaluation signals. And start small — 50 to 100 items — then expand as needed. Large datasets cost more to evaluate and take longer to curate well.
 
 ### Creating Datasets in Langfuse
 
@@ -437,7 +401,7 @@ dataset.create_item(
 
 ### Converting Production Traces to Datasets
 
-Promote high-quality production interactions to your golden dataset:
+Promote your best production interactions to the golden dataset:
 
 ```python
 from langfuse import Langfuse
@@ -488,19 +452,11 @@ Always use explicit versions for reproducibility:
 
 ### Separate Concerns
 
-Create focused datasets rather than one large catch-all:
-
-| Dataset | Purpose |
-|---------|---------|
-| `regression-critical` | Must-pass cases for deployment gate |
-| `qa-factual` | Factual accuracy testing |
-| `qa-creative` | Creative/generative quality |
-| `safety-adversarial` | Prompt injection and safety |
-| `edge-cases` | Unusual inputs and formats |
+We recommend focused datasets rather than one giant catch-all. Something like `regression-critical` for must-pass deployment gates, `qa-factual` for accuracy, `safety-adversarial` for prompt injection, and `edge-cases` for unusual inputs.
 
 ### Document Expected Outputs
 
-Include reasoning in metadata to help future curators:
+Include reasoning in metadata so future curators understand why an answer is correct:
 
 ```python
 dataset.create_item(
@@ -515,27 +471,13 @@ dataset.create_item(
 )
 ```
 
-### Regular Dataset Maintenance
+### Maintain Datasets Regularly
 
-Datasets require ongoing curation:
-
-- **Quarterly review**: Remove outdated items, add new edge cases
-- **Version on changes**: Create new versions rather than modifying in place
-- **Track provenance**: Record where each item came from and who reviewed it
-- **Monitor coverage**: Ensure dataset reflects current production usage patterns
+Datasets go stale. We recommend quarterly reviews to remove outdated items and add new edge cases. Create new versions rather than editing in place. Track where each item came from and who reviewed it. And periodically check that coverage still reflects current production usage.
 
 ### Use Appropriate Thresholds
 
-Dataset tests typically use higher thresholds than production monitoring:
-
-| Context | Typical Threshold |
-|---------|-------------------|
-| Production monitoring | 0.75–0.80 |
-| A/B testing | 0.80–0.85 |
-| Regression testing | 0.85–0.95 |
-| Safety-critical | 0.95+ |
-
-The golden dataset represents your quality standard—set thresholds accordingly.
+Dataset tests typically demand higher thresholds than production monitoring since you're testing against known-good answers. We use roughly 0.75-0.80 for production monitoring, 0.80-0.85 for A/B testing, 0.85-0.95 for regression suites, and 0.95+ for anything safety-critical.
 
 ## Next Steps
 

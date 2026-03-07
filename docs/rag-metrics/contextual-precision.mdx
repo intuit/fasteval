@@ -15,9 +15,9 @@ sidebar:
 
 # Contextual Precision Metric
 
-Your RAG system retrieves 5 documents, but are they actually relevant? Contextual precision measures retrieval quality by checking what percentage of retrieved documents actually help answer the question.
+Your RAG system retrieves 5 documents -- but are they actually relevant? Contextual precision answers that question by measuring what percentage of retrieved docs genuinely help answer the query.
 
-**In simple terms:** "Of the docs we retrieved, how many are useful?"
+**Put simply:** "Of the docs we pulled back, how many are useful?"
 
 ## Quick Example
 
@@ -27,10 +27,10 @@ import fasteval as fe
 @fe.contextual_precision(threshold=0.7)
 def test_retrieval_relevance():
     query = "How do I reset my password?"
-    
+
     # Documents from your retriever
     docs = retriever.search(query, k=5)
-    
+
     response = rag_agent(query, context=docs)
     fe.score(response, retrieval_context=docs, input=query)
 ```
@@ -57,15 +57,15 @@ def test_retrieval_relevance():
 
 ### Testing Retriever Directly
 
-Evaluate retrieval quality without running the full RAG pipeline:
+You can evaluate retrieval quality without running the full RAG pipeline:
 
 ```python
 @fe.contextual_precision(threshold=0.8)
 def test_vector_search():
     query = "What are the side effects of aspirin?"
-    
+
     docs = vector_db.similarity_search(query, k=5)
-    
+
     # No actual_output needed - testing retrieval only
     fe.score(actual_output="", retrieval_context=docs, input=query)
 ```
@@ -80,7 +80,7 @@ def test_bm25_retriever(query):
     fe.score(actual_output="", retrieval_context=docs, input=query)
 
 @fe.contextual_precision(threshold=0.75)
-@fe.csv("retrieval_test_queries.csv")  
+@fe.csv("retrieval_test_queries.csv")
 def test_dense_retriever(query):
     docs = dense_retriever.search(query, k=5)
     fe.score(actual_output="", retrieval_context=docs, input=query)
@@ -139,7 +139,7 @@ These are the classic retrieval trade-offs:
 | **Precision** | "Are retrieved docs relevant?" | Few irrelevant docs |
 | **Recall** | "Did we get all needed docs?" | Few missing docs |
 
-Use both together:
+We recommend using both together:
 
 ```python
 @fe.contextual_precision(threshold=0.7)  # Relevant docs
@@ -163,19 +163,8 @@ def test_retrieval_quality():
 
 **Symptoms:** Many irrelevant documents retrieved
 
-**Causes:**
-- Chunk size too small (partial matches)
-- Embedding model not domain-specific
-- k value too high
-
-**Fixes:**
-- Increase chunk size
-- Fine-tune embeddings on your domain
-- Reduce k or add reranking
+This usually comes down to chunk sizes being too small (causing partial matches), an embedding model that isn't tuned for your domain, or a k value that's too high. In practice, we've found that increasing chunk size, fine-tuning embeddings on your domain data, or adding a reranking step fixes most precision problems.
 
 ### Perfect Precision but Poor RAG Output
 
-If precision is high but answers are still wrong, the problem is likely:
-- Low recall (missing key documents)
-- Poor faithfulness (LLM ignoring context)
-- Incorrect expected answers
+If precision is high but answers are still wrong, the problem is likely low recall (you're missing key documents), poor faithfulness (the LLM is ignoring context), or incorrect expected answers in your test set.

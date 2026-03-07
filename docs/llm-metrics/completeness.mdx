@@ -15,7 +15,7 @@ sidebar:
 
 # Completeness Metric
 
-The completeness metric evaluates whether a response fully addresses all parts of a query. It checks if important information is missing and if the user would need follow-up questions to get complete information.
+Half-answers frustrate users. The completeness metric checks whether a response actually addresses every part of a query, or if it quietly skips over things the user explicitly asked about.
 
 ## Quick Example
 
@@ -49,11 +49,7 @@ The LLM judge evaluates coverage of the query:
 
 ### What Gets Evaluated
 
-1. **Query Coverage**: Does the response address all parts of the query?
-2. **Information Gaps**: Are there obvious missing pieces?
-3. **Multi-Aspect Handling**: If the query has multiple aspects, are all covered?
-4. **Context Inclusion**: Is important background information included?
-5. **Follow-up Need**: Would the user need to ask more questions?
+The judge checks whether every part of the query got addressed, flags obvious information gaps, and verifies that multi-aspect questions didn't get a single-aspect answer. It also considers whether important background context was included and whether the user would need to ask follow-up questions to get what they actually wanted.
 
 ## Practical Examples
 
@@ -118,26 +114,11 @@ Evaluation Results:
 
 ## Choosing Your Threshold
 
-| Use Case | Suggested Threshold |
-|----------|---------------------|
-| Quick Q&A | 0.6 - 0.7 |
-| General explanations | 0.7 - 0.8 |
-| Documentation | 0.8 - 0.85 |
-| Compliance/checklist requirements | 0.9+ |
+Quick Q&A can work at 0.6-0.7 — users don't always need exhaustive answers. General explanations should hit 0.7-0.8. Documentation needs 0.8-0.85, and if you're checking compliance against a specific checklist, push it to 0.9 or above.
 
 ## When to Use Completeness
 
-**Good for:**
-- Multi-part questions
-- Documentation generation
-- Comparison tasks
-- Educational explanations
-- Any query with explicit requirements
-
-**Consider alternatives for:**
-- Accuracy verification — use `@fe.correctness()`
-- Brevity requirements — balance with `@fe.conciseness()`
-- Format compliance — use `@fe.instruction_following()`
+This metric works best for multi-part questions, documentation generation, comparison tasks, and educational explanations — any query with explicit requirements. If you're after accuracy verification, use `@fe.correctness()` instead. Need brevity? Balance completeness with `@fe.conciseness()`. For format compliance, `@fe.instruction_following()` is your tool.
 
 ## Combining with Other Metrics
 
@@ -153,4 +134,4 @@ def test_balanced_response():
     fe.score(response, input=query)
 ```
 
-This ensures comprehensive yet efficient and accurate responses.
+A common mistake is optimizing for completeness alone. You'll get thorough but bloated responses. Pairing with conciseness keeps things tight.

@@ -29,29 +29,25 @@ sidebar:
 
 # Dataset Regression Testing [Open in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langfuse-trace-evaluation/dataset-regression-testing.ipynb)
 
-While trace evaluation catches issues in the wild, **dataset evaluation** prevents them from shipping. It closes the quality loop by testing new code against known "golden" examples before deployment.
+Trace evaluation catches issues in the wild. **Dataset evaluation** prevents them from shipping. It closes the quality loop by testing new code against known "golden" examples before deployment.
 
 ## The Offline Loop
 
 ![Dataset Regression Testing Lifecycle](docs/assets/langfuse-dataset-lifecycle.svg)
 
-The lifecycle from production failure to permanent test case:
+Here's the lifecycle from production failure to permanent test case:
 
 1.  **Detect** — Trace evaluation finds a failure (e.g., "Bot hallucinated about refund policy").
 2.  **Promote** — Turn that trace into a dataset item. A human expert writes the correct expected output.
 3.  **Fix** — Update the agent, prompt, or retrieval logic.
-4.  **Verify** — Run the dataset evaluation to confirm the fix works AND did not break other cases.
+4.  **Verify** — Run the dataset evaluation to confirm the fix works AND didn't break other cases.
 5.  **Deploy** — Dataset tests pass in CI, giving the green light to ship.
 
-Over time, your golden dataset grows with every production failure, creating an increasingly robust regression test suite.
+Over time, your golden dataset grows with every production failure — building a regression test suite that gets stronger with each incident.
 
 ## What Are Langfuse Datasets?
 
-Langfuse Datasets are curated collections of `(input, expected_output, metadata)` tuples stored in Langfuse. They can be managed via:
-
-*   **Langfuse UI** — Add items manually, import from CSV.
-*   **Langfuse SDK** — Create items programmatically from code.
-*   **Trace Promotion** — Turn real production traces into dataset items (see [Promoting Traces](#promoting-traces-to-datasets)).
+Langfuse Datasets are curated collections of `(input, expected_output, metadata)` tuples stored in Langfuse. You can manage them through the **Langfuse UI** (add items manually, import from CSV), the **Langfuse SDK** (create items programmatically), or **Trace Promotion** (turn real production traces into dataset items — see [Promoting Traces](#promoting-traces-to-datasets)).
 
 Each dataset can have multiple **versions** and be organized into **folders** using `/` in names (e.g., `evaluation/support/billing`).
 
@@ -96,12 +92,7 @@ The `@langfuse_dataset` decorator integrates directly with [Langfuse Experiments
 
 ### What You See in Langfuse
 
-Navigate to **Langfuse > Datasets > your-dataset > Experiments**:
-
-*   Each test execution appears as a **column** (run).
-*   Each dataset item is a **row**.
-*   Cells show individual metric scores, pass/fail status, and deltas between runs.
-*   Click any cell to see the full trace, including the judge's reasoning.
+Navigate to **Langfuse > Datasets > your-dataset > Experiments**. Each test execution appears as a **column** (run), each dataset item as a **row**. Cells show individual metric scores, pass/fail status, and deltas between runs. Click any cell to see the full trace, including the judge's reasoning.
 
 This gives you a clear answer to: "Did the new version actually improve quality?"
 
@@ -127,7 +118,7 @@ def test_minimal(input, expected_output):
 
 ## Metadata Flattening
 
-If dataset items have metadata (e.g., `{"difficulty": "hard", "category": "billing"}`), these fields are **flattened** into keyword arguments. Declare them in your function signature to receive them:
+If dataset items have metadata (e.g., `{"difficulty": "hard", "category": "billing"}`), those fields get **flattened** into keyword arguments. Declare them in your function signature to receive them:
 
 ```python
 @fe.correctness(threshold=0.85)
@@ -142,10 +133,7 @@ def test_with_metadata(input, expected_output, difficulty, category):
     fe.score(response, expected_output, input=input)
 ```
 
-This is useful for:
-*   **Conditional logic** — Lower thresholds for hard questions.
-*   **Debugging** — Log which categories fail most often.
-*   **Reporting** — Group results by metadata dimension.
+This is useful for conditional logic (lower thresholds for hard questions), debugging (log which categories fail most), and reporting (group results by metadata dimension).
 
 ## Input-Only Datasets
 
@@ -161,11 +149,11 @@ def test_safety_and_relevance(input):
     fe.score(response, input=input)
 ```
 
-This is useful for smoke testing, safety checks, and toxicity screening.
+Works well for smoke testing, safety checks, and toxicity screening.
 
 ## A/B Testing
 
-Compare two versions of your agent on the same dataset. Each version generates a separate run in Langfuse Experiments, enabling side-by-side comparison.
+Compare two versions of your agent on the same dataset. Each version generates a separate run in Langfuse Experiments, so you get side-by-side comparison out of the box.
 
 ### Step 1: Define Both Versions
 
@@ -205,7 +193,7 @@ pytest test_regression.py -v
 
 ### Step 3: Compare in Langfuse
 
-After running both tests, go to **Langfuse > Datasets > qa-golden-set > Experiments**. You will see two columns — `test_baseline_v1` and `test_candidate_v2` — with scores and deltas for every dataset item.
+After running both tests, go to **Langfuse > Datasets > qa-golden-set > Experiments**. You'll see two columns — `test_baseline_v1` and `test_candidate_v2` — with scores and deltas for every dataset item.
 
 | Dataset Item | `test_baseline_v1` | `test_candidate_v2` | Delta |
 |--------------|--------------------|-----------------------|-------|
@@ -215,7 +203,7 @@ After running both tests, go to **Langfuse > Datasets > qa-golden-set > Experime
 
 ## Promoting Traces to Datasets
 
-Bridge the gap between online and offline evaluation by turning real production failures into permanent test cases.
+Bridge online and offline evaluation by turning real production failures into permanent test cases.
 
 ### Step 1: Find Low-Quality Traces
 
@@ -263,16 +251,11 @@ for trace in candidates:
     )
 ```
 
-The `source_trace_id` in metadata creates a link back to the original production trace, maintaining full traceability.
+The `source_trace_id` in metadata links back to the original production trace, maintaining full traceability.
 
 ### Step 3: Human Review
 
-A human expert reviews each promoted item and:
-1.  Writes the correct `expected_output`.
-2.  Adds relevant metadata (difficulty, category).
-3.  Removes any items that are not useful test cases.
-
-This can be done via the Langfuse UI or programmatically.
+A human expert reviews each promoted item and writes the correct `expected_output`, adds relevant metadata (difficulty, category), and removes any items that aren't useful test cases. This can be done via the Langfuse UI or programmatically.
 
 ## Dataset Organization
 
@@ -286,7 +269,7 @@ def test_pinned(input, expected_output):
     ...
 ```
 
-This ensures that adding new items to the dataset does not affect existing CI/CD runs until you explicitly update the version.
+This ensures that adding new items to the dataset doesn't affect existing CI/CD runs until you explicitly update the version.
 
 ### Folders
 

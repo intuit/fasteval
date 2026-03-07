@@ -15,9 +15,9 @@ sidebar:
 
 # Contextual Recall Metric
 
-Your retriever found 5 highly relevant documents (great precision!), but did those documents contain everything needed to answer the question? Contextual recall measures information coverage.
+So your retriever found 5 highly relevant documents -- great precision. But did those documents actually contain everything needed to answer the question? That's what contextual recall measures: information coverage.
 
-**In simple terms:** "Did we retrieve all the facts we need?"
+**Put simply:** "Did we retrieve all the facts we need?"
 
 ## Quick Example
 
@@ -28,10 +28,10 @@ import fasteval as fe
 def test_information_coverage():
     query = "What are the benefits of exercise?"
     expected = "Exercise improves cardiovascular health, mental well-being, and weight management."
-    
+
     docs = retriever.search(query)
     response = rag_agent(query, context=docs)
-    
+
     fe.score(response, expected, retrieval_context=docs, input=query)
 ```
 
@@ -66,7 +66,7 @@ def test_kb_has_answers(query, expected_answer):
     """Verify knowledge base covers all expected information."""
     docs = knowledge_base.search(query)
     response = rag_agent(query, context=docs)
-    
+
     fe.score(response, expected_answer, retrieval_context=docs, input=query)
 ```
 
@@ -80,12 +80,12 @@ def test_product_info_complete():
     expected = """
     Widget Pro has:
     - 8GB RAM
-    - 256GB storage  
+    - 256GB storage
     - 6.5 inch display
     - 5000mAh battery
     - Water resistant IP68
     """
-    
+
     docs = product_db.search(query)
     fe.score("", expected, retrieval_context=docs, input=query)
 ```
@@ -94,7 +94,7 @@ If this fails, you know exactly which specs are missing from your docs.
 
 ### Optimizing Chunk Size
 
-Smaller chunks = more precise retrieval but potentially worse recall.
+Smaller chunks give you more precise retrieval but can hurt recall.
 
 ```python
 CHUNK_SIZES = [256, 512, 1024, 2048]
@@ -138,7 +138,7 @@ Evaluation Results:
 
 ## Precision vs Recall Trade-off
 
-These metrics often conflict:
+These metrics often pull in opposite directions:
 
 | Scenario | Precision | Recall | Cause |
 |----------|-----------|--------|-------|
@@ -160,33 +160,25 @@ def test_balanced_retrieval():
 
 | Use Case | Suggested Threshold |
 |----------|---------------------|
-| Comprehensive answers needed | 0.9+ |
+| Thorough answers needed | 0.9+ |
 | General Q&A | 0.7 - 0.8 |
 | Acceptable partial answers | 0.5 - 0.7 |
 
 ## Diagnosing Low Recall
 
-When recall is low, investigate:
+When recall is low, work through these questions in order.
 
-1. **Is the information in your knowledge base at all?**
-   - Check if expected facts exist in any document
-   - May need to add more content
+**Is the information in your knowledge base at all?** Check whether the expected facts exist in any document. You might just need to add more content.
 
-2. **Is chunking splitting important information?**
-   - Expected fact might span two chunks
-   - Try larger chunk sizes or chunk overlap
+**Is chunking splitting important information?** An expected fact might span two chunks. Try larger chunk sizes or add chunk overlap.
 
-3. **Is k (number of docs) too low?**
-   - Relevant doc might be at position 6 when k=5
-   - Try increasing k
+**Is k too low?** The relevant doc might sit at position 6 when you're only pulling back 5. Bump k up and see if the score improves.
 
-4. **Is the embedding model finding semantic matches?**
-   - Query phrasing might not match document phrasing
-   - Consider hybrid search (semantic + keyword)
+**Is the embedding model finding semantic matches?** Sometimes the query phrasing doesn't match document phrasing well enough. Consider hybrid search (semantic + keyword) to cover both angles.
 
 ## Best Practices
 
-1. **Always provide expected_output**: Recall needs a ground truth to compare against
-2. **Use realistic expected answers**: Should reflect what a good answer looks like
-3. **Combine with precision**: High recall + low precision = noisy retrieval
-4. **Test edge cases**: Complex queries that need information from multiple docs
+1. **Always provide expected_output** -- recall needs ground truth to compare against.
+2. **Use realistic expected answers** that reflect what a good answer actually looks like.
+3. **Combine with precision** -- high recall plus low precision means noisy retrieval.
+4. **Test edge cases** -- especially complex queries that need information from multiple docs.

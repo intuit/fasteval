@@ -15,7 +15,7 @@ sidebar:
 
 # Tool Args Match
 
-The `tool_args_match` metric evaluates whether an agent passed the correct arguments to tools. This is primarily a **deterministic metric**, with optional LLM-based fuzzy matching.
+Did your agent pass the right arguments to the tools it called? `tool_args_match` checks exactly that. It's primarily a **deterministic metric**, with optional LLM-based fuzzy matching for cases where values can vary in format.
 
 ## Usage
 
@@ -26,11 +26,11 @@ from fasteval import ExpectedTool
 @fe.tool_args_match(threshold=0.9)
 def test_search_agent():
     response, tool_calls = agent("Search for flights to NYC")
-    
+
     expected = [
         ExpectedTool(name="search_flights", args={"destination": "NYC"}),
     ]
-    
+
     fe.score(response, tool_calls=tool_calls, expected_tools=expected)
 ```
 
@@ -51,10 +51,7 @@ def test_search_agent():
 score = matched_args / total_expected_args
 ```
 
-For each expected tool:
-1. Find the matching actual tool call
-2. Compare expected args against actual args
-3. Count matches (exact or fuzzy)
+For each expected tool, the metric finds the matching actual tool call, compares expected args against actual args, and counts matches (exact or fuzzy).
 
 ## Argument Comparison
 
@@ -84,30 +81,25 @@ For each expected tool:
 
 ## Fuzzy Matching (LLM-Based)
 
-Enable semantic comparison for flexible argument matching:
+Enable semantic comparison when argument values might vary in format but mean the same thing:
 
 ```python
 @fe.tool_args_match(threshold=0.8, fuzzy_match=True)
 def test_location_search():
     response, tool_calls = agent("Find flights to New York City")
-    
+
     # Agent might call: search_flights(destination="NYC")
     # Expected: search_flights(destination="New York City")
     # With fuzzy_match=True: "NYC" ≈ "New York City" → PASS
-    
+
     expected = [
         ExpectedTool(name="search_flights", args={"destination": "New York City"}),
     ]
-    
+
     fe.score(response, tool_calls=tool_calls, expected_tools=expected)
 ```
 
-**When to use fuzzy matching:**
-- Location names: "NYC" vs "New York City"
-- Date formats: "2024-01-15" vs "January 15, 2024"
-- Synonyms: "flight" vs "airplane ticket"
-
-Fuzzy matching uses the same default LLM provider configured for other metrics or can be overriden with llm_client.
+In practice, fuzzy matching is most useful for location names ("NYC" vs "New York City"), date formats ("2024-01-15" vs "January 15, 2024"), and synonyms ("flight" vs "airplane ticket"). It uses the same default LLM provider configured for other metrics, or you can override it with `llm_client`.
 
 ## Example Output
 
@@ -124,7 +116,7 @@ Details:
 
 ## Handling Missing Tools
 
-If an expected tool wasn't called, all its args count as missing:
+If an expected tool wasn't called at all, every one of its args counts as missing:
 
 ```python
 # Expected: search_flights(destination="NYC")
@@ -149,19 +141,19 @@ from fasteval import ExpectedTool
 @fe.tool_args_match(threshold=0.9)       # Correct arguments?
 def test_booking_workflow():
     response, tool_calls = agent("Book a flight to NYC for tomorrow")
-    
+
     expected = [
         ExpectedTool(name="search_flights", args={"destination": "NYC"}),
         ExpectedTool(name="select_flight", required=False),
         ExpectedTool(name="book_flight", args={"confirm": True}),
     ]
-    
+
     fe.score(response, tool_calls=tool_calls, expected_tools=expected)
 ```
 
 ## Best Practices
 
-- Only specify args you care about (others are ignored)
-- Use `fuzzy_match=True` for user-facing values that may vary
-- Set higher thresholds (0.9+) for critical arguments
-- Use `ignore_extra=False` if unexpected args are problematic
+1. **Only specify args you care about** -- everything else gets ignored.
+2. **Use `fuzzy_match=True` for user-facing values** that might vary in phrasing.
+3. **Set higher thresholds (0.9+)** for critical arguments where getting it wrong matters.
+4. **Use `ignore_extra=False`** if unexpected args could cause problems downstream.

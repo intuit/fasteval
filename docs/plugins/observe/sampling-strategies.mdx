@@ -23,7 +23,7 @@ sidebar:
 
 # Sampling Strategies
 
-Sampling strategies determine which agent calls get observed. Choose based on your monitoring goals, latency requirements, and resource constraints.
+Which calls get observed? That's what sampling strategies decide. Pick one based on your monitoring goals, latency budget, and resource constraints.
 
 ## Overview
 
@@ -38,7 +38,7 @@ Sampling strategies determine which agent calls get observed. Choose based on yo
 
 ## NoSamplingStrategy
 
-Sample every call. Use for development, debugging, or critical paths.
+Samples every single call. Use it for development, debugging, or critical paths where you can't afford to miss anything.
 
 ```python
 from fasteval_observe import observe
@@ -49,19 +49,11 @@ async def debug_agent(query: str) -> str:
     return await llm.invoke(query)
 ```
 
-**When to use:**
-- Local development
-- Debugging issues
-- Critical paths that must always be monitored
-- Low-traffic functions
-
-**When NOT to use:**
-- High-traffic production endpoints
-- When latency is critical
+Good for local development, debugging issues, critical paths that must always be monitored, and low-traffic functions. Don't use it on high-traffic production endpoints or when latency is critical.
 
 ## FixedRateSamplingStrategy
 
-Sample at a fixed rate using a counter (deterministic).
+Samples at a fixed rate using an internal counter. It's deterministic -- the same Nth calls always get sampled.
 
 ```python
 from fasteval_observe.sampling import FixedRateSamplingStrategy
@@ -77,22 +69,11 @@ async def higher_rate_agent(query: str) -> str:
     return await llm.invoke(query)
 ```
 
-**Parameters:**
-- `rate` (float): Sampling rate between 0.0 and 1.0
-
-**How it works:**
-- Uses internal counter
-- Samples every Nth call where N = 1/rate
-- Deterministic: same calls are always sampled
-
-**When to use:**
-- Production monitoring
-- Consistent sampling rate needed
-- Predictable resource usage
+Takes one parameter: `rate` (float between 0.0 and 1.0). Internally it samples every Nth call where N = 1/rate. We recommend this as the default for production monitoring -- it gives you predictable resource usage and a consistent sampling rate.
 
 ## ProbabilisticSamplingStrategy
 
-Random probability-based sampling (non-deterministic).
+Random probability-based sampling. Non-deterministic, but you can pin it with a seed if you need reproducibility.
 
 ```python
 from fasteval_observe.sampling import ProbabilisticSamplingStrategy
@@ -108,18 +89,11 @@ async def reproducible_agent(query: str) -> str:
     return await llm.invoke(query)
 ```
 
-**Parameters:**
-- `probability` (float): Probability of sampling each call (0.0-1.0)
-- `seed` (int, optional): Random seed for reproducibility
-
-**When to use:**
-- Statistical profiling
-- A/B testing observability
-- When exact sampling rate doesn't matter
+Parameters: `probability` (float, 0.0-1.0) and an optional `seed` (int) for reproducibility. Best for statistical profiling, A/B testing observability, or when the exact sampling rate doesn't matter.
 
 ## AdaptiveSamplingStrategy
 
-Dynamically adjust sampling rate based on latency and errors.
+This one gets interesting. It dynamically adjusts the sampling rate based on latency and error patterns.
 
 ```python
 from fasteval_observe.sampling import AdaptiveSamplingStrategy
@@ -137,28 +111,20 @@ async def my_agent(query: str) -> str:
 ```
 
 **Parameters:**
-- `base_rate` (float): Normal operation sampling rate
-- `error_rate` (float): Rate when errors detected (default: 1.0)
-- `slow_threshold_ms` (float): Latency threshold for "slow" calls
-- `slow_rate` (float): Rate for slow calls
-- `window_size` (int): Recent calls to consider
-- `cooldown_seconds` (float): Time before returning to base rate
 
-**How it works:**
-1. Tracks recent latencies and errors
-2. If >10% errors in window → use `error_rate`
-3. If >10% slow calls in window → use `slow_rate`
-4. After incident, stays elevated for `cooldown_seconds`
-5. Otherwise uses `base_rate`
+- `base_rate` -- Normal operation sampling rate
+- `error_rate` -- Rate when errors are detected (default: 1.0)
+- `slow_threshold_ms` -- Latency threshold for "slow" calls
+- `slow_rate` -- Rate for slow calls
+- `window_size` -- How many recent calls to consider
 
-**When to use:**
-- Production with variable load
-- Automatic incident response
-- When you want more data during problems
+Here's how it works: the strategy tracks recent latencies and errors. If more than 10% of calls in the window are errors, it switches to `error_rate`. If more than 10% are slow, it uses `slow_rate`. After an incident subsides, it stays elevated for `cooldown_seconds` before dropping back to `base_rate`.
+
+In practice, this is the strategy we reach for when things go wrong in production.
 
 ## TokenBudgetSamplingStrategy
 
-Sample based on token usage and cost.
+Samples based on token usage and cost. Useful when you need to keep evaluation spend under control.
 
 ```python
 from fasteval_observe.sampling import TokenBudgetSamplingStrategy
@@ -173,27 +139,11 @@ async def my_agent(query: str) -> str:
     return await llm.invoke(query)
 ```
 
-**Parameters:**
-- `budget_tokens_per_hour` (int): Token budget per hour
-- `high_cost_threshold` (int): Token count for "high cost" classification
-- `high_cost_rate` (float): Sampling rate for high-cost calls
-- `base_rate` (float): Base sampling rate
-
-**How it works:**
-1. Tracks hourly token usage from completion callbacks
-2. If call looks high-cost (via context) → use `high_cost_rate`
-3. If approaching budget (>70% used) → increase rate
-4. If critical (>90% used) → 5x base rate
-5. Otherwise use `base_rate`
-
-**When to use:**
-- Cost monitoring and alerting
-- LLM budget tracking
-- Identifying expensive queries
+It tracks hourly token usage from completion callbacks. High-cost calls (based on context) get sampled at `high_cost_rate`. As you approach your budget -- past 70% usage, the rate increases. Past 90%, it jumps to 5x the base rate. Otherwise it sticks to `base_rate`.
 
 ## ComposableSamplingStrategy
 
-Combine multiple strategies with AND/OR logic.
+Combine multiple strategies with AND/OR logic when a single strategy doesn't cut it.
 
 ```python
 from fasteval_observe.sampling import (
@@ -225,14 +175,7 @@ async def conservative_agent(query: str) -> str:
     return await llm.invoke(query)
 ```
 
-**Parameters:**
-- `strategies` (List[BaseSamplingStrategy]): Strategies to combine
-- `mode` (str): "any" for OR logic, "all" for AND logic
-
-**When to use:**
-- Complex sampling requirements
-- Combining multiple conditions
-- Custom sampling logic without writing code
+Two parameters: `strategies` (list of strategies to combine) and `mode` (`"any"` for OR, `"all"` for AND).
 
 ## Choosing a Strategy
 

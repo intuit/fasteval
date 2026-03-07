@@ -19,31 +19,17 @@ sidebar:
 
 # Correctness Metric
 
-The correctness metric evaluates whether an LLM's response contains semantically equivalent information to an expected answer. Unlike exact string matching, correctness understands that "Paris" and "The capital of France is Paris" convey the same factual content.
+Is the answer right? That's what correctness checks. Unlike exact string matching, it uses semantic understanding — so "Paris" and "The capital of France is Paris" both count as correct when the expected answer is "Paris."
 
 ## Overview
 
-Correctness is the most commonly used evaluation metric for question-answering systems, knowledge retrieval, and any application where responses have a definable "right answer." It uses semantic understanding to compare actual outputs against expected outputs, accounting for paraphrasing, different phrasings, and varying levels of detail.
+Correctness is the go-to metric for question-answering systems, knowledge retrieval, and anything with a definable "right answer." It compares actual outputs against expected outputs using semantic understanding, so paraphrasing, different word choices, and varying levels of detail don't cause false failures.
 
-### When to Use Correctness
-
-| Scenario | Suitability |
-|----------|-------------|
-| Factual Q&A systems | Excellent |
-| Knowledge base queries | Excellent |
-| Information extraction | Good |
-| Summarization (with reference) | Good |
-| Creative writing | Not recommended |
-| Open-ended generation | Not recommended |
+Use it for factual Q&A, knowledge base queries, and information extraction. It works well for summarization when you've got a reference answer too. It's not the right fit for creative writing or open-ended generation — those don't have a single correct answer.
 
 ## How It Works
 
-The correctness metric sends the actual output and expected output to an LLM judge, which evaluates semantic equivalence:
-
-1. **Content Analysis**: The judge identifies factual claims in both outputs
-2. **Semantic Comparison**: Claims are compared for meaning, not exact wording
-3. **Scoring**: A score from 0.0 to 1.0 reflects the degree of semantic match
-4. **Reasoning**: The judge explains its assessment for debugging
+The correctness metric sends both the actual and expected output to an LLM judge, which evaluates semantic equivalence. The judge identifies factual claims in both outputs, compares them for meaning rather than exact wording, assigns a 0.0-1.0 score reflecting how closely they match, and provides reasoning you can use for debugging.
 
 ### Score Interpretation
 
@@ -161,16 +147,13 @@ def test_calculation():
 
 ### Calibrating Your Threshold
 
-1. **Collect examples**: Gather known-good and known-bad responses
-2. **Run evaluation**: Score all examples without thresholds
-3. **Analyze distribution**: Find the gap between good and bad scores
-4. **Set threshold**: Choose a value that separates them with margin
+Start by collecting known-good and known-bad responses. Run them all through evaluation without thresholds and look at the score distribution. You'll usually see a clear gap between the good and bad clusters. Set your threshold in that gap with some margin.
 
 ## Best Practices
 
 ### Combine with Other Metrics
 
-Correctness alone does not tell you everything. Stack metrics for comprehensive evaluation:
+Correctness alone doesn't tell you everything. Stack metrics for deeper evaluation:
 
 ```python
 @fe.correctness(threshold=0.8)    # Is it factually right?
@@ -180,8 +163,8 @@ def test_comprehensive_qa():
     question = "What causes rain?"
     response = my_llm(question)
     fe.score(
-        response, 
-        "Water evaporates, forms clouds, and falls as precipitation", 
+        response,
+        "Water evaporates, forms clouds, and falls as precipitation",
         input=question
     )
 ```
@@ -198,14 +181,9 @@ fe.score(response, expected_output="Python was released in 1991")
 fe.score(response, expected_output="Guido van Rossum released Python version 1.0 in January 1991")
 ```
 
-### Consider Alternatives for Specific Use Cases
+### Know When to Reach for Something Else
 
-| Use Case | Better Alternative |
-|----------|-------------------|
-| Open-ended creative writing | `@fe.criteria()` with custom criteria |
-| RAG systems | Combine with `@fe.faithfulness()` |
-| Safety evaluation | `@fe.toxicity()` + `@fe.bias()` |
-| Format validation | `@fe.json_schema()` or `@fe.contains()` |
+For open-ended creative writing, `@fe.criteria()` with custom criteria is a better fit. RAG systems benefit from combining correctness with `@fe.faithfulness()`. Safety evaluation calls for `@fe.toxicity()` and `@fe.bias()`. And if you're validating output format, `@fe.json_schema()` or `@fe.contains()` will serve you better.
 
 ## Example Output
 
@@ -216,8 +194,8 @@ test_geography PASSED
 
 Evaluation Results:
   correctness: 0.92 (threshold: 0.80)
-    Reasoning: The response correctly states that Paris is the capital 
-    of France. The additional historical context does not contradict 
+    Reasoning: The response correctly states that Paris is the capital
+    of France. The additional historical context does not contradict
     the expected answer.
 ```
 
@@ -228,6 +206,6 @@ test_geography FAILED
 
 Evaluation Results:
   correctness: 0.45 (threshold: 0.80)
-    Reasoning: The response mentions France but incorrectly states 
+    Reasoning: The response mentions France but incorrectly states
     Lyon as the capital instead of Paris.
 ```

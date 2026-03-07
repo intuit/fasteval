@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="900" height="420" viewBox="0 0 900 420" xmlns="http://www.w3.org/2000/svg" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-opacity="0.08"/>
+    </filter>
+  </defs>
+
+  <rect width="900" height="420" fill="#f8fafc"/>
+
+  <text x="450" y="40" text-anchor="middle" font-size="22" font-weight="700" fill="#1e293b">Function Signatures &amp; Return Types</text>
+  <text x="450" y="65" text-anchor="middle" font-size="14" fill="#64748b">Pick the fields you need. Return what makes sense.</text>
+
+  <!-- Left column: Signatures -->
+  <text x="235" y="100" text-anchor="middle" font-size="15" font-weight="700" fill="#4f46e5">Input Signatures</text>
+
+  <!-- Signature 1: Minimal -->
+  <g transform="translate(30, 115)" filter="url(#shadow)">
+    <rect width="410" height="55" rx="10" fill="white" stroke="#c7d2fe" stroke-width="1.5"/>
+    <circle cx="22" cy="28" r="10" fill="#eef2ff"/>
+    <text x="22" y="32" text-anchor="middle" font-size="11" font-weight="700" fill="#4f46e5">1</text>
+    <text x="45" y="24" font-size="12" font-weight="600" fill="#1e293b">Minimal</text>
+    <text x="45" y="42" font-size="11" font-family="monospace" fill="#64748b">def check(actual_output: str) -&gt; float</text>
+  </g>
+
+  <!-- Signature 2: With context -->
+  <g transform="translate(30, 180)" filter="url(#shadow)">
+    <rect width="410" height="55" rx="10" fill="white" stroke="#c7d2fe" stroke-width="1.5"/>
+    <circle cx="22" cy="28" r="10" fill="#eef2ff"/>
+    <text x="22" y="32" text-anchor="middle" font-size="11" font-weight="700" fill="#4f46e5">2</text>
+    <text x="45" y="24" font-size="12" font-weight="600" fill="#1e293b">Multiple fields</text>
+    <text x="45" y="42" font-size="11" font-family="monospace" fill="#64748b">def check(actual_output, expected_output, input)</text>
+  </g>
+
+  <!-- Signature 3: Full EvalInput -->
+  <g transform="translate(30, 245)" filter="url(#shadow)">
+    <rect width="410" height="55" rx="10" fill="white" stroke="#c7d2fe" stroke-width="1.5"/>
+    <circle cx="22" cy="28" r="10" fill="#eef2ff"/>
+    <text x="22" y="32" text-anchor="middle" font-size="11" font-weight="700" fill="#4f46e5">3</text>
+    <text x="45" y="24" font-size="12" font-weight="600" fill="#1e293b">Full access</text>
+    <text x="45" y="42" font-size="11" font-family="monospace" fill="#64748b">def check(eval_input: EvalInput) -&gt; float</text>
+  </g>
+
+  <!-- Signature 4: Async -->
+  <g transform="translate(30, 310)" filter="url(#shadow)">
+    <rect width="410" height="55" rx="10" fill="white" stroke="#c7d2fe" stroke-width="1.5"/>
+    <circle cx="22" cy="28" r="10" fill="#eef2ff"/>
+    <text x="22" y="32" text-anchor="middle" font-size="11" font-weight="700" fill="#4f46e5">4</text>
+    <text x="45" y="24" font-size="12" font-weight="600" fill="#1e293b">Async</text>
+    <text x="45" y="42" font-size="11" font-family="monospace" fill="#64748b">async def check(actual_output: str) -&gt; float</text>
+  </g>
+
+  <!-- Right column: Return types -->
+  <text x="670" y="100" text-anchor="middle" font-size="15" font-weight="700" fill="#059669">Return Types</text>
+
+  <!-- Return 1: float -->
+  <g transform="translate(460, 115)" filter="url(#shadow)">
+    <rect width="410" height="55" rx="10" fill="white" stroke="#bbf7d0" stroke-width="1.5"/>
+    <rect width="70" height="28" x="12" y="14" rx="6" fill="#ecfdf5"/>
+    <text x="47" y="33" text-anchor="middle" font-size="12" font-weight="700" fill="#059669">float</text>
+    <text x="95" y="27" font-size="12" font-weight="600" fill="#1e293b">Score only</text>
+    <text x="95" y="44" font-size="11" font-family="monospace" fill="#64748b">return 0.85</text>
+  </g>
+
+  <!-- Return 2: tuple -->
+  <g transform="translate(460, 180)" filter="url(#shadow)">
+    <rect width="410" height="55" rx="10" fill="white" stroke="#bbf7d0" stroke-width="1.5"/>
+    <rect width="70" height="28" x="12" y="14" rx="6" fill="#ecfdf5"/>
+    <text x="47" y="33" text-anchor="middle" font-size="12" font-weight="700" fill="#059669">tuple</text>
+    <text x="95" y="27" font-size="12" font-weight="600" fill="#1e293b">Score + reasoning</text>
+    <text x="95" y="44" font-size="11" font-family="monospace" fill="#64748b">return (0.85, "Looks good")</text>
+  </g>
+
+  <!-- Return 3: dict -->
+  <g transform="translate(460, 245)" filter="url(#shadow)">
+    <rect width="410" height="55" rx="10" fill="white" stroke="#bbf7d0" stroke-width="1.5"/>
+    <rect width="70" height="28" x="12" y="14" rx="6" fill="#ecfdf5"/>
+    <text x="47" y="33" text-anchor="middle" font-size="12" font-weight="700" fill="#059669">dict</text>
+    <text x="95" y="27" font-size="12" font-weight="600" fill="#1e293b">Score + reasoning + details</text>
+    <text x="95" y="44" font-size="11" font-family="monospace" fill="#64748b">return {"score": 0.85, "reasoning": ...}</text>
+  </g>
+
+  <!-- Return 4: MetricResult -->
+  <g transform="translate(460, 310)" filter="url(#shadow)">
+    <rect width="410" height="55" rx="10" fill="white" stroke="#bbf7d0" stroke-width="1.5"/>
+    <rect width="105" height="28" x="12" y="14" rx="6" fill="#ecfdf5"/>
+    <text x="65" y="33" text-anchor="middle" font-size="12" font-weight="700" fill="#059669">MetricResult</text>
+    <text x="130" y="27" font-size="12" font-weight="600" fill="#1e293b">Full control</text>
+    <text x="130" y="44" font-size="11" font-family="monospace" fill="#64748b">return MetricResult(score=..., ...)</text>
+  </g>
+
+  <text x="450" y="408" text-anchor="middle" font-size="11" fill="#94a3b8">fasteval - Code as a Judge - Signature &amp; Return Reference - 2026</text>
+</svg>

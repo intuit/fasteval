@@ -1679,6 +1679,55 @@ def metric(
     return decorator
 
 
+# === Code-as-Judge Decorator ===
+
+
+def judge(
+    func: Callable[..., Any],
+    threshold: float = 0.5,
+    weight: float = 1.0,
+    name: Optional[str] = None,
+) -> Callable[[F], F]:
+    """
+    Use a plain function as an evaluation metric (Code as a Judge).
+
+    The function can accept any subset of EvalInput fields as named
+    parameters, or the full EvalInput via an ``eval_input`` parameter.
+    It must return a score (float 0-1), a (score, reasoning) tuple,
+    a dict with a ``score`` key, or a MetricResult.
+
+    Example:
+        def check_tone(actual_output: str, input: str) -> float:
+            return 1.0 if "thank you" in actual_output.lower() else 0.3
+
+        @fe.judge(check_tone, threshold=0.8)
+        def test_support():
+            response = my_agent("Help me")
+            fe.score(response, input="Help me")
+    """
+    from fasteval.metrics.code_judge import CodeJudgeMetric
+
+    metric_name = name or func.__name__
+    instance = CodeJudgeMetric(
+        func=func,
+        name=metric_name,
+        threshold=threshold,
+        weight=weight,
+    )
+
+    def decorator(test_func: F) -> F:
+        config = MetricConfig(
+            metric_type="custom",
+            name=metric_name,
+            threshold=threshold,
+            weight=weight,
+            config={"instance": instance},
+        )
+        return _attach_metric(test_func, config)
+
+    return decorator
+
+
 # === Data Decorators ===
 
 

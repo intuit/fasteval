@@ -9,13 +9,13 @@ sidebar:
     anchor: practical-examples
   - title: Faithfulness vs Other Metrics
     anchor: faithfulness-vs-other-metrics
-  - title: Comprehensive RAG Stack
-    anchor: comprehensive-rag-testing-stack
+  - title: Full RAG Testing Stack
+    anchor: full-rag-testing-stack
 ---
 
 # Faithfulness Metric
 
-The core question for any RAG system: "Is the answer actually based on what we retrieved?" The faithfulness metric answers this by checking whether every claim in the response is supported by the provided context.
+Here's the core question for any RAG system: is the answer actually based on what you retrieved? Faithfulness checks whether every claim in the response is backed by the provided context. If your LLM is making stuff up instead of using the docs, this metric catches it.
 
 ## Quick Example
 
@@ -29,7 +29,7 @@ def test_rag_grounding():
         "Our return policy allows returns within 30 days of purchase.",
         "Items must be in original packaging with receipt.",
     ]
-    
+
     response = my_rag_agent("What's your return policy?", context=docs)
     fe.score(response, context=docs, input="What's your return policy?")
 ```
@@ -44,7 +44,7 @@ def test_rag_grounding():
 
 ## How Scoring Works
 
-The metric extracts claims from the response and checks each one:
+The metric extracts claims from the response and checks each one against the context:
 
 ![Faithfulness Claim Checking](docs/assets/faithfulness-claim-checking.svg)
 
@@ -65,13 +65,13 @@ The metric extracts claims from the response and checks each one:
 @fe.faithfulness(threshold=0.85)
 def test_knowledge_base_qa():
     query = "What are the system requirements?"
-    
+
     # Your retriever gets relevant docs
     docs = retriever.search(query)
-    
+
     # Your LLM generates an answer using those docs
     response = rag_agent(query, context=docs)
-    
+
     # Test: is the response grounded in the docs?
     fe.score(response, context=docs, input=query)
 ```
@@ -82,12 +82,12 @@ def test_knowledge_base_qa():
 @fe.faithfulness(threshold=0.8)
 def test_multi_source_rag():
     query = "Compare product A and product B"
-    
+
     # Retrieve from multiple sources
     product_a_docs = product_db.search("product A specs")
     product_b_docs = product_db.search("product B specs")
     all_docs = product_a_docs + product_b_docs
-    
+
     response = comparison_agent(query, context=all_docs)
     fe.score(response, context=all_docs, input=query)
 ```
@@ -156,7 +156,7 @@ Evaluation Results:
 | **Hallucination** | Does output contain fabrications? | Any LLM output |
 | **Correctness** | Is output semantically correct? | Q&A without context |
 
-**Key difference:** Faithfulness specifically checks against the provided context. Hallucination checks against general factual accuracy.
+The key difference: faithfulness checks specifically against the provided context, while hallucination checks against general factual accuracy.
 
 ```python
 # Use faithfulness for RAG
@@ -166,15 +166,15 @@ def test_rag():
     fe.score(response, context=docs)
 
 # Use hallucination for general LLM output
-@fe.hallucination(threshold=0.85)  
+@fe.hallucination(threshold=0.85)
 def test_llm():
     response = llm(query)
     fe.score(response)
 ```
 
-## Comprehensive RAG Testing Stack
+## Full RAG Testing Stack
 
-For production RAG systems, combine metrics:
+For production RAG systems, we recommend combining metrics:
 
 ```python
 @fe.faithfulness(threshold=0.85)         # Grounded in context?
@@ -184,10 +184,10 @@ For production RAG systems, combine metrics:
 def test_production_rag():
     query = "What's the cancellation policy?"
     expected = "You can cancel within 14 days for a full refund."
-    
+
     docs = retriever.search(query)
     response = rag_agent(query, context=docs)
-    
+
     fe.score(response, expected, context=docs, input=query)
 ```
 
@@ -202,7 +202,7 @@ def test_production_rag():
 
 ## Best Practices
 
-1. **Always pass context**: Faithfulness requires `context=` or `retrieval_context=`
-2. **Test with realistic docs**: Use actual retriever output, not curated examples
-3. **Log failed cases**: Unsupported claims reveal retrieval gaps or hallucination patterns
-4. **Combine with precision/recall**: Low faithfulness + high precision = hallucination problem; Low faithfulness + low recall = retrieval problem
+1. **Always pass context** -- faithfulness requires `context=` or `retrieval_context=`.
+2. **Test with realistic docs** -- use actual retriever output, not hand-picked examples.
+3. **Log failed cases** -- unsupported claims reveal retrieval gaps or hallucination patterns.
+4. **Read the scores together** -- low faithfulness with high precision points to a hallucination problem; low faithfulness with low recall points to a retrieval problem.

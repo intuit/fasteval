@@ -9,51 +9,51 @@ order: 2
 ## Metric Decorators
 
 ### @fe.correctness(threshold)
-Evaluate semantic correctness.
+Evaluates semantic correctness against an expected output.
 
 ### @fe.relevance(threshold)
-Evaluate relevance to input.
+Evaluates relevance to the input query.
 
 ### @fe.hallucination(threshold)
-Detect hallucinations.
+Detects hallucinated content.
 
 ### @fe.toxicity(threshold)
-Detect toxic content.
+Detects toxic content.
 
 ### @fe.bias(threshold)
-Detect biased content.
+Detects biased content.
 
 ### @fe.criteria(criteria_text, threshold)
-Custom criteria evaluation using plain English.
+Evaluates against custom criteria written in plain English.
 
-**Aliases:** `@fe.geval()`, `@fe.g_eval()` (for backward compatibility)
+**Aliases:** `@fe.geval()`, `@fe.g_eval()` (backward-compatible)
 
 ## Deterministic Decorators
 
 ### @fe.contains(case_sensitive)
-Check substring containment.
+Checks substring containment.
 
 ### @fe.exact_match(normalize, case_sensitive)
-Check exact equality.
+Checks exact equality.
 
 ### @fe.rouge(threshold, rouge_type)
-Compute ROUGE scores.
+Computes ROUGE scores.
 
 ### @fe.json_schema(schema)
-Validate JSON schema.
+Validates against a JSON schema.
 
 ## Data Decorators
 
 ### @fe.csv(filepath)
-Load test cases from CSV.
+Loads test cases from a CSV file.
 
 ### @fe.conversation(turns)
-Define conversation tests.
+Defines conversation-based tests.
 
 ### @fe.traces()
-Evaluate production traces.
+Evaluates production traces. See [Production Traces](/docs/advanced/traces).
 
 ## Custom Metric
 
 ### @fe.metric(metric_instance)
-Apply a custom metric.
+Applies a custom metric instance. See [Custom Metrics](/docs/advanced/custom-metrics).

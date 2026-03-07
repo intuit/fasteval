@@ -53,7 +53,7 @@ Vague criteria produce inconsistent scores.
 
 ### Focus on One Thing
 
-Each criteria decorator should measure one aspect. Stack multiple for comprehensive evaluation.
+Each criteria decorator should measure one aspect. Stack multiple for broader evaluation.
 
 ```python
 # Bad: Too many concepts
@@ -172,8 +172,8 @@ test_empathy PASSED
 
 Evaluation Results:
   ✓ criteria:Is the response empathetic...: 0.88 (threshold: 0.80)
-    Reasoning: The response acknowledges the customer's frustration 
-    with phrases like "I completely understand how frustrating this 
+    Reasoning: The response acknowledges the customer's frustration
+    with phrases like "I completely understand how frustrating this
     must be" and offers immediate, concrete help.
 ```
 
@@ -184,20 +184,14 @@ test_empathy FAILED
 
 Evaluation Results:
   ✗ criteria:Is the response empathetic...: 0.52 (threshold: 0.80)
-    Reasoning: The response jumps directly to troubleshooting steps 
-    without acknowledging the customer's expressed frustration about 
+    Reasoning: The response jumps directly to troubleshooting steps
+    without acknowledging the customer's expressed frustration about
     the long wait time.
 ```
 
 ## When to Use Custom Criteria vs Built-in Metrics
 
-| Use Case | Recommendation |
-|----------|---------------|
-| Semantic correctness | Use `@fe.correctness()` — optimized for this |
-| Harmful content | Use `@fe.toxicity()` — trained for safety |
-| Domain-specific needs | Use `@fe.criteria()` with custom criteria |
-| Subjective qualities | Use `@fe.criteria()` (tone, style, readability) |
-| Business requirements | Use `@fe.criteria()` (disclaimers, formatting) |
+For semantic correctness, use `@fe.correctness()` — it's optimized for that job. For detecting harmful content, `@fe.toxicity()` is trained specifically for safety. But for domain-specific needs, subjective qualities like tone or style or readability, and business requirements like disclaimers or formatting rules — that's where `@fe.criteria()` earns its keep.
 
 ## Combining with Built-in Metrics
 
@@ -215,11 +209,7 @@ def test_sales_response():
 
 ## Tips for Reliable Evaluation
 
-1. **Test your criteria**: Run the same test multiple times to ensure consistent scores
-2. **Iterate on wording**: Small changes in criteria can affect results
-3. **Use steps for complex criteria**: Improves consistency
-4. **Set appropriate thresholds**: Start at 0.5, adjust based on results
-5. **Log reasoning**: Use the reasoning output to refine criteria
+Run the same test multiple times to make sure scores are consistent — if they bounce around, your criteria is probably too vague. Small wording changes can shift results, so iterate on phrasing. For anything complex, add evaluation steps. Start your threshold at 0.5 and adjust based on what you see. And always check the reasoning output when you're refining — it'll tell you exactly how the judge is interpreting your criteria.
 
 ## Aliases
 

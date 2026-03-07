@@ -19,11 +19,11 @@ sidebar:
 
 # Harness Basics [Open in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/harness-basics.ipynb)
 
-This page covers the `fasteval-langgraph` harness API in detail: wrapping graphs, inspecting results, configuring hooks, and evaluating tool trajectories.
+Everything starts with wrapping your compiled graph. This page covers the `harness()` API in detail -- how it handles threads, what `ChatResult` gives you, hooks for customization, and tool trajectory evaluation.
 
 ## Wrapping a Graph
 
-The `harness()` function wraps any compiled `StateGraph` for testing:
+Pass any compiled `StateGraph` to `harness()`:
 
 ```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/harness-basics.ipynb#scrollTo=wrap_messages_graph)
 from fasteval_langgraph import harness
@@ -53,7 +53,7 @@ result = await graph.chat("Hello world")
 print(result.response)  # "Echo: Hello world"
 ```
 
-Each `.chat()` call creates a **new thread** automatically, so calls are isolated:
+Each `.chat()` call spins up a fresh thread, so calls are isolated:
 
 ```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/harness-basics.ipynb#scrollTo=new_thread_per_chat)
 r1 = await graph.chat("First")
@@ -65,7 +65,7 @@ assert r2.state["call_count"] == 1
 
 ### Plain TypedDict Graphs
 
-The harness also works with graphs that don't use `MessagesState`:
+Don't use `MessagesState`? No problem -- the harness works with plain `TypedDict` graphs too:
 
 ```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/harness-basics.ipynb#scrollTo=wrap_plain_graph)
 from typing import TypedDict
@@ -90,7 +90,7 @@ print(result.response)  # "{'input': '5 + 3', 'result': 'Calculated: 5 + 3'}"
 
 ## Inspecting ChatResult
 
-Every `.chat()` call returns a `ChatResult` with four fields:
+Every `.chat()` returns a `ChatResult` with four fields:
 
 ```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/harness-basics.ipynb#scrollTo=inspect_chat_result)
 result = await graph.chat("Hello")
@@ -127,7 +127,7 @@ for step in result.trace:
 
 ## Auto-Detection
 
-The harness automatically detects whether your graph uses `MessagesState` or a plain `TypedDict` and configures itself accordingly:
+The harness figures out whether your graph uses `MessagesState` or a plain `TypedDict` and configures itself accordingly:
 
 | Behavior | MessagesState | Plain TypedDict |
 |----------|:---:|:---:|
@@ -147,7 +147,7 @@ assert plain_graph.has_messages_state is False
 
 ## Custom Hooks
 
-Override any auto-detected behavior with custom hooks:
+Override any auto-detected behavior when you need to.
 
 ### input_fn
 
@@ -210,7 +210,7 @@ result = await graph.chat(
 
 ## Graph Introspection
 
-The harness exposes useful properties for assertions and debugging:
+The harness exposes a few properties that are handy for assertions and debugging:
 
 ```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/harness-basics.ipynb#scrollTo=graph_introspection)
 graph = harness(router_compiled)
@@ -228,7 +228,7 @@ print(graph.entry)  # "classifier"
 
 ## Tool Trajectory via Harness
 
-When your agent uses tools, combine the harness with fasteval's tool metrics. Here's the complete pattern:
+When your agent uses tools, combine the harness with fasteval's tool metrics. Here's the full pattern:
 
 ```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/harness-basics.ipynb#scrollTo=tool_trajectory)
 from fasteval.models import ExpectedTool, ToolCall
@@ -258,7 +258,7 @@ async def test_weather_tool():
 
 ### Argument Matching with Fuzzy Search
 
-For search queries where exact matching is too strict, use fuzzy matching:
+When exact matching is too strict (search queries, for example), use fuzzy matching:
 
 ```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/harness-basics.ipynb#scrollTo=fuzzy_args_match)
 @fe.tool_args_match(threshold=0.8, fuzzy=True)

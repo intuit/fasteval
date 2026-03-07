@@ -21,37 +21,19 @@ sidebar:
 
 ## Overview
 
-The fasteval-langfuse plugin requires configuration to connect to your Langfuse instance and control evaluation behavior. This page covers all configuration options, from basic authentication to advanced performance tuning.
-
-Configuration can be provided through three mechanisms, listed in order of precedence:
-
-1. **Decorator parameters** — Override settings for specific tests
-2. **Code-based configuration** — Set defaults programmatically via `configure_langfuse()`
-3. **Environment variables** — Provide credentials and defaults at the system level
-
-For most deployments, environment variables handle authentication while code-based configuration sets operational defaults. Decorator parameters allow per-test customization when needed.
+Three mechanisms control plugin behavior, listed by precedence: decorator parameters (highest), code-based configuration via `configure_langfuse()`, and environment variables (lowest). Most teams use environment variables for credentials and code config for operational defaults, then override per-test with decorator parameters when needed.
 
 ## Authentication
 
 ### Required Credentials
 
-Connecting to Langfuse requires two API keys:
+Connecting to Langfuse requires two API keys: a **Public Key** (`LANGFUSE_PUBLIC_KEY`, starts with `pk-lf-`) that identifies your project, and a **Secret Key** (`LANGFUSE_SECRET_KEY`, starts with `sk-lf-`) that authenticates requests.
 
-| Credential | Environment Variable | Description |
-|------------|---------------------|-------------|
-| Public Key | `LANGFUSE_PUBLIC_KEY` | Identifies your project. Starts with `pk-lf-` |
-| Secret Key | `LANGFUSE_SECRET_KEY` | Authenticates requests. Starts with `sk-lf-` |
-
-**Obtaining API Keys:**
-
-1. Log in to your Langfuse dashboard
-2. Navigate to **Settings** → **API Keys**
-3. Create a new key pair or copy existing credentials
-4. Store securely—secret keys cannot be retrieved after creation
+To get these, log into your Langfuse dashboard, go to **Settings** > **API Keys**, and create a new key pair or copy existing credentials. Secret keys can't be retrieved after creation, so store them safely.
 
 ### Environment Variables (Recommended)
 
-For production deployments and CI/CD pipelines, environment variables provide secure, externalized configuration:
+For production and CI/CD, environment variables are the way to go:
 
 ```bash
 # Required
@@ -62,16 +44,11 @@ export LANGFUSE_SECRET_KEY="sk-lf-..."
 export LANGFUSE_HOST="https://cloud.langfuse.com"
 ```
 
-**Security Best Practices:**
-
-- Never commit credentials to version control
-- Use secrets management (AWS Secrets Manager, HashiCorp Vault, etc.) in production
-- Rotate keys periodically and after any suspected exposure
-- Use separate keys for development, staging, and production environments
+Don't commit credentials to version control. Use a secrets manager (AWS Secrets Manager, HashiCorp Vault, etc.) in production. Rotate keys periodically, and keep separate keys for dev, staging, and prod.
 
 ### Code-Based Configuration
 
-For explicit control or when environment variables aren't practical:
+When environment variables aren't practical:
 
 ```python
 from fasteval_langfuse import configure_langfuse, LangfuseConfig
@@ -83,16 +60,11 @@ configure_langfuse(LangfuseConfig(
 ))
 ```
 
-**When to Use Code Configuration:**
-
-- Development and local testing where environment variables are inconvenient
-- Dynamic configuration based on runtime conditions
-- Integration tests that need isolated Langfuse projects
-- Applications that manage multiple Langfuse connections
+This works well for local development, dynamic configuration, integration tests with isolated projects, and apps managing multiple Langfuse connections.
 
 ### Self-Hosted Langfuse
 
-If you operate a self-hosted Langfuse deployment, specify your instance URL:
+Point to your instance URL:
 
 ```bash
 export LANGFUSE_HOST="https://langfuse.your-company.com"
@@ -106,13 +78,11 @@ configure_langfuse(LangfuseConfig(
 ))
 ```
 
-The plugin communicates via Langfuse's REST API, so ensure your self-hosted instance is network-accessible from your evaluation environment.
+The plugin talks to Langfuse over its REST API, so make sure your instance is reachable from wherever you're running evaluations.
 
 ## Configuration Options
 
 ### LangfuseConfig Reference
-
-The `LangfuseConfig` class accepts the following parameters:
 
 ```python
 from fasteval_langfuse import LangfuseConfig
@@ -122,14 +92,14 @@ config = LangfuseConfig(
     public_key: str = None,           # Langfuse public API key
     secret_key: str = None,           # Langfuse secret API key
     host: str = "https://cloud.langfuse.com",  # Langfuse instance URL
-    
+
     # Defaults
     default_project: str = None,      # Default project for trace queries
-    
+
     # Score Reporting
     auto_push_scores: bool = True,    # Automatically push scores to Langfuse
     score_name_prefix: str = "fasteval_",  # Prefix for score names
-    
+
     # Performance
     batch_size: int = 50,             # Traces per API request
     max_parallel_evals: int = 5,      # Concurrent evaluation workers
@@ -141,7 +111,7 @@ config = LangfuseConfig(
 
 #### `public_key` and `secret_key`
 
-Your Langfuse API credentials. If not provided, the plugin reads from `LANGFUSE_PUBLIC_KEY` and `LANGFUSE_SECRET_KEY` environment variables.
+Your Langfuse API credentials. Falls back to `LANGFUSE_PUBLIC_KEY` and `LANGFUSE_SECRET_KEY` environment variables if not set.
 
 ```python
 # Explicit credentials
@@ -171,7 +141,7 @@ LangfuseConfig(host="http://localhost:3000")
 
 #### `default_project`
 
-The default project name used when `@langfuse_traces` doesn't specify a project. Setting this allows shorter decorator syntax:
+Default project name when `@langfuse_traces` doesn't specify one. Keeps your decorator syntax shorter:
 
 ```python
 configure_langfuse(LangfuseConfig(default_project="production"))
@@ -184,18 +154,7 @@ def test_traces(trace_id, input, output, context, metadata):
 
 #### `auto_push_scores`
 
-Controls whether evaluation scores are automatically pushed to Langfuse after each trace evaluation.
-
-| Value | Behavior |
-|-------|----------|
-| `True` (default) | Scores appear in Langfuse UI immediately after evaluation |
-| `False` | Scores only in pytest output; Langfuse traces remain unchanged |
-
-**When to Disable:**
-
-- Dry-run evaluations to preview results without affecting production data
-- Development/debugging where you don't want to pollute Langfuse with test scores
-- Custom score reporting logic that handles pushing differently
+When `True` (the default), scores show up in the Langfuse UI right after evaluation. Set to `False` for dry runs, dev/debugging sessions where you don't want test scores cluttering Langfuse, or when you've got custom reporting logic.
 
 ```python
 # Disable globally
@@ -209,7 +168,7 @@ def test_dry_run(trace_id, input, output, context, metadata):
 
 #### `score_name_prefix`
 
-Prefix applied to all score names when pushing to Langfuse. Helps distinguish fasteval scores from other scoring systems.
+Applied to all score names when pushing to Langfuse. Helps you tell fasteval scores apart from other scoring systems.
 
 ```python
 # Default prefix
@@ -225,16 +184,11 @@ LangfuseConfig(score_name_prefix="")
 # Creates: correctness, relevance, aggregate
 ```
 
-**Tip:** Using a prefix makes it easy to filter scores in Langfuse UI: `score.fasteval_* < 0.8`
+**Tip:** A prefix makes filtering easy in the Langfuse UI: `score.fasteval_* < 0.8`
 
 #### `batch_size`
 
-Number of traces fetched per Langfuse API request. Affects memory usage and API efficiency.
-
-| Value | Trade-off |
-|-------|-----------|
-| Lower (e.g., 20) | Less memory, more API calls, slower total fetch time |
-| Higher (e.g., 100) | More memory, fewer API calls, faster total fetch time |
+Traces fetched per API request. Lower values (e.g., 20) use less memory but make more API calls. Higher values (e.g., 100) fetch faster but need more memory.
 
 ```python
 # Default
@@ -249,12 +203,7 @@ LangfuseConfig(batch_size=100)
 
 #### `max_parallel_evals`
 
-Maximum number of concurrent evaluation operations. Each evaluation involves an LLM judge call.
-
-| Value | Trade-off |
-|-------|-----------|
-| Lower (e.g., 2) | Slower evaluation, easier to stay within rate limits |
-| Higher (e.g., 10) | Faster evaluation, higher concurrent LLM API usage |
+Concurrent evaluation workers. Each one makes an LLM judge call. Lower values (e.g., 2) are safer for rate-limited providers; higher values (e.g., 10) speed things up.
 
 ```python
 # Default
@@ -269,7 +218,7 @@ LangfuseConfig(max_parallel_evals=10)
 
 #### `retry_on_failure`
 
-Controls retry behavior for failed Langfuse API calls (fetching traces, pushing scores).
+Retries failed Langfuse API calls (fetching traces, pushing scores). Set to `False` if you want to fail fast during debugging.
 
 ```python
 # Default: retry on transient failures
@@ -283,7 +232,7 @@ LangfuseConfig(retry_on_failure=False)
 
 ### Development
 
-Local development typically uses a separate Langfuse project to avoid polluting production data:
+Use a separate project to keep test data out of production:
 
 ```python
 # conftest.py or test setup
@@ -299,7 +248,7 @@ if os.getenv("ENV") != "production":
 
 ### CI/CD Pipelines
 
-In CI environments, credentials come from secrets management:
+Pull credentials from secrets management:
 
 ```yaml
 # GitHub Actions example
@@ -313,15 +262,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      
+
       - name: Install dependencies
         run: pip install fasteval-core fasteval-langfuse
-      
+
       - name: Run evaluations
         env:
           LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
@@ -331,7 +280,7 @@ jobs:
 
 ### Production Monitoring
 
-Production configurations prioritize reliability and throughput:
+Prioritize reliability and throughput:
 
 ```python
 configure_langfuse(LangfuseConfig(
@@ -346,7 +295,7 @@ configure_langfuse(LangfuseConfig(
 
 ### Multiple Environments
 
-Use environment variables to switch between environments:
+Switch between environments with a single variable:
 
 ```python
 import os
@@ -361,8 +310,6 @@ configure_langfuse(LangfuseConfig(
 ))
 ```
 
-Run against different environments:
-
 ```bash
 ENVIRONMENT=staging pytest tests/evaluation/
 ENVIRONMENT=production pytest tests/evaluation/
@@ -372,7 +319,7 @@ ENVIRONMENT=production pytest tests/evaluation/
 
 ### Per-Test Overrides
 
-Decorator parameters override global configuration for specific tests:
+Decorator parameters override global config for individual tests:
 
 ```python
 # Global config: auto_push_scores=True, default_project="production"
@@ -412,12 +359,12 @@ traces, total = fetcher.fetch_and_sample(
 
 ### Configuration Precedence
 
-When the same setting is specified at multiple levels, higher precedence wins:
+When the same setting appears at multiple levels, higher precedence wins:
 
 ```
 1. Decorator parameters     (highest)
-2. configure_langfuse()     
-3. Environment variables    
+2. configure_langfuse()
+3. Environment variables
 4. Built-in defaults        (lowest)
 ```
 
@@ -441,55 +388,21 @@ def test_traces(trace_id, input, output, context, metadata):
 
 **Error:** `ValueError: Langfuse credentials required`
 
-**Cause:** Missing or invalid API keys
-
-**Solution:**
-1. Verify environment variables are set: `echo $LANGFUSE_PUBLIC_KEY`
-2. Check for typos in key values
-3. Ensure keys are for the correct Langfuse project
-4. If using code config, verify keys are passed correctly
+Missing or invalid API keys. Verify your environment variables are set (`echo $LANGFUSE_PUBLIC_KEY`), check for typos, confirm the keys belong to the right project, and double-check code config if you're using it.
 
 ### Connection Errors
 
 **Error:** `ConnectionError: Unable to connect to Langfuse`
 
-**Cause:** Network issues or incorrect host URL
-
-**Solution:**
-1. Verify `LANGFUSE_HOST` points to the correct URL
-2. Check network connectivity to Langfuse
-3. For self-hosted: ensure the instance is running and accessible
-4. Check for proxy or firewall issues
+Network issue or wrong host URL. Verify `LANGFUSE_HOST`, check connectivity, make sure self-hosted instances are up and reachable, and look for proxy or firewall problems.
 
 ### Empty Trace Results
 
-**Issue:** Evaluation runs but finds no traces
-
-**Possible Causes:**
-- Incorrect project name
-- Filters too restrictive (tags, time range)
-- Traces haven't been flushed to Langfuse yet
-
-**Solution:**
-1. Verify project name matches exactly (case-sensitive)
-2. Widen time range: `time_range="last_7d"`
-3. Remove tag filters temporarily to test
-4. Check Langfuse UI to confirm traces exist
+Evaluation runs but finds zero traces. Usually this means the project name doesn't match exactly (it's case-sensitive), filters are too narrow, or traces haven't flushed to Langfuse yet. Try widening the time range to `last_7d`, removing tag filters temporarily, and checking the Langfuse UI to confirm traces exist.
 
 ### Score Push Failures
 
-**Issue:** Evaluation completes but scores don't appear in Langfuse
-
-**Possible Causes:**
-- `auto_push_scores=False` is set
-- Network timeout during score push
-- Invalid trace IDs
-
-**Solution:**
-1. Check `auto_push_scores` setting
-2. Enable `retry_on_failure=True`
-3. Check Langfuse API status
-4. Review pytest output for error messages
+Evaluation finishes but scores don't show up in Langfuse. Check that `auto_push_scores` isn't set to `False`, enable `retry_on_failure=True`, verify the Langfuse API is healthy, and look at pytest output for error messages.
 
 ## Next Steps
 

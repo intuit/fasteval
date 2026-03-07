@@ -42,18 +42,17 @@ async def test_agent():
 
 ## Key Features
 
-- **Single wrapper, not a framework** -- `GraphHarness` wraps any compiled `StateGraph`. One class, four methods.
-- **Auto-detects graph type** -- Detects `MessagesState` vs plain `TypedDict` and sets sensible defaults for input/output handling.
-- **Per-node trace capture** -- Every `.chat()` call records which nodes ran and what state updates each produced.
-- **Fluent node mocking** -- Replace any node with `mock("rag").updates({...}).goto("planner")`. Supports static, dynamic, scoped, and immutable copy patterns.
-- **Multi-turn sessions** -- `.session()` holds a thread_id, auto-detects interrupts, and handles resume.
-- **Layered config/context** -- Set defaults at constructor level, override per-session, override per-call. Deep-merged automatically.
-- **Single node execution** -- `.node("classifier").run(messages=[...])` executes one node in isolation and parses `Command` routing.
-- **Works with any LangGraph agent** -- No assumptions about state schema, node names, routing patterns, or interrupt strategies.
+It's a single wrapper, not a framework. `GraphHarness` wraps any compiled `StateGraph` -- one class, four methods. It auto-detects `MessagesState` vs plain `TypedDict` and sets sensible defaults for input/output handling.
+
+Every `.chat()` call records which nodes ran and what state updates each produced. You can replace any node with `mock("rag").updates({...}).goto("planner")`, supporting static, dynamic, scoped, and immutable copy patterns.
+
+Sessions hold a `thread_id`, auto-detect interrupts, and handle resume. Config and context are layered -- set defaults at the constructor, override per-session, override per-call. Everything deep-merges automatically. And `.node("classifier").run(messages=[...])` executes one node in isolation and parses `Command` routing.
+
+No assumptions about state schema, node names, routing patterns, or interrupt strategies.
 
 ## Architecture
 
-The plugin consists of one class (`GraphHarness`), one factory function (`harness()`), one builder (`NodeMock` via `mock()`), and three data models:
+The plugin is four files:
 
 ```
 fasteval_langgraph/

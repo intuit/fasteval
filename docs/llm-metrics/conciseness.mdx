@@ -15,7 +15,7 @@ sidebar:
 
 # Conciseness Metric
 
-The conciseness metric evaluates whether responses are efficiently written without unnecessary verbosity, repetition, or filler content. It measures information density — how much useful information is conveyed per word.
+LLMs love to ramble. The conciseness metric measures information density — how much useful content you're getting per word, and whether the response is padded with filler, repetition, or unnecessary qualifiers.
 
 ## Quick Example
 
@@ -104,29 +104,15 @@ Evaluation Results:
 
 ## Choosing Your Threshold
 
-| Use Case | Suggested Threshold |
-|----------|---------------------|
-| General responses | 0.6 - 0.7 |
-| Summaries | 0.7 - 0.8 |
-| API/error messages | 0.8 - 0.9 |
-| One-liner responses | 0.85+ |
+General responses are fine at 0.6-0.7. Summaries should hit 0.7-0.8 since brevity is the whole point. API and error messages need 0.8-0.9 — nobody wants a paragraph-length error. One-liner responses should target 0.85 or above.
 
 ## When to Use Conciseness
 
-**Good for:**
-- Summary generation
-- API response messages
-- Documentation snippets
-- Chatbot responses where brevity matters
-
-**Consider alternatives for:**
-- Educational content (may need detail) — use `@fe.completeness()`
-- Creative writing — use `@fe.criteria()` with custom criteria
-- Technical explanations — balance with `@fe.completeness()`
+Conciseness works great for summary generation, API response messages, documentation snippets, and chatbot responses where brevity matters. For educational content where you actually need detail, reach for `@fe.completeness()` instead. Creative writing is better served by `@fe.criteria()` with custom criteria. And for technical explanations, we recommend balancing conciseness with `@fe.completeness()` so you don't cut too much.
 
 ## Combining with Other Metrics
 
-Conciseness alone doesn't guarantee quality. Combine with other metrics:
+Conciseness alone doesn't guarantee quality. A one-word wrong answer is very concise.
 
 ```python
 @fe.conciseness(threshold=0.7)    # Is it brief?
@@ -137,4 +123,4 @@ def test_quality_summary():
     fe.score(response, input="Summarize the quarterly report")
 ```
 
-This ensures the response is brief but still complete and readable.
+What we've found is that the sweet spot is pairing conciseness with completeness. They push against each other in a productive way — you get responses that cover the material without padding.

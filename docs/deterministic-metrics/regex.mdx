@@ -15,7 +15,7 @@ sidebar:
 
 # Regex Metric
 
-The regex metric validates that output matches a regular expression pattern. This is ideal for structured outputs like phone numbers, emails, IDs, dates, or any format that can be expressed as a pattern.
+Pattern-match your output against a regular expression. It's the right tool when you need to verify structured formats like phone numbers, emails, dates, or any output that follows a predictable shape.
 
 ## Quick Example
 
@@ -39,10 +39,7 @@ def test_phone_format():
 
 ## How It Works
 
-- Returns **1.0** if the pattern matches
-- Returns **0.0** if the pattern doesn't match
-
-By default (`full_match=True`), the entire output must match the pattern. Set `full_match=False` to search for the pattern anywhere in the output.
+Returns **1.0** if the pattern matches, **0.0** if it doesn't. By default (`full_match=True`), the entire output must match. Set `full_match=False` to search for the pattern anywhere in the output.
 
 ## Practical Examples
 
@@ -174,16 +171,9 @@ Evaluation Results:
 
 ## When to Use Regex
 
-**Good for:**
-- Structured data formats (phone, email, date)
-- Simple yes/no or keyword responses
-- ID or code format validation
-- Checking for presence of specific patterns
+We'd reach for regex when you're validating structured data formats (phone, email, date), constraining responses to simple yes/no or keyword answers, checking ID or code formats, or looking for specific patterns in longer text.
 
-**Consider alternatives for:**
-- Complex JSON validation — use `@fe.json()` with Pydantic
-- Semantic content validation — use LLM metrics
-- Substring containment — use `@fe.contains()` for simplicity
+In practice, though, there are better options for some use cases. For complex JSON validation, use `@fe.json()` with Pydantic. For semantic content checks, go with LLM metrics. And if you just need to confirm a substring is present, `@fe.contains()` is simpler.
 
 ## Combining with Other Metrics
 

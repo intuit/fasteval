@@ -6,7 +6,7 @@ order: 5
 
 # Multi-Modal RAG Metrics
 
-Evaluate RAG systems that work with documents containing text, tables, images, and figures.
+When your RAG system handles documents with text, tables, images, and figures all mixed together, you need metrics that understand every modality. That's what these are for.
 
 ## Installation
 
@@ -18,7 +18,7 @@ pip install fasteval-core[vision]
 
 ### `@fe.multimodal_faithfulness`
 
-Evaluate if the response is faithful to multi-modal context (text + images).
+Evaluates whether the response stays faithful to multi-modal context — both text and images. It checks that claims are supported by the text context, supported by visual content, and that nothing unsupported sneaks in from either modality.
 
 ```python
 import fasteval as fe
@@ -39,14 +39,9 @@ def test_document_qa():
     )
 ```
 
-**Checks:**
-- Claims supported by text context
-- Claims supported by visual content
-- No unsupported claims from either modality
-
 ### `@fe.table_extraction`
 
-Evaluate accuracy of table data extraction from document images.
+Measures accuracy when extracting table data from document images.
 
 ```python
 @fe.table_extraction(threshold=0.9)
@@ -83,7 +78,7 @@ def test_table_extraction():
 
 ### `@fe.figure_reference`
 
-Evaluate if the response correctly references figures and charts in documents.
+Checks whether the response correctly references figures and charts. It verifies that references are accurate, figure numbers and labels are attributed properly, and data cited from figures is correct.
 
 ```python
 @fe.figure_reference(threshold=0.8)
@@ -99,14 +94,9 @@ def test_figure_citation():
     )
 ```
 
-**Checks:**
-- References to figures are accurate
-- Figure numbers/labels correctly attributed
-- Data cited from figures is correct
-
 ### `@fe.cross_modal_coherence`
 
-Evaluate coherence between text and visual elements.
+Evaluates coherence between text and visual elements. Does the text accurately describe what's in the image? Are there contradictions? Is the style consistent across modalities?
 
 ```python
 @fe.cross_modal_coherence(threshold=0.8)
@@ -118,14 +108,9 @@ def test_caption_coherence():
     )
 ```
 
-**Checks:**
-- Text accurately describes visual content
-- No contradictions between text and images
-- Consistent style/tone across modalities
-
 ### `@fe.document_understanding`
 
-Evaluate understanding of complex documents with mixed content types.
+Evaluates how well the model grasps complex documents with mixed content types — correct interpretation of document structure, accurate reading of tables/forms/figures, and integration of context from multiple sections.
 
 ```python
 @fe.document_understanding(threshold=0.8)
@@ -142,11 +127,6 @@ def test_contract_qa():
     )
 ```
 
-**Checks:**
-- Correct interpretation of document structure
-- Tables, forms, and figures read accurately
-- Context from multiple sections integrated
-
 ## Complete Multi-Modal RAG Example
 
 ```python
@@ -158,20 +138,20 @@ from fasteval import ImageInput, MultiModalContext
 @fe.figure_reference(threshold=0.8)
 def test_financial_report_qa():
     """Evaluate QA over a financial report with charts and tables."""
-    
+
     query = "Compare Q3 and Q4 revenue and explain the trend"
-    
+
     # Retrieve relevant content
     text_chunks = retriever.get_text_chunks(query, doc="report.pdf")
     relevant_images = retriever.get_images(query, doc="report.pdf")
-    
+
     # Generate response
     response = llm.generate(
         query=query,
         context=text_chunks,
         images=relevant_images
     )
-    
+
     fe.score(
         actual_output=response,
         context=text_chunks,
@@ -234,10 +214,10 @@ from langchain.vectorstores import Chroma
 def test_langchain_rag():
     # Your LangChain RAG setup
     qa_chain = RetrievalQA.from_chain_type(...)
-    
+
     result = qa_chain.run(query)
     retrieved_docs = retriever.get_relevant_documents(query)
-    
+
     fe.score(
         actual_output=result,
         context=[doc.page_content for doc in retrieved_docs],
@@ -248,8 +228,4 @@ def test_langchain_rag():
 
 ## Best Practices
 
-1. **Include both text and images** - Multi-modal faithfulness requires context from both modalities
-2. **Use page-level images for PDFs** - Convert PDF pages to images for visual context
-3. **Provide expected_fields for extraction** - More precise than full text comparison for tables
-4. **Test edge cases** - Include queries that span multiple tables or figures
-5. **Track source attribution** - Include page numbers in metadata for debugging
+Multi-modal faithfulness needs context from both modalities, so always include text and images together. Convert PDF pages to images for visual context — page-level images work best. When evaluating table extraction, use `expected_fields` instead of full text comparison for more precise results. Make sure to test queries that span multiple tables or figures, since those are the cases most likely to break. And include page numbers in your metadata; you'll thank yourself when debugging.

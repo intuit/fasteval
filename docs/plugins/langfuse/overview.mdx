@@ -23,127 +23,63 @@ sidebar:
 
 ## Introduction
 
-The **fasteval-langfuse** plugin connects two critical aspects of LLM application development: production observability and systematic quality evaluation. It enables engineering teams to evaluate real production traces captured by [Langfuse](https://langfuse.com) using fasteval's LLM-as-judge metrics, creating a closed-loop system where production insights directly inform quality improvements.
+The **fasteval-langfuse** plugin lets you evaluate real production traces from [Langfuse](https://langfuse.com) using fasteval's LLM-as-judge metrics. You're already capturing traces. This plugin scores them automatically and pushes results back to Langfuse so you can see quality data right next to your operational data.
 
-This plugin is designed for teams who:
-
-- Already use Langfuse to capture production traces from their LLM applications
-- Want to move beyond manual trace review to automated, systematic evaluation
-- Need to understand whether their LLM responses are actually meeting quality standards
-- Require cost-effective evaluation that scales with production volume
+It's built for teams that use Langfuse for observability and want to go beyond eyeballing traces — automated evaluation on a schedule, with scores that actually mean something.
 
 ## The Evaluation Gap
 
-Modern LLM applications face a fundamental challenge: **observability is not evaluation**. Teams invest heavily in instrumenting their applications with Langfuse, gaining visibility into every LLM call, every prompt, and every response. Yet this visibility alone doesn't answer the critical question: *"Are these responses actually good?"*
+You've instrumented your app. You can see every prompt and every response in Langfuse. But visibility alone doesn't tell you whether the responses are any good.
 
-### The Problem with Traditional Approaches
+Manual review doesn't scale past a few hundred traces a day. Synthetic test suites can't capture the weird stuff real users do — slang, typos, follow-up questions out of nowhere. And periodic offline evaluations create a weeks-long delay between "something broke" and "we noticed."
 
-**Manual Review Doesn't Scale**
-
-Reviewing production traces manually works for small volumes, but becomes impractical as applications scale. A customer support chatbot handling 10,000 conversations daily cannot have each response reviewed by a human. Teams typically resort to spot-checking a handful of traces, which provides limited statistical confidence.
-
-**Synthetic Tests Don't Reflect Reality**
-
-Traditional unit tests evaluate against predetermined inputs and expected outputs. While valuable for catching regressions, synthetic tests cannot capture the diversity of real user queries. Production users ask questions in unexpected ways, use slang, make typos, and reference context that test suites rarely anticipate.
-
-**Offline Evaluation Is Disconnected**
-
-Many teams run periodic evaluation campaigns—manually exporting data, running analysis scripts, and generating reports. This approach creates a disconnect between evaluation and production, with delays measured in weeks rather than hours. By the time issues are identified, they may have affected thousands of users.
-
-### The Solution: Continuous Production Evaluation
-
-The fasteval-langfuse plugin bridges this gap by enabling automated evaluation of production data:
-
-1. **Production traces already exist** in Langfuse from your instrumented application
-2. **Evaluation runs automatically** on a schedule or on-demand via pytest
-3. **Scores flow back** to Langfuse, creating a unified quality dashboard
-4. **Statistical sampling** keeps costs manageable even at high volume
-
-This creates a continuous feedback loop where quality issues are identified within hours, not weeks.
+The fix is straightforward: evaluate production data continuously. Your traces already exist in Langfuse. The plugin runs evaluations on a schedule (or on-demand via pytest), pushes scores back to each trace, and uses statistical sampling to keep costs under control. Quality issues show up in hours, not weeks.
 
 ## How It Works
 
-The plugin operates through a simple but powerful workflow:
+The plugin follows a five-step workflow:
 
 ![Langfuse Integration Architecture](/docs/assets/langfuse-architecture.svg)
 
 ### Step 1: Trace Collection (Existing Infrastructure)
 
-Your LLM application already sends traces to Langfuse using the Langfuse SDK. Each trace captures the input query, the LLM's response, any retrieved context, and custom metadata. This step requires no changes—the plugin leverages your existing observability infrastructure.
+Your app already sends traces to Langfuse via the SDK. Each trace captures the input, response, any retrieved context, and custom metadata. Nothing changes here — the plugin works with what you've already got.
 
 ### Step 2: Trace Fetching
 
-When you run an evaluation test, the `@langfuse_traces` decorator connects to Langfuse's API and fetches traces matching your criteria. You can filter by:
-
-- **Project**: Target specific applications or environments
-- **Tags**: Filter by user type, feature area, or custom labels
-- **Time range**: Focus on recent traces or specific time periods
-- **User/Session**: Evaluate specific users or conversation sessions
+When you run an evaluation test, the `@langfuse_traces` decorator connects to Langfuse's API and fetches traces matching your criteria. You can filter by project, tags, time range, or specific users/sessions.
 
 ### Step 3: Intelligent Sampling
 
-For high-volume applications, evaluating every trace is cost-prohibitive. The plugin provides five built-in sampling strategies that let you evaluate a representative subset:
-
-- **Random sampling**: Unbiased selection for general quality monitoring
-- **Stratified sampling**: Ensure representation across user segments
-- **Score-based sampling**: Focus evaluation budget on low-quality interactions
-- **Recent-first sampling**: Prioritize the latest traces for timely feedback
-- **No sampling**: Evaluate all traces when completeness matters
+Evaluating every trace gets expensive fast. The plugin ships with five sampling strategies — random, stratified, score-based, recent-first, and no-sampling — so you can evaluate a representative subset without blowing your budget.
 
 ### Step 4: Metric Evaluation
 
-Each sampled trace is evaluated using fasteval's LLM-as-judge metrics. These metrics use a language model to assess quality dimensions like:
-
-- **Correctness**: Is the response factually accurate?
-- **Faithfulness**: Does the response stay grounded in provided context?
-- **Relevance**: Does the response address the user's actual question?
-- **Hallucination**: Does the response contain fabricated information?
-
-The evaluation happens locally in your test environment, giving you full control over which LLM provider and model performs the judging.
+Each sampled trace gets evaluated using fasteval's LLM-as-judge metrics. These assess things like correctness, faithfulness, relevance, and hallucination. The evaluation runs locally in your test environment, so you control which LLM provider does the judging.
 
 ### Step 5: Score Synchronization
 
-After evaluation, scores are automatically pushed back to each trace in Langfuse. This creates a unified view where you can:
-
-- See quality scores alongside user feedback and operational metrics
-- Filter traces by quality (e.g., "show all traces with correctness < 0.7")
-- Build dashboards tracking quality trends over time
-- Set up alerts when quality drops below acceptable thresholds
+After evaluation, scores are pushed back to each trace in Langfuse automatically. From there you can filter traces by quality, build dashboards tracking trends over time, and set up alerts when scores drop.
 
 ## Core Concepts
 
 ### Traces vs. Datasets
 
-The plugin supports two distinct evaluation patterns:
+The plugin supports two evaluation patterns:
 
-**Trace Evaluation** (`@langfuse_traces`)
+**Trace Evaluation** (`@langfuse_traces`) evaluates real production data. Use it for continuous monitoring, debugging live issues, and understanding how users actually interact with your app.
 
-Evaluates real production data captured by Langfuse. Use this for:
-- Continuous production monitoring
-- Debugging quality issues in live traffic
-- Understanding how real users interact with your application
-
-**Dataset Evaluation** (`@langfuse_dataset`)
-
-Evaluates against curated test sets stored in Langfuse. Use this for:
-- Regression testing before deployments
-- A/B testing different prompts or models
-- Benchmarking against golden reference data
+**Dataset Evaluation** (`@langfuse_dataset`) evaluates against curated test sets stored in Langfuse. Use it for regression testing, A/B testing prompts or models, and benchmarking against golden references.
 
 ### The Decorator Pattern
 
-Both decorators follow a similar pattern: they wrap a test function that receives data as parameters. When the test runs, the decorator:
+Both decorators wrap a test function that receives data as parameters. When the test runs, the decorator fetches traces or dataset items, calls your function once per item, collects results, and reports outcomes through pytest (and optionally back to Langfuse).
 
-1. Fetches traces or dataset items from Langfuse
-2. Calls your test function once per item
-3. Collects evaluation results
-4. Reports outcomes through pytest and (optionally) back to Langfuse
-
-This design integrates naturally with existing pytest workflows, CI/CD pipelines, and developer tooling.
+This fits naturally into existing pytest workflows and CI/CD pipelines.
 
 ### Automatic Score Reporting
 
-By default, evaluation results are pushed back to Langfuse as scores attached to each trace. This happens automatically without additional code:
+By default, evaluation results get pushed back to Langfuse as scores on each trace:
 
 ```
 After evaluation, each trace in Langfuse displays:
@@ -220,7 +156,7 @@ import fasteval as fe
 def test_production_quality(trace_id, input, output, context, metadata):
     """
     Evaluate 200 random traces from customer support interactions.
-    
+
     Parameters are populated automatically from each trace:
     - trace_id: Unique identifier for score reporting
     - input: The user's query
@@ -241,7 +177,7 @@ pytest test_production.py -v
 
 ```
 ========================= test session starts ==========================
-collecting ... 
+collecting ...
 Evaluating 200/5,432 traces (3.7% sample, strategy=RandomSamplingStrategy)
 
 test_production.py::test_production_quality PASSED
@@ -270,7 +206,7 @@ import fasteval as fe
 def test_golden_dataset(input, expected_output):
     """
     Validate agent against golden reference answers.
-    
+
     Parameters come from dataset item fields:
     - input: The test query
     - expected_output: The reference answer to compare against
@@ -283,43 +219,25 @@ def test_golden_dataset(input, expected_output):
 
 ### Ideal Use Cases
 
-**Continuous Production Monitoring**
+**Continuous Production Monitoring** — Run hourly or daily evaluations on a sample of production traces. Catch quality degradation before users complain.
 
-Run hourly or daily evaluations on a sample of production traces. Detect quality degradation before users complain.
+**Root Cause Analysis** — When user feedback flags issues, evaluate all traces from affected users or time periods to find patterns.
 
-**Root Cause Analysis**
+**Pre-Deployment Validation** — Test new agent versions against golden datasets before shipping.
 
-When user feedback indicates issues, evaluate all traces from affected users or time periods to identify patterns.
-
-**Pre-Deployment Validation**
-
-Test new agent versions against golden datasets before pushing to production.
-
-**A/B Testing**
-
-Compare different prompts, models, or configurations using the same dataset.
-
-**Cross-Segment Analysis**
-
-Ensure quality is consistent across user types, regions, or use cases using stratified sampling.
+**A/B Testing** — Compare prompts, models, or configurations using the same dataset.
 
 ### When to Consider Alternatives
 
-**Real-Time Evaluation**
+**Real-time evaluation** — This plugin does batch evaluation. For scoring during request processing, use fasteval's core library with direct integration.
 
-This plugin is designed for batch evaluation. For real-time scoring during request processing, consider fasteval's core library with direct integration.
+**Very high volume** — If you need to evaluate millions of traces daily, sampling helps, but you may need custom infrastructure at that scale.
 
-**Extremely High Volume**
-
-If you need to evaluate millions of traces daily, the sampling strategies help manage costs, but you may need custom infrastructure for very large scale.
-
-**Non-Langfuse Observability**
-
-This plugin specifically integrates with Langfuse. For other observability platforms, consider fasteval's core library with custom data loading.
+**Non-Langfuse observability** — This plugin is Langfuse-specific. For other platforms, use fasteval's core library with custom data loading.
 
 ## What's Next?
 
-Now that you understand the plugin's purpose and basic usage, explore these topics:
+Now that you've got the big picture, dig into the specifics:
 
 - **[Configuration](/docs/plugins/langfuse/configuration)** — Detailed configuration options and environment setup
 - **[Trace Evaluation](/docs/plugins/langfuse/trace-evaluation)** — Deep dive into production trace evaluation

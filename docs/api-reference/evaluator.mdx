@@ -6,7 +6,7 @@ order: 3
 
 # Evaluator API Reference
 
-The Evaluator class runs metrics against evaluation inputs.
+The Evaluator runs metrics against evaluation inputs. You won't need it for most workflows — the decorator API handles things automatically — but it's there when you want direct control.
 
 ## Creating an Evaluator
 
@@ -27,7 +27,7 @@ async def evaluate(
 ) -> EvalResult
 ```
 
-Run evaluation metrics on an input.
+Runs the specified metrics on `eval_input` and returns an `EvalResult`.
 
 ## Example
 

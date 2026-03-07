@@ -21,11 +21,11 @@ sidebar:
 
 # Node Testing and Mocking [Open in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/node-mocking.ipynb)
 
-This page covers isolated node testing and mocking patterns with the `fasteval-langgraph` harness: running single nodes, replacing nodes with fakes, and combining mocks with fasteval metrics.
+Not every test needs to run the full graph. Sometimes you just want to poke one node, feed it known inputs, and check what it does. This page covers isolated node execution, the three mocking patterns, and how to wire mocks into fasteval metrics.
 
 ## Single Node Execution
 
-Use `.node("name").run(**state)` to execute a single node without running the full graph:
+Use `.node("name").run(**state)` to run a single node without the rest of the graph:
 
 ```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/node-mocking.ipynb#scrollTo=single_node_run)
 from fasteval_langgraph import harness
@@ -46,7 +46,7 @@ print(result.execution_time_ms)  # e.g., 0.5
 
 ### Testing Routing Logic
 
-Node execution is ideal for testing routing decisions in isolation:
+This is ideal for testing routing decisions without running downstream nodes:
 
 ```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/node-mocking.ipynb#scrollTo=test_routing)
 # FAQ classification
@@ -66,7 +66,7 @@ assert ts_result.goto == "planner"
 
 ### Nodes with AI Response
 
-If a node produces an `AIMessage`, the response is extracted:
+If a node produces an `AIMessage`, the response gets extracted automatically:
 
 ```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/node-mocking.ipynb#scrollTo=node_with_response)
 result = await graph.node("responder").run(
@@ -113,7 +113,7 @@ print(f"Time: {result.execution_time_ms:.2f}ms")
 
 ## Mocking Nodes
 
-The harness provides a fluent mocking API to replace nodes with fakes. Use `mock()` to create a `NodeMock`:
+The harness has a fluent mocking API for replacing nodes with fakes:
 
 ```python
 from fasteval_langgraph import mock
@@ -129,7 +129,7 @@ mock("analyzer").fn(lambda state: {"verdict": "OK"}).goto("END")
 
 ### 1. In-place: `graph.mock()`
 
-Mutates the harness directly. Simple but requires manual cleanup:
+Mutates the harness directly. Simple, but you're responsible for cleanup:
 
 ```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/node-mocking.ipynb#scrollTo=mock_in_place)
 graph = harness(router_compiled)
@@ -146,7 +146,7 @@ graph.reset_mocks()
 
 ### 2. Immutable copy: `graph.with_mocks()`
 
-Returns a new harness with mocks applied. The original is unchanged:
+Returns a new harness with mocks applied. The original stays untouched:
 
 ```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/node-mocking.ipynb#scrollTo=mock_with_mocks)
 graph = harness(router_compiled)
@@ -166,7 +166,7 @@ assert "mocked doc" not in str(original_result.state.get("docs", []))
 
 ### 3. Scoped context manager: `graph.mocked()`
 
-Applies mocks for the duration of a `with` block, then automatically restores:
+Applies mocks for the duration of a `with` block, then restores automatically. This is what we reach for in most test functions:
 
 ```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/node-mocking.ipynb#scrollTo=mock_context_manager)
 graph = harness(router_compiled)
@@ -192,7 +192,7 @@ assert "scoped mock" not in str(result2.state.get("docs", []))
 
 ## Dynamic Mocks
 
-Use `.fn()` to compute mock results dynamically based on the input state:
+Use `.fn()` when you need mock results that depend on the input state:
 
 ```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/node-mocking.ipynb#scrollTo=dynamic_mocks)
 with graph.mocked(
@@ -233,7 +233,7 @@ except ValueError as e:
 
 ## Combining Mocks with fasteval Metrics
 
-The real power of mocking is isolating the node under test while using fasteval to evaluate its output:
+This is where mocking really shines -- isolate the node under test, feed it controlled inputs, and let fasteval score the output:
 
 ```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/node-mocking.ipynb#scrollTo=mocks_with_metrics)
 import fasteval as fe
@@ -278,15 +278,14 @@ async def test_classifier_accuracy():
 
 | Situation | Approach |
 |-----------|----------|
-| Testing routing logic | `.node().run()` — no mocks needed |
+| Testing routing logic | `.node().run()` -- no mocks needed |
 | Testing one node with controlled inputs | `.mocked()` the upstream nodes |
-| Testing the full agent flow | No mocks — use `.chat()` or `.session()` |
+| Testing the full agent flow | No mocks -- use `.chat()` or `.session()` |
 | Flaky external dependencies (APIs, DBs) | Mock the node that calls them |
 | Expensive LLM calls in CI | Mock the LLM node, test the rest |
-| Verifying integration between nodes | Mock non-essential nodes, keep the ones under test |
+
+In practice, we start with node-level unit tests (fast, deterministic), add integration tests with mocks for controlled external deps, and top off with a handful of end-to-end tests that hit the real thing.
 
 ### Testing Pyramid for Agents
 
 ![Testing Pyramid for Agents](/docs/assets/testing-pyramid-agents.svg)
-
-Start with node-level unit tests (fast, deterministic), add integration tests with mocks (controlled external deps), and top off with end-to-end tests (realistic but slower).

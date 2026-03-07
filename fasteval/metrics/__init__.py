@@ -1,6 +1,7 @@
 """fasteval metrics module."""
 
 from fasteval.metrics.base import Metric
+from fasteval.metrics.code_judge import CodeJudgeMetric
 from fasteval.metrics.conversation import (
     ConsistencyMetric,
     ContextRetentionMetric,
@@ -91,6 +92,7 @@ except ImportError:
 __all__ = [
     # Base
     "Metric",
+    "CodeJudgeMetric",
     "LLMMetric",
     # LLM Metrics
     "CorrectnessMetric",
