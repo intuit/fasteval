@@ -1,0 +1,101 @@
+<svg viewBox="0 0 900 560" xmlns="http://www.w3.org/2000/svg" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-opacity="0.08"/>
+    </filter>
+    <marker id="arrow" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/>
+    </marker>
+    <marker id="arrow-blue" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#2563eb"/>
+    </marker>
+    <marker id="arrow-green" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#059669"/>
+    </marker>
+  </defs>
+
+  <rect width="900" height="560" fill="#f8fafc"/>
+
+  <text x="450" y="38" text-anchor="middle" font-size="22" font-weight="700" fill="#1e293b">Integration Architecture</text>
+  <text x="450" y="62" text-anchor="middle" font-size="14" fill="#64748b">Asynchronous production monitoring vs. Synchronous CI/CD benchmarking</text>
+
+  <g transform="translate(20, 85)">
+    <rect width="860" height="190" rx="14" fill="white" stroke="#3b82f6" stroke-width="1.5" stroke-dasharray="6 4" filter="url(#shadow)"/>
+    <rect width="860" height="34" rx="14" fill="#eff6ff"/>
+    <rect y="24" width="860" height="10" fill="#eff6ff"/>
+    <text x="20" y="24" font-size="13" font-weight="700" fill="#1d4ed8" letter-spacing="0.5">ONLINE: ASYNC MONITORING</text>
+    <text x="840" y="24" text-anchor="end" font-size="11" font-family="monospace" fill="#64748b">@fe.langfuse_traces</text>
+
+    <rect x="25" y="55" width="130" height="60" rx="8" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+    <text x="90" y="82" text-anchor="middle" font-size="11" font-weight="700" fill="#475569">Langfuse</text>
+    <text x="90" y="98" text-anchor="middle" font-size="9" fill="#64748b">Production Traces</text>
+
+    <line x1="155" y1="85" x2="190" y2="85" stroke="#3b82f6" stroke-width="2" marker-end="url(#arrow-blue)"/>
+
+    <rect x="190" y="55" width="140" height="60" rx="8" fill="white" stroke="#3b82f6" stroke-width="1.5"/>
+    <text x="260" y="82" text-anchor="middle" font-size="10" font-weight="700" fill="#1d4ed8">Logic Extractor</text>
+    <text x="260" y="98" text-anchor="middle" font-size="9" fill="#64748b">Sample &amp; Map</text>
+
+    <line x1="330" y1="85" x2="365" y2="85" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)"/>
+
+    <rect x="365" y="55" width="135" height="60" rx="8" fill="#fefce8" stroke="#fcd34d" stroke-width="1.5"/>
+    <text x="432.5" y="82" text-anchor="middle" font-size="10" font-weight="700" fill="#a16207">Trace Params</text>
+    <text x="432.5" y="98" text-anchor="middle" font-size="9" font-family="monospace" fill="#78716c">input, output, ctx</text>
+
+    <line x1="500" y1="85" x2="535" y2="85" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)"/>
+
+    <rect x="535" y="55" width="135" height="60" rx="8" fill="white" stroke="#7c3aed" stroke-width="1.5"/>
+    <text x="602.5" y="82" text-anchor="middle" font-size="10" font-weight="700" fill="#6d28d9">LLM Judge</text>
+    <text x="602.5" y="98" text-anchor="middle" font-size="9" font-family="monospace" fill="#78716c">fe.score()</text>
+
+    <line x1="670" y1="85" x2="705" y2="85" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)"/>
+
+    <rect x="705" y="55" width="130" height="60" rx="8" fill="#ecfdf5" stroke="#10b981" stroke-width="1.5"/>
+    <text x="770" y="82" text-anchor="middle" font-size="10" font-weight="700" fill="#059669">Metric Scores</text>
+    <text x="770" y="98" text-anchor="middle" font-size="9" font-family="monospace" fill="#059669">faithfulness: 0.9</text>
+
+    <path d="M 770 115 C 770 160, 430 170, 90 150" fill="none" stroke="#10b981" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#arrow-green)"/>
+    <text x="450" y="149" text-anchor="middle" font-size="9" font-weight="700" fill="#059669">PUSH SCORES TO PRODUCTION DASHBOARD</text>
+  </g>
+
+  <g transform="translate(20, 305)">
+    <rect width="860" height="190" rx="14" fill="white" stroke="#10b981" stroke-width="1.5" stroke-dasharray="6 4" filter="url(#shadow)"/>
+    <rect width="860" height="34" rx="14" fill="#ecfdf5"/>
+    <rect y="24" width="860" height="10" fill="#ecfdf5"/>
+    <text x="20" y="24" font-size="13" font-weight="700" fill="#059669" letter-spacing="0.5">OFFLINE: CI/CD BENCHMARKING</text>
+    <text x="840" y="24" text-anchor="end" font-size="11" font-family="monospace" fill="#64748b">@fe.langfuse_dataset</text>
+
+    <rect x="25" y="55" width="130" height="60" rx="8" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+    <text x="90" y="82" text-anchor="middle" font-size="11" font-weight="700" fill="#475569">Langfuse</text>
+    <text x="90" y="98" text-anchor="middle" font-size="9" fill="#64748b">Golden Dataset</text>
+
+    <line x1="155" y1="85" x2="190" y2="85" stroke="#059669" stroke-width="2" marker-end="url(#arrow-green)"/>
+
+    <rect x="190" y="55" width="140" height="60" rx="8" fill="white" stroke="#10b981" stroke-width="1.5"/>
+    <text x="260" y="82" text-anchor="middle" font-size="10" font-weight="700" fill="#047857">Dataset Runner</text>
+    <text x="260" y="98" text-anchor="middle" font-size="9" fill="#64748b">Iterate Items</text>
+
+    <line x1="330" y1="85" x2="365" y2="85" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)"/>
+
+    <rect x="365" y="55" width="135" height="60" rx="8" fill="#fefce8" stroke="#fcd34d" stroke-width="1.5"/>
+    <text x="432.5" y="82" text-anchor="middle" font-size="10" font-weight="700" fill="#a16207">Golden Params</text>
+    <text x="432.5" y="98" text-anchor="middle" font-size="9" font-family="monospace" fill="#78716c">input, expected</text>
+
+    <line x1="500" y1="85" x2="535" y2="85" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)"/>
+
+    <rect x="535" y="55" width="135" height="60" rx="8" fill="white" stroke="#7c3aed" stroke-width="1.5"/>
+    <text x="602.5" y="82" text-anchor="middle" font-size="10" font-weight="700" fill="#6d28d9">Agent + Judge</text>
+    <text x="602.5" y="98" text-anchor="middle" font-size="9" font-family="monospace" fill="#78716c">Run logic vs. Ref</text>
+
+    <line x1="670" y1="85" x2="705" y2="85" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)"/>
+
+    <rect x="705" y="55" width="130" height="60" rx="8" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.5"/>
+    <text x="770" y="82" text-anchor="middle" font-size="10" font-weight="700" fill="#1d4ed8">Regression Delta</text>
+    <text x="770" y="98" text-anchor="middle" font-size="9" font-family="monospace" fill="#1d4ed8">v1 (0.8) &gt; v2 (0.9)</text>
+
+    <path d="M 770 115 C 770 160, 430 170, 90 150" fill="none" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#arrow-blue)"/>
+    <text x="450" y="149" text-anchor="middle" font-size="9" font-weight="700" fill="#1d4ed8">UPLOAD RESULTS TO EXPERIMENTS TAB</text>
+  </g>
+
+  <text x="450" y="535" text-anchor="middle" font-size="11" fill="#94a3b8">FastEval Documentation • Integration Architecture Standards • 2026</text>
+</svg>

@@ -1,0 +1,10 @@
+{
+  "title": "Trace Evaluation with Langfuse",
+  "order": 1,
+  "items": [
+    "overview",
+    "basic-trace-evaluation",
+    "sampling-strategies",
+    "dataset-regression-testing"
+  ]
+}

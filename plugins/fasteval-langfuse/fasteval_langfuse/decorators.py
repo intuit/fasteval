@@ -2,9 +2,11 @@
 
 import functools
 import inspect
+from datetime import datetime
 from typing import Any, Callable, List, Optional, TypeVar
 
 from fasteval_langfuse.client import LangfuseClient
+from fasteval_langfuse.config import get_config
 from fasteval_langfuse.sampling.base import BaseSamplingStrategy
 from fasteval_langfuse.score_reporter import ScoreReporter
 from fasteval_langfuse.trace_fetcher import TraceFetcher
@@ -169,11 +171,9 @@ def _execute_trace_evaluation(
 
         # Call the test function
         if is_async:
-            import asyncio
+            from fasteval.utils import run_async
 
-            asyncio.get_event_loop().run_until_complete(
-                func(*args, **{**kwargs, **params})
-            )
+            run_async(func(*args, **{**kwargs, **params}))
         else:
             func(*args, **{**kwargs, **params})
 
@@ -287,40 +287,54 @@ def _execute_dataset_evaluation(
     args: tuple,
     kwargs: dict,
 ) -> None:
-    """Execute dataset evaluation (internal implementation)."""
-    # Initialize client
+    """Execute dataset evaluation with Langfuse Experiments integration.
+
+    Uses item.run() to create linked traces in Langfuse, enabling the
+    Experiments comparison UI for side-by-side run analysis.
+    """
+    from fasteval.core.scoring import get_last_score_result
+
     client = LangfuseClient()
+    config = get_config()
+    raw_items = client.fetch_dataset_raw(name=name, version=version)
+    run_name = f"fasteval-{func.__name__}-{datetime.now().isoformat()}"
 
-    # Fetch dataset items
-    items = client.fetch_dataset(name=name, version=version)
+    print(
+        f"\nEvaluating {len(raw_items)} items from dataset '{name}' (run: {run_name})\n"
+    )
 
-    print(f"\nEvaluating {len(items)} items from dataset '{name}'\n")
+    for item in raw_items:
+        with item.run(run_name=run_name) as root_span:
+            params: dict[str, Any] = {}
 
-    # Evaluate each item
-    for item in items:
-        # Extract all available fields from dataset item
-        # Pass all columns as kwargs - user declares what they need
-        params = {}
+            if item.input is not None:
+                params["input"] = item.input
+            if item.expected_output is not None:
+                params["expected_output"] = item.expected_output
+            if item.id is not None:
+                params["item_id"] = item.id
 
-        # Add standard Langfuse dataset fields if present
-        if "input" in item:
-            params["input"] = item["input"]
-        if "expected_output" in item:
-            params["expected_output"] = item["expected_output"]
-        if "id" in item:
-            params["item_id"] = item["id"]
+            metadata = getattr(item, "metadata", None) or {}
+            if metadata:
+                params.update(metadata)
 
-        # Flatten metadata into top-level kwargs
-        metadata = item.get("metadata", {})
-        if metadata:
-            params.update(metadata)
+            if is_async:
+                from fasteval.utils import run_async
 
-        # Call the test function
-        if is_async:
-            import asyncio
-
-            asyncio.get_event_loop().run_until_complete(
+                run_async(func(*args, **{**kwargs, **params}))
+            else:
                 func(*args, **{**kwargs, **params})
-            )
-        else:
-            func(*args, **{**kwargs, **params})
+            result = get_last_score_result()
+            if result:
+                for mr in result.metric_results:
+                    root_span.score_trace(
+                        name=f"{config.score_name_prefix}{mr.metric_name}",
+                        value=mr.score,
+                        comment=getattr(mr, "reasoning", None),
+                    )
+                root_span.score_trace(
+                    name=f"{config.score_name_prefix}aggregate",
+                    value=result.aggregate_score,
+                )
+
+    client.flush()

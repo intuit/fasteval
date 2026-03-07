@@ -1,0 +1,368 @@
+---
+title: Basic Trace Evaluation
+description: Fetch, evaluate, and score production traces with LLM-as-judge metrics
+order: 2
+sidebar:
+  - title: How It Works
+    anchor: how-it-works
+  - title: Your First Evaluation
+    anchor: your-first-evaluation
+  - title: Function Parameters
+    anchor: function-parameters
+  - title: Decorator Parameters
+    anchor: decorator-parameters
+  - title: Filtering Traces
+    anchor: filtering-traces
+  - title: Stacking Metrics
+    anchor: stacking-metrics
+  - title: RAG Evaluation
+    anchor: rag-evaluation
+  - title: Handling Missing Data
+    anchor: handling-missing-data
+  - title: Score Reporting
+    anchor: score-reporting
+  - title: Debugging Failures
+    anchor: debugging-failures
+  - title: Running with pytest
+    anchor: running-with-pytest
+---
+
+# Basic Trace Evaluation [Open in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langfuse-trace-evaluation/basic-trace-evaluation.ipynb)
+
+Evaluate production traces to understand how your application performs in the wild. This page covers the `@langfuse_traces` decorator, parameter extraction, metric stacking, and score reporting.
+
+## How It Works
+
+![Trace Evaluation Data Flow](docs/assets/langfuse-trace-eval-flow.svg)
+
+The `@langfuse_traces` decorator handles the full pipeline:
+
+1.  **Fetch** — Queries the Langfuse API for traces matching your filters (project, tags, time range).
+2.  **Extract** — Automatically pulls `input`, `output`, `context`, and `metadata` from each trace.
+3.  **Evaluate** — Calls your test function once per trace, running the stacked metric decorators.
+4.  **Report** — Pushes scores back to Langfuse so they appear on the trace in the dashboard.
+
+## Your First Evaluation
+
+A minimal example that evaluates the correctness of traces from the last 24 hours:
+
+```python
+# test_production_eval.py
+import fasteval as fe
+from fasteval_langfuse import langfuse_traces
+
+@fe.correctness(threshold=0.8)
+@langfuse_traces(
+    project="production",
+    time_range="last_24h",
+    limit=10,
+)
+def test_production_correctness(trace_id, input, output, context, metadata):
+    fe.score(output, input=input)
+```
+
+Run it:
+
+```bash
+pytest test_production_eval.py -v
+```
+
+Expected output:
+
+```
+Evaluating 10/2,341 traces (0.4% sample, strategy=NoSamplingStrategy)
+
+test_production_correctness PASSED
+
+Scores pushed to Langfuse with prefix "fasteval_"
+```
+
+## Function Parameters
+
+The test function receives these parameters, automatically extracted from the Langfuse trace:
+
+| Parameter | Type | Description | Extraction Logic |
+|-----------|------|-------------|------------------|
+| `trace_id` | `str` | Unique trace identifier | `trace.id` |
+| `input` | `str` | User query or prompt | Auto-extracted from `trace.input` - handles strings and dicts with keys: `query`, `input`, `prompt`, `message`, `question` |
+| `output` | `str` | AI response | Auto-extracted from `trace.output` - handles strings and dicts with keys: `response`, `output`, `answer`, `completion`, `result` |
+| `context` | `str` or `None` | Retrieved documents (RAG) | Extracted from metadata keys: `context`, `retrieved_docs`, `documents`, `retrieval_context`, `docs` |
+| `metadata` | `dict` | Full trace metadata | `trace.metadata` - everything else lives here |
+
+You only need to declare the parameters you use. If you don't need `context`, leave it out of the signature:
+
+```python
+@langfuse_traces(project="production")
+def test_minimal(trace_id, input, output):
+    fe.score(output, input=input)
+```
+
+### Input/Output Extraction Details
+
+When `trace.input` or `trace.output` is a dictionary, the plugin tries common keys in order:
+
+**Input**: `query` → `input` → `prompt` → `message` → `question` → first string value
+
+**Output**: `response` → `output` → `answer` → `completion` → `result` → first string value
+
+If the value is already a string, it is used directly.
+
+## Decorator Parameters
+
+Control which traces are fetched using `@langfuse_traces`:
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `project` | `str` | Config default | Langfuse project name |
+| `filter_tags` | `list[str]` | `None` | Only fetch traces with ALL these tags |
+| `time_range` | `str` | `None` | Relative (`last_1h`, `last_24h`, `last_7d`) or absolute (`"2026-03-01 to 2026-03-05"`) |
+| `user_id` | `str` | `None` | Filter by specific user ID |
+| `session_id` | `str` | `None` | Filter by conversation session ID |
+| `limit` | `int` | `None` | Max traces to fetch (before sampling) |
+| `sampling` | `Strategy` | `NoSamplingStrategy()` | [Sampling strategy](./sampling-strategies) object |
+| `auto_push_scores` | `bool` | Config default | Override global config for this test |
+
+## Filtering Traces
+
+### By Tags
+
+Tags are the most common way to partition traces:
+
+```python
+@langfuse_traces(filter_tags=["customer-support"])
+def test_support_only(trace_id, input, output, metadata):
+    fe.score(output, input=input)
+
+@langfuse_traces(filter_tags=["rag", "v2"])
+def test_rag_v2_only(trace_id, input, output, context, metadata):
+    fe.score(output, context=context, input=input)
+```
+
+### By Time Range
+
+Relative ranges use human-readable strings. Absolute ranges use `"start to end"` format:
+
+```python
+# Relative
+@langfuse_traces(time_range="last_1h")   # Last hour
+@langfuse_traces(time_range="last_24h")  # Last day
+@langfuse_traces(time_range="last_7d")   # Last week
+
+# Absolute (ISO-like format)
+@langfuse_traces(time_range="2026-03-04 14:00 to 2026-03-04 16:00")
+```
+
+### By User or Session
+
+```python
+@langfuse_traces(user_id="user-123")
+def test_specific_user(trace_id, input, output, metadata):
+    fe.score(output, input=input)
+
+@langfuse_traces(session_id="sess-abc")
+def test_specific_session(trace_id, input, output, metadata):
+    fe.score(output, input=input)
+```
+
+### Combining Filters
+
+All filters are AND-combined:
+
+```python
+@langfuse_traces(
+    project="production",
+    filter_tags=["rag"],
+    time_range="last_24h",
+    limit=50,
+)
+def test_recent_rag_traces(trace_id, input, output, context, metadata):
+    fe.score(output, context=context, input=input)
+```
+
+## Stacking Metrics
+
+Apply multiple metric decorators to evaluate different quality dimensions on the same trace. Each decorator generates its own score.
+
+### Common Combinations
+
+| Use Case | Metrics | Cost per Trace |
+|----------|---------|----------------|
+| General quality | `correctness` + `relevance` | 2 judge calls |
+| RAG pipeline | `faithfulness` + `answer_correctness` + `contextual_precision` | 3 judge calls |
+| Safety-critical | `correctness` + `toxicity` + `bias` | 3 judge calls |
+| Customer support | `correctness` + `relevance` + `hallucination` | 3 judge calls |
+
+### Example: Comprehensive Quality Check
+
+```python
+@fe.correctness(threshold=0.8)
+@fe.relevance(threshold=0.8)
+@fe.hallucination(threshold=0.9)
+@langfuse_traces(project="production", time_range="last_24h")
+def test_comprehensive_quality(trace_id, input, output, context, metadata):
+    fe.score(output, context=context, input=input)
+```
+
+### Mixing Deterministic and LLM Metrics
+
+Combine zero-cost deterministic checks with LLM-as-judge metrics:
+
+```python
+@fe.json()                         # Deterministic: is it valid JSON?
+@fe.contains("disclaimer")         # Deterministic: does it include required text?
+@fe.correctness(threshold=0.8)     # LLM judge: is it correct?
+@langfuse_traces(project="production", filter_tags=["api-response"])
+def test_api_responses(trace_id, input, output, metadata):
+    fe.score(output, input=input)
+```
+
+## RAG Evaluation
+
+For Retrieval-Augmented Generation applications, use specialized metrics that assess both retrieval and generation quality:
+
+| Metric | What It Measures | Requires |
+|--------|-----------------|----------|
+| `faithfulness` | Is the response grounded in the retrieved context? | `context` |
+| `answer_correctness` | Does the response correctly answer the question? | `expected_output` (optional) |
+| `contextual_precision` | Are the retrieved documents relevant to the question? | `context` |
+| `contextual_recall` | Do the retrieved documents cover what is needed? | `context` + `expected_output` |
+| `relevance` | Is the response relevant to the user's question? | `input` |
+
+```python
+@fe.faithfulness(threshold=0.9)
+@fe.answer_correctness(threshold=0.8)
+@fe.relevance(threshold=0.8)
+@langfuse_traces(
+    filter_tags=["rag"],
+    time_range="last_7d",
+    limit=50,
+)
+def test_rag_pipeline(trace_id, input, output, context, metadata):
+    if not context:
+        context = metadata.get("docs") or metadata.get("retrieval_context")
+    if not context:
+        return  # Skip traces without context
+
+    expected = metadata.get("expected_answer")
+    fe.score(output, expected, context=context, input=input)
+```
+
+## Handling Missing Data
+
+Production traces can be messy. Use defensive patterns to handle missing or malformed data:
+
+```python
+@fe.correctness(threshold=0.7)
+@langfuse_traces(project="production", time_range="last_7d", limit=100)
+def test_robust_evaluation(trace_id, input, output, context, metadata):
+    # Guard 1: Skip traces with missing essential data
+    if not input or not output:
+        return
+
+    # Guard 2: Skip very short outputs (likely errors or empty responses)
+    if len(str(output)) < 10:
+        return
+
+    # Guard 3: Fallback for context if auto-extraction missed it
+    if not context and metadata:
+        context = (
+            metadata.get("custom_docs_key")
+            or metadata.get("retrieved_documents")
+            or metadata.get("sources")
+        )
+
+    fe.score(output, context=context, input=input)
+```
+
+## Score Reporting
+
+When `auto_push_scores=True` (the default), fasteval pushes evaluation results back to Langfuse as scores on each trace.
+
+### What Gets Pushed
+
+For each evaluated trace, these scores are created:
+
+| Score Name | Value Range | Description |
+|------------|-------------|-------------|
+| `fasteval_correctness` | 0.0 - 1.0 | Individual metric score |
+| `fasteval_faithfulness` | 0.0 - 1.0 | Individual metric score |
+| `fasteval_aggregate` | 0.0 - 1.0 | Average of all metric scores |
+
+Each score also includes the **judge's reasoning** in the comment field, explaining why the score was given.
+
+### Viewing Scores in Langfuse
+
+1.  Go to your project in **Langfuse**.
+2.  Open the **Traces** table.
+3.  New columns appear for each `fasteval_` score.
+4.  **Filter** traces by score to find issues: `score.fasteval_correctness < 0.7`.
+5.  Click a trace to see the full breakdown and reasoning.
+
+### Customizing the Prefix
+
+Use different prefixes to distinguish evaluation pipelines:
+
+```python
+from fasteval_langfuse import configure_langfuse, LangfuseConfig
+
+# Nightly evaluations get a different prefix
+configure_langfuse(LangfuseConfig(score_name_prefix="nightly_"))
+# Scores: nightly_correctness, nightly_aggregate
+```
+
+### Disabling Score Push
+
+For local-only evaluation (no writes to Langfuse):
+
+```python
+@langfuse_traces(auto_push_scores=False)
+def test_local_only(trace_id, input, output, metadata):
+    fe.score(output, input=input)
+```
+
+## Debugging Failures
+
+When a test fails, inspect the `EvalResult` for root cause analysis:
+
+```python
+@fe.correctness(threshold=0.9)
+@langfuse_traces(project="production", limit=5)
+def test_with_debugging(trace_id, input, output, context, metadata):
+    result = fe.score(output, context=context, input=input)
+
+    if not result.passed:
+        print(f"\n{'='*60}")
+        print(f"FAILED — Trace: {trace_id}")
+        print(f"{'='*60}")
+        print(f"Input:   {str(input)[:200]}")
+        print(f"Output:  {str(output)[:200]}")
+        print(f"Context: {str(context)[:200] if context else 'None'}")
+        for mr in result.metric_results:
+            print(f"\n  {mr.metric_name}: {mr.score:.2f} (threshold: {mr.threshold})")
+            print(f"  Reasoning: {mr.reasoning}")
+```
+
+## Running with pytest
+
+In production, evaluations are run as part of your test suite:
+
+```bash
+# Run all trace evaluations
+pytest tests/test_production_eval.py -v
+
+# Run with short traceback for CI
+pytest tests/test_production_eval.py -v --tb=short
+
+# Run a specific test
+pytest tests/test_production_eval.py::test_rag_pipeline -v
+```
+
+A typical project structure:
+
+```
+tests/
+  conftest.py                    # configure_langfuse() in pytest_configure
+  test_production_eval.py        # @langfuse_traces tests (online)
+  test_nightly_eval.py           # ScoreBased/Stratified tests (scheduled)
+  test_regression.py             # @langfuse_dataset tests (offline)
+```

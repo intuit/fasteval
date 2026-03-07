@@ -10,6 +10,7 @@
     "prompt-regression",
     "custom-domain-metrics",
     "batch-evaluation",
-    "production-monitoring"
+    "production-monitoring",
+    "trace-evaluation-langfuse"
   ]
 }
