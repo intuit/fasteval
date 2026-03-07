@@ -63,9 +63,9 @@ def _create_provider_from_env() -> "LLMClient":
         try:
             from fasteval.providers.anthropic import AnthropicClient
 
-            return AnthropicClient(model="claude-3-5-sonnet-20241022")
+            return AnthropicClient(model="claude-sonnet-4-6")
         except ImportError:
-            pass  # Anthropic not installed
+            pass  # anthropic package not installed
 
     raise ValueError(
         "No LLM provider configured. Either:\n"

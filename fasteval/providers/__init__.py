@@ -11,7 +11,16 @@ from fasteval.providers.registry import (
 __all__ = [
     "LLMClient",
     "OpenAIClient",
+    "AnthropicClient",
     "set_default_provider",
     "get_default_provider",
     "create_provider_for_model",
 ]
+
+
+def __getattr__(name: str) -> object:
+    if name == "AnthropicClient":
+        from fasteval.providers.anthropic import AnthropicClient
+
+        return AnthropicClient
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
