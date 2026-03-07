@@ -72,9 +72,7 @@ class ResultCollector:
         reporter_cls = self._reporters.get(format)
         if not reporter_cls:
             available = list(self._reporters.keys())
-            raise ValueError(
-                f"Unknown format: {format!r}. Available: {available}"
-            )
+            raise ValueError(f"Unknown format: {format!r}. Available: {available}")
         reporter = reporter_cls(**kwargs)
         content = reporter.generate(self.summary(), self._results)
         if path:
@@ -82,9 +80,7 @@ class ResultCollector:
             Path(path).write_text(content, encoding="utf-8")
         return content
 
-    def register_reporter(
-        self, name: str, reporter_cls: Type[OutputReporter]
-    ) -> None:
+    def register_reporter(self, name: str, reporter_cls: Type[OutputReporter]) -> None:
         """Register a custom reporter format."""
         self._reporters[name] = reporter_cls
 

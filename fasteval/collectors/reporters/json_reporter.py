@@ -17,9 +17,7 @@ class JsonReporter(OutputReporter):
         self.indent = indent
         self.include_inputs = include_inputs
 
-    def generate(
-        self, summary: EvalRunSummary, results: List[EvalResult]
-    ) -> str:
+    def generate(self, summary: EvalRunSummary, results: List[EvalResult]) -> str:
         output: Dict[str, Any] = {
             "summary": summary.model_dump(mode="json"),
             "results": [],

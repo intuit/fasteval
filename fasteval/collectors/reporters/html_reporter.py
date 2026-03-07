@@ -44,9 +44,7 @@ details .detail-body { padding: 0 16px 16px; }
 class HtmlReporter(OutputReporter):
     """Generates a self-contained HTML report with inline CSS."""
 
-    def generate(
-        self, summary: EvalRunSummary, results: List[EvalResult]
-    ) -> str:
+    def generate(self, summary: EvalRunSummary, results: List[EvalResult]) -> str:
         parts = [
             "<!DOCTYPE html>",
             '<html lang="en"><head><meta charset="utf-8">',
@@ -128,10 +126,14 @@ class HtmlReporter(OutputReporter):
                     f'<td><span class="badge {m_badge}">{"PASS" if mr.passed else "FAIL"}</span></td>'
                     f"<td>{reasoning_html}</td></tr>"
                 )
-            metrics_table = f"""<table>
+            metrics_table = (
+                f"""<table>
 <thead><tr><th>Metric</th><th>Score</th><th>Threshold</th><th>Status</th><th>Reasoning</th></tr></thead>
 <tbody>{"".join(metric_rows)}</tbody>
-</table>""" if metric_rows else "<p>No metrics.</p>"
+</table>"""
+                if metric_rows
+                else "<p>No metrics.</p>"
+            )
 
             parts.append(
                 f'<details><summary><span class="badge {badge}">{label}</span> '

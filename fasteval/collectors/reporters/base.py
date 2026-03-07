@@ -24,8 +24,6 @@ class OutputReporter(ABC):
     """
 
     @abstractmethod
-    def generate(
-        self, summary: EvalRunSummary, results: List[EvalResult]
-    ) -> str:
+    def generate(self, summary: EvalRunSummary, results: List[EvalResult]) -> str:
         """Generate report content as a string."""
         ...
