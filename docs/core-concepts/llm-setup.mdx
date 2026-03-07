@@ -17,11 +17,11 @@ sidebar:
 
 # LLM Setup
 
-fasteval uses LLM providers to power its evaluation metrics like correctness, relevance, and hallucination detection. This guide covers all the ways to configure your LLM provider.
+fasteval needs an LLM provider to run evaluation metrics — correctness, relevance, hallucination detection, and so on. Here's how to wire one up.
 
 ## Quick Start (Environment Variables)
 
-The simplest way to get started is to set an environment variable. fasteval auto-detects common providers:
+Fastest path: set an env var. fasteval auto-detects common providers.
 
 ```bash
 # Option 1: OpenAI (recommended)
@@ -31,7 +31,7 @@ export OPENAI_API_KEY=sk-...
 export ANTHROPIC_API_KEY=sk-ant-...
 ```
 
-With an environment variable set, fasteval automatically creates a provider:
+Once that's in place, fasteval picks it up automatically:
 
 ```python
 import fasteval as fe
@@ -47,7 +47,7 @@ def test_qa():
 
 ### OpenAI
 
-The `OpenAIClient` is the recommended provider for most use cases:
+We recommend `OpenAIClient` for most use cases:
 
 ```python
 import fasteval as fe
@@ -83,7 +83,7 @@ set_default_provider(client)
 
 ## Custom LLM Client
 
-You can create a custom client for any LLM by implementing the `LLMClient` protocol. Your class just needs an async `invoke()` method:
+You can build a client for any LLM by implementing the `LLMClient` protocol. Just give it an async `invoke()` method:
 
 ```python
 from typing import Dict, List
@@ -91,27 +91,27 @@ import fasteval as fe
 
 class MyCustomClient:
     """Custom LLM client for any API."""
-    
+
     def __init__(self, api_key: str, endpoint: str):
         self.api_key = api_key
         self.endpoint = endpoint
-    
+
     async def invoke(self, messages: List[Dict[str, str]]) -> str:
         """
         Call your LLM API.
-        
+
         Args:
             messages: List of message dicts with "role" and "content" keys.
                      Example: [
                          {"role": "system", "content": "You are a helpful assistant"},
                          {"role": "user", "content": "Hello"}
                      ]
-        
+
         Returns:
             The response content as a string.
         """
         import httpx
-        
+
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 self.endpoint,
@@ -127,22 +127,24 @@ fe.set_default_provider(client)
 
 ### Protocol Requirements
 
-The `LLMClient` protocol requires only one method:
+The `LLMClient` protocol requires exactly one method:
 
 ```python
 async def invoke(self, messages: List[Dict[str, str]]) -> str:
     """
     Args:
         messages: List of dicts with "role" (str) and "content" (str) keys.
-    
+
     Returns:
         Response content string from the LLM.
     """
 ```
 
+That's it. No base class, no registration. If it's got `invoke`, it works.
+
 ## LangChain Integration
 
-If you're already using LangChain, you can wrap your existing models:
+Already using LangChain? Wrap your existing models:
 
 ![LangChain Integration](docs/assets/langchain-integration.svg)
 
@@ -153,10 +155,10 @@ import fasteval as fe
 
 class LangChainClient:
     """Wrapper to use LangChain models with fasteval."""
-    
+
     def __init__(self, llm):
         self.llm = llm
-    
+
     async def invoke(self, messages: list) -> str:
         # Convert dict messages to LangChain message objects
         lc_messages = []
@@ -169,7 +171,7 @@ class LangChainClient:
                 lc_messages.append(HumanMessage(content=content))
             elif role == "assistant":
                 lc_messages.append(AIMessage(content=content))
-        
+
         response = await self.llm.ainvoke(lc_messages)
         return response.content
 
@@ -181,7 +183,7 @@ fe.set_default_provider(client)
 
 ### Using GenOS or Custom LLM Configurations
 
-For enterprise LLM configurations (like GenOS):
+For enterprise LLM setups (like GenOS):
 
 ```python
 from your_company.llm import get_configured_llm
@@ -190,7 +192,7 @@ import fasteval as fe
 class EnterpriseClient:
     def __init__(self):
         self.llm = get_configured_llm()  # Your company's LLM setup
-    
+
     async def invoke(self, messages: list) -> str:
         response = await self.llm.ainvoke(messages)
         return response.content
@@ -200,7 +202,7 @@ fe.set_default_provider(EnterpriseClient())
 
 ## Per-Metric Model Overrides
 
-You can override the model for specific metrics using the `model` or `llm` parameter:
+You can override the model for individual metrics via the `model` or `llm` parameter:
 
 ```python
 import fasteval as fe
@@ -236,7 +238,7 @@ def test_qa():
 
 ## Provider Resolution Priority
 
-When determining which LLM to use, fasteval follows this priority order:
+When figuring out which LLM to use, fasteval checks in this order:
 
 ![Provider Resolution Flow](docs/assets/provider-resolution-flow.svg)
 
@@ -270,11 +272,11 @@ import fasteval as fe
 
 class MockClient:
     """Mock LLM client for testing."""
-    
+
     def __init__(self, response: str = "mocked response"):
         self.response = response
         self.calls = []  # Track calls for assertions
-    
+
     async def invoke(self, messages: list) -> str:
         self.calls.append(messages)
         return self.response
@@ -283,12 +285,12 @@ class MockClient:
 def test_with_mock():
     mock = MockClient(response='{"score": 0.9, "reasoning": "Good answer"}')
     fe.set_default_provider(mock)
-    
+
     # Run your test
     @fe.correctness(threshold=0.8)
     def test_qa():
         fe.score("actual", "expected")
-    
+
     # Verify the mock was called
     assert len(mock.calls) > 0
 ```
@@ -313,7 +315,7 @@ def test_evaluation_calls_llm(mock_llm):
     @fe.correctness(threshold=0.8)
     def inner_test():
         fe.score("response", "expected")
-    
+
     inner_test()
     assert len(mock_llm.calls) > 0
 ```
@@ -322,7 +324,7 @@ def test_evaluation_calls_llm(mock_llm):
 
 ### "No LLM provider configured" Error
 
-This error occurs when fasteval can't find a provider:
+You'll see this when fasteval can't find a provider:
 
 ```
 ValueError: No LLM provider configured. Either:
@@ -330,13 +332,13 @@ ValueError: No LLM provider configured. Either:
   2. Call fasteval.set_default_provider(your_client)
 ```
 
-**Solutions:**
-1. Set an environment variable: `export OPENAI_API_KEY=sk-...`
-2. Explicitly set a provider in your test setup
+**Fix it:**
+1. Set an env var: `export OPENAI_API_KEY=sk-...`
+2. Or explicitly set a provider in your test setup
 
 ### API Key Issues
 
-If you get authentication errors:
+Getting auth errors? Double-check your key's actually set:
 
 ```python
 # Check your API key is set
@@ -349,10 +351,12 @@ client = OpenAIClient(api_key="sk-...")
 
 ### Rate Limiting
 
-For high-volume testing, consider:
+For high-volume testing, we'd recommend:
 
 1. Using a faster/cheaper model for most tests
 2. Adding retries with backoff
+
+In practice, what works well is defaulting to a cheap model and only upgrading where it matters:
 
 ```python
 # Use cheaper model for most tests

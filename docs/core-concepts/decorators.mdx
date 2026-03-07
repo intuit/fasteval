@@ -21,13 +21,7 @@ sidebar:
 
 # Decorator API
 
-fasteval uses Python decorators to define evaluation criteria directly on test functions. This approach keeps evaluation logic visible, co-located with test code, and follows Python conventions that developers already understand.
-
-The decorator pattern offers several advantages over configuration-based alternatives:
-- **Explicit**: Evaluation criteria are visible at the test definition
-- **Composable**: Multiple metrics can be stacked on a single test
-- **Discoverable**: IDE autocomplete shows available metrics
-- **Type-safe**: Type hints enable static analysis
+Decorators are how you tell fasteval what to measure. You put them on test functions, they run your evaluations. No config files, no YAML, no separate evaluation spec to keep in sync. The criteria live right next to the code they're testing, which means you can actually see what's being evaluated without jumping between files. Your IDE's autocomplete works. Type checking works. It's just Python.
 
 ![Decorator Execution Flow](docs/assets/decorator-flow.svg)
 
@@ -64,10 +58,10 @@ Understanding the execution model helps you write effective tests and debug issu
 def test_my_agent():
     # 1. Test body executes normally
     response = my_agent(query)
-    
+
     # 2. fe.score() records data (does not block)
     fe.score(response, expected)
-    
+
     # 3. After test body: metrics evaluate in parallel
     # 4. Results aggregated, test passes/fails based on thresholds
 ```
@@ -93,7 +87,7 @@ Evaluation Results:
 
 ## Stacking Multiple Metrics
 
-Real-world evaluation requires assessing multiple quality dimensions. Stack decorators to evaluate different aspects of the same output:
+Real evaluations aren't one-dimensional. Stack decorators to check multiple aspects of the same output:
 
 ```python
 @fe.correctness(threshold=0.7)    # Is the content factually accurate?
@@ -120,21 +114,21 @@ For metric combinations used across multiple tests, see [Metric Stacks](/docs/co
 
 ### LLM-Based Metrics
 
-These metrics use an LLM judge to evaluate semantic qualities. Each call involves an API request to your configured LLM provider.
+These use an LLM judge to evaluate semantic qualities. Each call hits your configured LLM provider.
 
 | Decorator | What it Measures | Typical Threshold | Use Case |
 |-----------|-----------------|-------------------|----------|
 | `@fe.correctness()` | Semantic accuracy vs expected output | 0.7 - 0.8 | Q&A, factual responses |
-| `@fe.relevance()` | Response addresses the question | 0.7 - 0.8 | All conversational AI |
+| `@fe.relevance()` | Whether the response addresses the question | 0.7 - 0.8 | Conversational AI |
 | `@fe.hallucination()` | Absence of fabricated facts | 0.8 - 0.9 | Knowledge-based systems |
-| `@fe.toxicity()` | Absence of harmful content | 0.9 - 0.95 | User-facing applications |
+| `@fe.toxicity()` | Absence of harmful content | 0.9 - 0.95 | User-facing apps |
 | `@fe.bias()` | Fairness and neutrality | 0.8 - 0.9 | Sensitive topics |
 | `@fe.coherence()` | Logical consistency | 0.7 - 0.8 | Long-form generation |
 | `@fe.conciseness()` | Appropriate brevity | 0.6 - 0.8 | Summarization |
 
 ### RAG Metrics
 
-Specialized metrics for Retrieval-Augmented Generation systems that consider retrieved context:
+Built for Retrieval-Augmented Generation systems. These consider retrieved context alongside the response.
 
 | Decorator | What it Measures | Use Case |
 |-----------|-----------------|----------|
@@ -145,7 +139,7 @@ Specialized metrics for Retrieval-Augmented Generation systems that consider ret
 
 ### Deterministic Metrics
 
-Fast metrics that do not require LLM calls. Ideal for format validation and CI/CD pipelines:
+No LLM calls. Fast. Great for format validation and CI/CD:
 
 | Decorator | What it Checks | Use Case |
 |-----------|---------------|----------|
@@ -181,14 +175,7 @@ All metric decorators accept these parameters:
 
 ### Threshold Parameter
 
-The threshold determines the minimum score required to pass:
-
-| Threshold | Interpretation | Typical Use |
-|-----------|----------------|-------------|
-| 0.95+ | Very strict | Safety-critical metrics |
-| 0.80-0.94 | Standard | Production quality gates |
-| 0.70-0.79 | Moderate | Development and testing |
-| 0.50-0.69 | Lenient | Exploratory, creative tasks |
+The threshold is your minimum passing score. At 0.95+ you're in strict territory -- think safety-critical stuff where you can't afford mistakes. The 0.80-0.94 range is what we'd consider standard for production quality gates. Drop to 0.70-0.79 during development when you're still iterating. And 0.50-0.69? That's intentionally lenient, useful for exploratory or creative tasks where you don't want to over-constrain the output.
 
 ### Model Override
 
@@ -202,10 +189,7 @@ def test_with_overrides():
     fe.score(response, expected)
 ```
 
-Model selection considerations:
-- **Accuracy-critical metrics**: Use more capable models (GPT-4o, Claude Opus)
-- **High-volume metrics**: Use efficient models (GPT-4o-mini, Claude Haiku)
-- **Safety metrics**: Prefer models specifically trained for safety evaluation
+In practice, you'll want your most capable model (GPT-4o, Claude Opus) on accuracy-critical metrics where nuance matters. For high-volume metrics, switch to something efficient like GPT-4o-mini or Claude Haiku -- they're cheaper and faster, and often good enough. Safety metrics are a special case; we've found it's worth using models specifically trained for safety evaluation when you can.
 
 ### Weight Parameter
 
@@ -222,7 +206,7 @@ The aggregate score is the weighted average of all metric scores.
 
 ## The fe.score() Function
 
-Every test must call `fe.score()` to record outputs for evaluation. This function captures the data that metrics will assess.
+Every test must call `fe.score()` to record outputs for evaluation. This is how metrics get their data.
 
 ### Basic Usage
 
@@ -259,7 +243,7 @@ fe.score(
 
 ### Return Value
 
-`fe.score()` returns an `EvalResult` object containing detailed evaluation information:
+`fe.score()` returns an `EvalResult` object with detailed evaluation info:
 
 ```python
 result = fe.score(response, expected)
@@ -279,7 +263,7 @@ for mr in result.metric_results:
 
 ### Start Lenient, Tighten Over Time
 
-Begin with moderate thresholds and increase them as your system matures:
+Begin with moderate thresholds and ratchet them up as your system matures:
 
 ```python
 # During development
@@ -291,7 +275,7 @@ Begin with moderate thresholds and increase them as your system matures:
 
 ### Use Deterministic Metrics for Speed
 
-When exact matching suffices, avoid LLM calls:
+When exact matching suffices, skip the LLM calls:
 
 ```python
 # Fast: No LLM call needed
@@ -313,7 +297,7 @@ Organize metrics logically for readability:
 # Quality metrics
 @fe.correctness(threshold=0.8)
 @fe.relevance(threshold=0.8)
-# Safety metrics  
+# Safety metrics
 @fe.toxicity(threshold=0.95)
 @fe.bias(threshold=0.9)
 # Format checks
@@ -324,7 +308,7 @@ def test_production_ready():
 
 ### Provide Context When Available
 
-Always provide `input` and `context` parameters when available—they improve evaluation accuracy:
+Always pass `input` and `context` when you've got them -- they improve evaluation accuracy:
 
 ```python
 @fe.relevance(threshold=0.8)
@@ -333,7 +317,7 @@ def test_rag_response():
     query = "What's the return policy?"
     docs = retriever.search(query)
     response = rag_agent(query, docs)
-    
+
     fe.score(
         response,
         expected="Returns accepted within 30 days",

@@ -19,9 +19,9 @@ sidebar:
 
 # Metrics Overview
 
-Metrics are the core building blocks of fasteval evaluation. Each metric assesses a specific quality dimension of LLM outputs, returning a score between 0.0 and 1.0 along with reasoning that explains the assessment.
+Everything in fasteval revolves around metrics. You pick the ones that matter for your use case, set thresholds, and let them score your LLM's output on a 0.0 to 1.0 scale — with reasoning attached so you can actually understand *why* something scored the way it did.
 
-fasteval provides metrics across four categories, each designed for specific evaluation needs and use cases.
+We've organized metrics into four categories. Some are fast and deterministic, others use an LLM judge under the hood. The tradeoff is always speed vs. depth of understanding.
 
 ![Metric Categories](docs/assets/metrics-categories.svg)
 
@@ -36,29 +36,33 @@ fasteval provides metrics across four categories, each designed for specific eva
 
 ### When to Use Each Category
 
-- **LLM-Based Metrics**: When you need semantic understanding that goes beyond surface-level text matching. Use for evaluating correctness, relevance, safety, and nuanced quality dimensions.
+**LLM-Based Metrics** are your go-to when surface-level text matching won't cut it. You need them for evaluating correctness, relevance, safety, and any quality dimension that requires understanding what the text actually *means* — not just what characters it contains.
 
-- **RAG Metrics**: When evaluating Retrieval-Augmented Generation systems where answers must be grounded in retrieved context. These metrics specifically assess the relationship between generated content and source documents.
+**RAG Metrics** come into play when you're building retrieval-augmented generation pipelines. They're specifically designed to evaluate the relationship between what your model generated and what the source documents actually say. If your answers need to be grounded in retrieved context, these are non-negotiable.
 
-- **Deterministic Metrics**: When exact matching, format validation, or high-speed evaluation is required. Ideal for CI/CD pipelines, format compliance, and scenarios where LLM evaluation would be overkill.
+**Deterministic Metrics** are instant and don't hit any API. Use them for exact matching, format validation, and anywhere you'd rather not wait on an LLM call. They're perfect for CI/CD pipelines, and honestly, they're often all you need for structural checks. Don't overthink it.
 
-- **Conversation Metrics**: When evaluating multi-turn dialogues where context retention, consistency, and topic management matter. These metrics analyze the full conversation history.
+**Conversation Metrics** matter when you're building multi-turn systems — chatbots, support agents, assistants. They look at the full conversation history to evaluate context retention, consistency, and whether the bot stays on topic across turns.
 
 ## LLM-Based Metrics
 
-LLM-based metrics use an LLM judge to assess semantic qualities of responses. They provide nuanced evaluation that understands meaning, paraphrasing, and context.
+LLM-based metrics use a judge model to evaluate the *meaning* of responses. They get paraphrasing. They understand nuance. And they're the only way to catch subtle quality issues that rule-based checks will miss entirely.
 
 ### Available Metrics
 
-| Metric | What it Measures | When to Use |
-|--------|-----------------|-------------|
-| **Correctness** | Semantic accuracy vs expected output | Q&A systems, factual queries |
-| **Relevance** | Does the response address the question? | All conversational AI |
-| **Hallucination** | Is everything grounded in facts or context? | Knowledge-based systems |
-| **Toxicity** | Is the content safe and appropriate? | User-facing applications |
-| **Bias** | Is the response fair and neutral? | Sensitive topics, hiring tools |
-| **Coherence** | Is the response logically consistent? | Long-form generation |
-| **Conciseness** | Is the response appropriately brief? | Summarization, customer support |
+**Correctness** measures semantic accuracy against an expected output. It's the workhorse metric for Q&A systems and factual queries — did the model get it right?
+
+**Relevance** checks whether the response actually addresses the question that was asked. Useful across pretty much all conversational AI.
+
+**Hallucination** flags content that isn't grounded in facts or provided context. Essential for knowledge-based systems where making things up is a dealbreaker.
+
+**Toxicity** evaluates whether content is safe and appropriate. If your app is user-facing, you want this one.
+
+**Bias** assesses fairness and neutrality. In practice, it's critical for sensitive domains — hiring tools, financial advice, anything where slanted output causes real harm.
+
+**Coherence** looks at logical consistency within the response. Long-form generation tends to drift, and this catches it.
+
+**Conciseness** judges whether the response is appropriately brief. Summarization tasks and customer support bots benefit most here.
 
 ### How They Work
 
@@ -82,36 +86,23 @@ def test_qa_bot():
 
 ### Threshold Guidelines
 
-| Metric | Typical Threshold | Rationale |
-|--------|------------------|-----------|
-| Correctness | 0.75-0.85 | Must be substantially accurate |
-| Relevance | 0.70-0.80 | Should address the question |
-| Hallucination | 0.80-0.90 | Moderate tolerance for grounding |
-| Toxicity | 0.90-0.95 | Very low tolerance for harmful content |
-| Bias | 0.80-0.90 | Moderate tolerance for neutrality |
-| Coherence | 0.70-0.80 | Should be logically consistent |
-| Conciseness | 0.60-0.75 | More lenient for style metrics |
+For **Correctness**, we recommend 0.75–0.85. The model needs to be substantially accurate — but perfection in wording isn't the goal. **Relevance** sits comfortably at 0.70–0.80; the response should address the question, though tangential context is sometimes fine. **Hallucination** thresholds should be higher — 0.80–0.90 — because ungrounded content erodes trust fast.
+
+**Toxicity** demands the strictest range: 0.90–0.95. You don't want much tolerance for harmful output. **Bias** works well at 0.80–0.90, giving moderate room while still catching significant skew. **Coherence** at 0.70–0.80 is reasonable since minor logical hiccups aren't always critical. And **Conciseness** is the most lenient at 0.60–0.75 — it's a style metric, so we give it more slack.
 
 ## RAG Metrics
 
-RAG metrics evaluate Retrieval-Augmented Generation systems, assessing both the retrieval quality and the generation's faithfulness to retrieved context.
+RAG metrics evaluate retrieval-augmented generation pipelines end to end. They look at both the quality of what you retrieved *and* whether the generated answer stayed faithful to those documents.
 
 ### Available Metrics
 
-| Metric | What it Measures | When to Use |
-|--------|-----------------|-------------|
-| **Faithfulness** | Is the response grounded in retrieved documents? | Any RAG system |
-| **Contextual Precision** | Are retrieved documents actually relevant? | Tuning retrievers |
-| **Contextual Recall** | Do retrieved documents cover the answer? | Knowledge coverage |
-| **Answer Correctness** | Combined RAG quality score | Overall RAG evaluation |
+**Faithfulness** is the big one. It checks whether the response is grounded in retrieved documents — catching those cases where the model generates something plausible but completely unsupported by the context. If you're running a RAG system, this is the metric you start with.
 
-### Key Concepts
+**Contextual Precision** measures your retriever's signal-to-noise ratio. Are the documents it's returning actually relevant to the query? Low precision means your retriever is pulling in junk.
 
-- **Faithfulness**: Evaluates whether claims in the response are supported by the provided context. Catches hallucinations where the model generates plausible but ungrounded information.
+**Contextual Recall** is the flip side — do the retrieved documents contain the information needed to answer the query? Low recall means your knowledge base has gaps, or your retriever isn't finding what's there.
 
-- **Contextual Precision**: Measures retrieval quality—whether the documents returned by your retriever are relevant to the query. Low precision indicates noise in retrieval results.
-
-- **Contextual Recall**: Measures retrieval coverage—whether the retrieved documents contain the information needed to answer the query. Low recall indicates missing knowledge.
+**Answer Correctness** gives you a combined RAG quality score. It's the single-number summary when you want an overall read on how well the whole pipeline is working.
 
 ### Example
 
@@ -128,34 +119,27 @@ def test_rag_pipeline():
 
 ### Threshold Guidelines
 
-| Metric | Typical Threshold | Rationale |
-|--------|------------------|-----------|
-| Faithfulness | 0.80-0.90 | High tolerance for grounding |
-| Contextual Precision | 0.70-0.80 | Some noise acceptable |
-| Contextual Recall | 0.70-0.80 | Complete coverage not always required |
-| Answer Correctness | 0.75-0.85 | Combined quality measure |
+**Faithfulness** should sit at 0.80–0.90. Grounding matters — a lot. A common mistake is setting this too low and then wondering why users complain about made-up answers. **Contextual Precision** and **Contextual Recall** both work well at 0.70–0.80. Some noise in retrieval results is normal, and complete coverage isn't always realistic. **Answer Correctness** at 0.75–0.85 gives you a solid overall quality bar without being punishingly strict.
 
 ## Deterministic Metrics
 
-Deterministic metrics provide instant evaluation without LLM calls. They use rule-based computation for exact matching, pattern validation, and format checking.
+No LLM calls. No latency. No cost. Deterministic metrics use rule-based computation for exact matching, pattern validation, and format checking. They run instantly.
 
 ### Available Metrics
 
-| Metric | What it Checks | Use Case |
-|--------|---------------|----------|
-| **Contains** | Substring exists in output | Required keywords, disclaimers |
-| **Exact Match** | Strings are identical | Structured outputs, specific formats |
-| **ROUGE** | Text overlap similarity | Summarization quality |
-| **JSON Schema** | Valid JSON matching schema | API responses, structured output |
-| **Regex** | Pattern matching | Format validation |
+**Contains** checks whether a substring exists in the output. Think required keywords, legal disclaimers, mandatory phrases — anything where specific text *must* appear.
+
+**Exact Match** verifies that strings are identical. It's strict by design. Use it for structured outputs where the format has to be precisely right.
+
+**ROUGE** measures text overlap similarity between the output and a reference. What we've found is it works best for summarization quality, where you want to confirm the key information survived.
+
+**JSON Schema** validates that output is valid JSON matching a given schema. If your LLM is producing API responses or structured data, this is how you catch malformed output before it hits production.
+
+**Regex** does pattern matching. Format validation, phone numbers, dates, IDs — any case where the shape of the text matters more than the meaning.
 
 ### When to Use Deterministic Metrics
 
-- **CI/CD pipelines**: Fast execution without API calls
-- **Format validation**: Schema compliance, required structure
-- **Required content**: Legal disclaimers, mandatory phrases
-- **High-volume testing**: Cost-effective for large test suites
-- **Complementing LLM metrics**: Layer with semantic evaluation
+In CI/CD pipelines, they're a no-brainer — fast execution with zero API calls. For format validation and schema compliance, they're the right tool. When you need to verify required content like legal disclaimers or mandatory phrases, **Contains** is simpler and cheaper than spinning up a judge model. For high-volume test suites where cost matters, deterministic metrics keep your bill under control. And they pair well with LLM metrics — layer them together so you get both structural checks and semantic evaluation.
 
 ### Example
 
@@ -175,23 +159,15 @@ def test_api_format():
 
 ## Conversation Metrics
 
-Conversation metrics evaluate multi-turn dialogues, analyzing how well the system maintains context, consistency, and topic coherence across turns.
+Conversation metrics evaluate multi-turn dialogues. They analyze how well a system holds context, stays consistent, and keeps the conversation on track across multiple exchanges.
 
 ### Available Metrics
 
-| Metric | What it Measures | When to Use |
-|--------|-----------------|-------------|
-| **Context Retention** | Does the bot remember previous turns? | Customer support, assistants |
-| **Consistency** | Are responses consistent across turns? | Any multi-turn system |
-| **Topic Drift** | Does the conversation stay on topic? | Focused task assistants |
+**Context Retention** evaluates whether the bot remembers information from earlier turns. A support bot should recall that order number you mentioned three messages ago. When it doesn't, users notice immediately.
 
-### Key Concepts
+**Consistency** catches contradictions across turns. If the bot says delivery takes 3 days in one response and 5 days in the next, that's a consistency failure. The gotcha here is that inconsistencies often only surface in longer conversations — so test with realistic turn counts.
 
-- **Context Retention**: Evaluates whether the system maintains information from earlier turns. A support bot should remember the user's order number mentioned three turns ago.
-
-- **Consistency**: Checks that the system doesn't contradict itself across turns. If it says delivery takes 3 days, it shouldn't later say 5 days.
-
-- **Topic Drift**: Monitors whether responses stay relevant to the conversation goal. Detects when the system inappropriately changes topics.
+**Topic Drift** monitors whether responses stay relevant to the conversation's goal. It detects when the system wanders off into unrelated territory. Focused task assistants — booking bots, troubleshooting agents — need this most.
 
 ### Example
 
@@ -251,9 +227,9 @@ Use deterministic metrics to avoid API latency:
 @fe.json_schema(schema=my_schema)      # Valid structure
 ```
 
-### Combining Metrics for Comprehensive Evaluation
+### Combining Metrics for Full Evaluation
 
-Production evaluation often requires multiple metric types:
+Production evaluation usually means mixing metric types:
 
 ```python
 @fe.correctness(threshold=0.8)     # LLM: semantic accuracy
@@ -264,4 +240,4 @@ def test_comprehensive():
     ...
 ```
 
-All metrics run and report independently. The test fails if **any** metric falls below its threshold, ensuring comprehensive quality coverage.
+All metrics run and report independently. The test fails if **any** metric falls below its threshold — so you'll know exactly which quality dimension broke and why.

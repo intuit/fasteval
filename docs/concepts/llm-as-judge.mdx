@@ -23,11 +23,11 @@ sidebar:
 
 # LLM as a Judge
 
-LLM-as-Judge is an evaluation paradigm where a language model assesses the quality, correctness, or safety of outputs from another LLM. This approach has emerged as a practical solution to the challenge of evaluating generative AI systems at scale, balancing the nuance of human judgment with the efficiency of automated testing.
+LLM-as-Judge is simple: you use one LLM to grade the output of another. Instead of writing fragile regex checks or manually reviewing thousands of responses, you let a capable model do the evaluating for you.
 
 ## What is LLM-as-Judge?
 
-Instead of manually reviewing every LLM output or writing brittle rule-based checks, you use a capable LLM (the "judge") to evaluate outputs against criteria you define. The judge model receives the output to evaluate, any reference material or criteria, and returns a structured assessment including a score and reasoning.
+You define criteria. A "judge" model scores outputs against those criteria and explains its reasoning. Feed it the output, some reference material, and scoring instructions — it hands back a score and a rationale.
 
 ![LLM as a Judge Flow](docs/assets/llm-as-judge-flow.svg)
 
@@ -46,31 +46,19 @@ Behind the scenes, fasteval constructs a prompt asking the judge LLM to evaluate
 
 ## Research Foundation
 
-The LLM-as-Judge paradigm has gained significant attention in academic research. Key findings support its practical utility:
+There's a growing body of research backing this pattern up. Here's what we think matters most.
 
-### Correlation with Human Judgment
+### It actually agrees with humans
 
-Research from multiple institutions has demonstrated that LLM judgments correlate highly with human evaluations when properly calibrated:
+The MT-Bench study (Zheng et al., 2023) found GPT-4 agreed with human annotators over 80% of the time on pairwise comparisons. AlpacaEval showed similar results — LLM judges rank outputs about as consistently as human annotators agree with each other. And JudgeLM (Zhu et al., 2023) pushed it further by fine-tuning judge models for even higher correlation. So the agreement is real, not just anecdotal.
 
-- **MT-Bench** (Zheng et al., 2023) showed GPT-4 agreement with human annotators exceeded 80% on pairwise comparisons
-- **AlpacaEval** demonstrated that LLM judges can effectively rank model outputs with agreement rates comparable to inter-annotator agreement
-- **JudgeLM** (Zhu et al., 2023) found that fine-tuned judge models achieve even higher correlation with human preferences
+### Position bias is a thing
 
-### Position Bias and Mitigation
+LLM judges sometimes prefer whichever response appears first (or second) in the prompt, regardless of quality. The fix is straightforward: randomize response order, run multiple evaluations and average, and use structured output formats that reduce ordering effects.
 
-Research has identified that LLM judges can exhibit position bias—preferring responses based on their position in the prompt rather than quality. Studies recommend:
+### Self-enhancement bias
 
-- Randomizing the order of responses in pairwise comparisons
-- Using multiple evaluation runs and averaging scores
-- Employing structured output formats that reduce ordering effects
-
-### Self-Enhancement Bias
-
-LLM judges may favor outputs similar to their own training distribution. Mitigation strategies include:
-
-- Using different model families for generation and evaluation
-- Calibrating thresholds empirically with known-good and known-bad examples
-- Supplementing LLM evaluation with deterministic checks where appropriate
+Judges tend to favor outputs that sound like something they'd generate. In practice, we've found a few things help: use a different model family for judging than you used for generation, calibrate thresholds with known-good and known-bad examples, and mix in deterministic checks where you can.
 
 ## How It Works
 
@@ -80,38 +68,17 @@ The judge LLM receives a structured prompt containing:
 2. **Reference/criteria** — Expected answer, context, or evaluation rubric
 3. **Scoring instructions** — How to assign a score (typically 0.0 to 1.0)
 
-The judge returns a structured response with a numerical score and reasoning that explains the assessment. This reasoning is crucial for debugging and understanding evaluation failures.
+The judge returns a numerical score plus reasoning that explains the assessment. That reasoning matters a lot for debugging — when a test fails, the "why" is right there.
 
 ### Evaluation Prompt Structure
 
-fasteval constructs evaluation prompts following established best practices:
-
-- Clear role definition for the judge ("You are an expert evaluator...")
-- Explicit scoring criteria with examples of each score level
-- Structured output format (JSON) for reliable parsing
-- Separation of the evaluation task from the content being evaluated
+fasteval builds evaluation prompts following a few key principles. The judge gets a clear role definition ("You are an expert evaluator...") along with explicit scoring criteria and examples of each score level. Outputs come back as structured JSON so parsing is reliable. And the evaluation task is kept separate from the content being evaluated, so the judge doesn't get confused about what it's actually scoring.
 
 ## When to Use LLM-as-Judge
 
-LLM-as-Judge excels at evaluating qualities that require semantic understanding:
+LLM-as-Judge shines when you need semantic understanding. It handles **semantic correctness** well because it gets paraphrasing, synonyms, and equivalent expressions. It's great at judging **relevance to a question** — understanding context and intent, not just keyword overlap. **Tone and style** assessments come naturally to it. And it can evaluate **safety and toxicity** since these models are trained to spot harmful content. It's also solid at **factual grounding** when you provide reference context to check against.
 
-| Good Fit | Why |
-|----------|-----|
-| **Semantic correctness** | Understands paraphrasing, synonyms, and equivalent expressions |
-| **Relevance to a question** | Comprehends context, intent, and topical alignment |
-| **Tone and style** | Can assess formality, helpfulness, and communication quality |
-| **Safety and toxicity** | Trained to recognize harmful, biased, or inappropriate content |
-| **Factual grounding** | Can verify claims against provided reference context |
-
-**Not ideal for:**
-
-| Poor Fit | Better Alternative |
-|----------|-------------------|
-| Exact string matching | Use `@fe.exact_match()` |
-| JSON schema validation | Use `@fe.json_schema()` |
-| Keyword presence | Use `@fe.contains()` |
-| Numerical calculations | Use deterministic checks |
-| Format compliance | Use regex or schema validation |
+But don't use it for everything. If you need exact string matching, use `@fe.exact_match()`. JSON schema validation? That's `@fe.json_schema()`. Keyword presence is just `@fe.contains()`. Numerical calculations and format compliance belong to deterministic checks — regex, schema validators, plain old assertions. Cheaper, faster, and more reliable for those jobs.
 
 ## Strengths
 
@@ -119,11 +86,11 @@ LLM-as-Judge excels at evaluating qualities that require semantic understanding:
 
 Unlike exact string matching, LLM judges understand that these expressions convey the same meaning:
 
-- "Paris is the capital" 
-- "The capital is Paris" 
+- "Paris is the capital"
+- "The capital is Paris"
 - "France's capital city is Paris"
 
-This semantic understanding allows evaluation to focus on meaning rather than surface form, which is essential for evaluating natural language generation.
+This lets evaluation focus on meaning rather than surface form. That's the whole point when you're evaluating natural language.
 
 ```python
 @fe.correctness(threshold=0.8)
@@ -135,12 +102,7 @@ def test_semantic_equivalence():
 
 ### Nuanced Assessment
 
-LLM judges can assess subtle qualities that would be difficult to capture with rule-based systems:
-
-- Is the response helpful but not overly verbose?
-- Does it acknowledge uncertainty appropriately?
-- Is the tone professional yet friendly?
-- Does the explanation build logically from simple to complex concepts?
+LLM judges can assess subtle qualities that rule-based systems can't touch. Is the response helpful but not rambling? Does it acknowledge uncertainty when it should? Is the tone right, professional but not stiff?
 
 ```python
 @fe.criteria(
@@ -154,25 +116,19 @@ def test_response_quality():
 
 ### Scalability
 
-- Run thousands of evaluations automatically without human reviewers
-- Consistent scoring with the same criteria applied every time
-- Integrates into CI/CD pipelines for continuous quality monitoring
-- Cost-effective compared to human evaluation at scale
+You can run thousands of evaluations without a single human reviewer. The same criteria get applied every time, so scoring stays consistent. It plugs straight into CI/CD pipelines for continuous quality monitoring. And at scale, it's dramatically cheaper than paying people to review outputs.
 
 ## Limitations and Mitigations
 
 ### Judge Bias
 
-The judge LLM has inherent biases from its training:
-
-- May prefer verbose responses over concise ones
-- Can be influenced by confident-sounding but incorrect answers
-- Different models may score the same output differently
+The judge LLM has its own biases baked in from training. It might prefer verbose responses over concise ones, or get fooled by confident-sounding answers that are flat wrong. Different models will also score the same output differently.
 
 **Mitigations:**
+
 - Use consistent judge models across evaluations
 - Calibrate thresholds empirically with known examples
-- Consider using multiple judge models and averaging for critical decisions
+- Consider multiple judge models and averaging for critical decisions
 - Set temperature to 0 for more deterministic evaluations
 
 ### Cost Considerations
@@ -186,6 +142,7 @@ Each evaluation requires an LLM API call:
 | Daily CI run | Variable | Budget accordingly | Reserve for critical paths |
 
 **Mitigations:**
+
 - Use cheaper models (GPT-4o-mini, Claude Haiku) for most tests
 - Reserve expensive models for critical evaluation paths
 - Combine with deterministic checks to reduce LLM calls
@@ -193,12 +150,13 @@ Each evaluation requires an LLM API call:
 
 ### Non-Determinism
 
-The same input may receive slightly different scores across runs due to LLM generation variance.
+The same input may receive slightly different scores across runs. That's just how LLMs work.
 
 **Mitigations:**
+
 - Set `temperature=0` for the judge model
 - Use consistent prompts and avoid ambiguous criteria
-- Set appropriate threshold margins (if scores cluster around 0.85, don't set threshold at 0.85)
+- Build in threshold margins (if scores cluster around 0.85, don't set your threshold at 0.85)
 - For critical decisions, run multiple evaluations and average
 
 ## LLM-as-Judge vs Human Evaluation
@@ -218,12 +176,11 @@ The same input may receive slightly different scores across runs due to LLM gene
 - Validating your LLM-as-Judge setup (meta-evaluation)
 - Handling edge cases and ambiguous scenarios
 - High-stakes decisions requiring accountability
-- Discovering new failure modes not captured by existing metrics
 - Building calibration datasets for threshold tuning
 
 **Hybrid approach:**
 
-Research suggests that combining LLM and human evaluation provides the best balance of coverage and accuracy. Use LLM-as-Judge for high-volume automated testing, with human review on a sample to validate and calibrate.
+What we've found works best is combining both. Use LLM-as-Judge for the high-volume automated runs, then have humans review a sample to validate and calibrate. You get coverage and accuracy without burning your budget.
 
 ```python
 @fe.correctness(threshold=0.8)
@@ -265,7 +222,7 @@ fe.set_default_provider(client)
 
 ### 3. Calibrate Thresholds Empirically
 
-Do not guess thresholds—measure them with known examples:
+Don't guess thresholds — measure them with known examples:
 
 1. Collect a set of known-good and known-bad responses
 2. Run evaluation on all examples without thresholds
@@ -294,7 +251,7 @@ When a test fails, always check the judge's reasoning:
 def test_with_review():
     response = agent(query)
     result = fe.score(response, expected)
-    
+
     # Access reasoning for debugging
     for metric in result.metric_results:
         if not metric.passed:

@@ -23,11 +23,11 @@ sidebar:
 
 # Testing Patterns
 
-fasteval integrates seamlessly with pytest's assertion system. You can use traditional `assert` statements alongside fasteval's decorator-based evaluation, giving you full control over your test logic.
+fasteval works with pytest's assertion system out of the box. You can use regular `assert` statements right alongside fasteval's decorator-based evaluation — nothing special required.
 
 ## Working with EvalResult
 
-The `fe.score()` function returns an `EvalResult` object containing detailed information about the evaluation:
+`fe.score()` returns an `EvalResult` object with everything you need to know about how the evaluation went.
 
 ![EvalResult Structure](docs/assets/evalresult-structure.svg)
 
@@ -38,7 +38,7 @@ import fasteval as fe
 def test_qa():
     response = agent("What is 2+2?")
     result = fe.score(response, "4", input="What is 2+2?")
-    
+
     # EvalResult properties:
     # result.passed          - True if all metrics passed their thresholds
     # result.aggregate_score - Weighted average of all metric scores (0.0-1.0)
@@ -46,7 +46,7 @@ def test_qa():
     # result.eval_input      - The input data used for evaluation
 ```
 
-Each `MetricResult` in `result.metric_results` contains:
+Each `MetricResult` in `result.metric_results` gives you the breakdown per metric:
 
 ```python
 # MetricResult properties:
@@ -59,7 +59,7 @@ Each `MetricResult` in `result.metric_results` contains:
 
 ## Custom Assertions
 
-Use the returned `EvalResult` for granular assertions beyond threshold checks:
+You can use the returned `EvalResult` for more granular assertions beyond the basic threshold check.
 
 ### Assert on Aggregate Score
 
@@ -69,7 +69,7 @@ Use the returned `EvalResult` for granular assertions beyond threshold checks:
 def test_high_quality_response():
     response = agent(query)
     result = fe.score(response, expected)
-    
+
     # Require higher aggregate score for critical tests
     assert result.aggregate_score > 0.85, \
         f"Quality too low: {result.aggregate_score:.2f}"
@@ -84,7 +84,7 @@ def test_high_quality_response():
 def test_with_metric_checks():
     response = agent(query)
     result = fe.score(response, expected)
-    
+
     # Find and check specific metric
     for mr in result.metric_results:
         if mr.metric_name == "correctness":
@@ -100,7 +100,7 @@ def test_with_metric_checks():
 def test_with_detailed_failure():
     response = agent(query)
     result = fe.score(response, expected)
-    
+
     # Build detailed assertion message
     if not result.passed:
         failed = [mr for mr in result.metric_results if not mr.passed]
@@ -113,7 +113,7 @@ def test_with_detailed_failure():
 
 ## Combining with Traditional Assertions
 
-Standard pytest assertions work alongside fasteval decorators. This is useful for validating preconditions, response format, or business logic:
+Normal pytest assertions work fine next to fasteval decorators. We'd recommend using them to validate preconditions, check response format, or enforce business logic before the LLM eval runs:
 
 ### Validate Before Evaluating
 
@@ -122,12 +122,12 @@ Standard pytest assertions work alongside fasteval decorators. This is useful fo
 @fe.toxicity(threshold=0.95)
 def test_response_validation():
     response = agent(query)
-    
+
     # Traditional assertions first
     assert response is not None, "Agent returned None"
     assert len(response) > 0, "Response is empty"
     assert len(response) < 10000, "Response too long"
-    
+
     # Then run LLM evaluation
     fe.score(response, expected)
 ```
@@ -138,13 +138,13 @@ def test_response_validation():
 @fe.correctness(threshold=0.8)
 def test_json_response():
     response = agent("Generate user profile as JSON")
-    
+
     # Validate JSON structure
     import json
     data = json.loads(response)  # Raises if invalid JSON
     assert "name" in data, "Missing 'name' field"
     assert "email" in data, "Missing 'email' field"
-    
+
     # Then evaluate content quality
     fe.score(response, expected_profile)
 ```
@@ -155,11 +155,11 @@ def test_json_response():
 @fe.correctness(threshold=0.8)
 def test_price_calculation():
     response = agent("What's the total for 3 items at $10 each?")
-    
+
     # Check business logic
     assert "$30" in response or "30 dollars" in response.lower(), \
         "Incorrect price calculation"
-    
+
     # Evaluate explanation quality
     fe.score(response, "The total is $30")
 ```
@@ -168,7 +168,7 @@ def test_price_calculation():
 
 ### Using EvaluationFailedError
 
-When any metric fails its threshold, `fe.score()` raises `EvaluationFailedError`. You can catch this for custom handling:
+When any metric fails its threshold, `fe.score()` raises `EvaluationFailedError`. You can catch this if you need custom handling:
 
 ```python
 from fasteval.models import EvaluationFailedError
@@ -176,19 +176,19 @@ from fasteval.models import EvaluationFailedError
 @fe.correctness(threshold=0.8)
 def test_with_error_handling():
     response = agent(query)
-    
+
     try:
         fe.score(response, expected)
     except EvaluationFailedError as e:
         # Access the full result
         print(f"Aggregate score: {e.result.aggregate_score:.2f}")
-        
+
         # Log failed metrics
         for mr in e.result.metric_results:
             if not mr.passed:
                 print(f"{mr.metric_name}: {mr.score:.2f}")
                 print(f"  Reason: {mr.reasoning}")
-        
+
         # Re-raise for pytest
         raise
 ```
@@ -202,14 +202,14 @@ from fasteval.models import EvaluationFailedError
 @fe.correctness(threshold=0.8)
 def test_with_conditional_handling():
     response = agent(query)
-    
+
     try:
         fe.score(response, expected)
     except EvaluationFailedError as e:
         # In CI, fail immediately
         if os.getenv("CI"):
             raise
-        
+
         # Locally, log and continue if close to threshold
         if e.result.aggregate_score > 0.7:
             print(f"Warning: Score {e.result.aggregate_score:.2f} below threshold")
@@ -227,13 +227,13 @@ def test_multi_step_validation():
     # Step 1: Get response
     response = agent(query)
     assert response, "No response received"
-    
+
     # Step 2: Validate format
     assert not response.startswith("Error"), "Agent returned error"
-    
+
     # Step 3: Run evaluation
     result = fe.score(response, expected)
-    
+
     # Step 4: Additional checks on result
     assert result.aggregate_score > 0.75
 ```
@@ -260,7 +260,7 @@ def assert_quality_score(result, min_score=0.8, metric_name=None):
 def test_with_helper():
     response = agent(query)
     result = fe.score(response, expected)
-    
+
     # Use helper for additional checks
     assert_quality_score(result, min_score=0.85)
     assert_quality_score(result, min_score=0.9, metric_name="correctness")
@@ -280,7 +280,7 @@ import pytest
 def test_parametrized_with_thresholds(query, expected, min_score):
     response = agent(query)
     result = fe.score(response, expected, input=query)
-    
+
     assert result.aggregate_score >= min_score, \
         f"Score {result.aggregate_score:.2f} below required {min_score} for: {query}"
 ```
@@ -291,7 +291,7 @@ def test_parametrized_with_thresholds(query, expected, min_score):
 @fe.correctness(threshold=0.8)
 def test_multiple_queries():
     failures = []
-    
+
     for query, expected in test_cases:
         response = agent(query)
         try:
@@ -300,21 +300,21 @@ def test_multiple_queries():
                 failures.append(f"{query}: score {result.aggregate_score:.2f}")
         except Exception as e:
             failures.append(f"{query}: {e}")
-    
+
     assert not failures, f"Failures:\n" + "\n".join(failures)
 ```
 
 ## Mocking LangGraph Nodes
 
-When testing LangGraph agents, you often want to mock specific nodes to isolate the behavior you're testing. There are two main approaches: direct patching and the factory pattern.
+When you're testing LangGraph agents, you'll often want to mock out specific nodes so you can isolate the behavior you actually care about. Two approaches work well here: direct patching and the factory pattern.
 
 ![LangGraph Mocking Strategies](docs/assets/langgraph-mocking-strategies.svg)
 
-The **direct patching** approach uses Python's `unittest.mock` to replace node functions.
+**Direct patching** uses Python's `unittest.mock` to swap out node functions at test time.
 
 ### How Direct Patching Works
 
-Consider a LangGraph agent with a retrieval node:
+Say you've got a LangGraph agent with a retrieval node:
 
 ```python
 # my_agent/nodes.py
@@ -347,9 +347,9 @@ def test_rag_with_mocked_retrieval(mock_retrieval):
     mock_retrieval.return_value = {
         "context": ["Paris is the capital of France."]
     }
-    
+
     result = agent.invoke({"query": "What is the capital of France?"})
-    
+
     # Evaluate with the mocked context
     fe.score(
         result["output"],
@@ -360,7 +360,7 @@ def test_rag_with_mocked_retrieval(mock_retrieval):
 
 ### Using pytest-mock
 
-The `pytest-mock` library provides a cleaner `mocker` fixture:
+If you prefer a cleaner API, `pytest-mock` gives you a `mocker` fixture:
 
 ```python
 import fasteval as fe
@@ -370,14 +370,14 @@ def test_with_mocker(mocker):
     # Patch using mocker fixture
     mock_retrieval = mocker.patch("my_agent.graph.retrieval_node")
     mock_retrieval.return_value = {"context": ["Mocked context"]}
-    
+
     result = agent.invoke({"query": "test query"})
     fe.score(result["output"], context=["Mocked context"])
 ```
 
 ### Common Gotchas
 
-**Wrong patch path:** Always patch where the function is imported, not where it's defined.
+**Wrong patch path:** Always patch where the function is imported, not where it's defined. This one bites everyone at least once.
 
 ```python
 # Wrong - patches the original module
@@ -387,7 +387,7 @@ def test_with_mocker(mocker):
 @patch("my_agent.graph.retrieval_node")
 ```
 
-**Forgetting return value:** Mocks return `MagicMock` by default. Always set `return_value`:
+**Forgetting return value:** Mocks return `MagicMock` by default, which isn't what your node expects. Always set `return_value`:
 
 ```python
 mock_retrieval.return_value = {"context": ["actual docs"]}
@@ -395,7 +395,7 @@ mock_retrieval.return_value = {"context": ["actual docs"]}
 
 ## Test Graph Factory
 
-For more explicit control, design your agent as a factory that accepts swappable nodes. This pattern is more verbose but provides better test isolation and is refactor-safe.
+For more explicit control, we'd recommend structuring your agent as a factory that takes swappable nodes. It's a bit more verbose, but you get better test isolation and it won't break when you refactor.
 
 ### Creating a Factory
 
@@ -410,24 +410,24 @@ def create_agent(
 ):
     """
     Factory function that creates an agent with injectable nodes.
-    
+
     Args:
         retrieval_fn: Custom retrieval node (uses default if None)
         generation_fn: Custom generation node (uses default if None)
-    
+
     Returns:
         Compiled LangGraph agent
     """
     graph = StateGraph(AgentState)
-    
+
     # Use provided functions or defaults
     graph.add_node("retrieve", retrieval_fn or default_retrieval_node)
     graph.add_node("generate", generation_fn or default_generation_node)
-    
+
     graph.add_edge("retrieve", "generate")
     graph.set_entry_point("retrieve")
     graph.set_finish_point("generate")
-    
+
     return graph.compile()
 
 # Production usage
@@ -448,9 +448,9 @@ def mock_retrieval_node(state):
 def test_generation_with_mocked_retrieval():
     # Create agent with mocked retrieval
     test_agent = create_agent(retrieval_fn=mock_retrieval_node)
-    
+
     result = test_agent.invoke({"query": "Capital of France?"})
-    
+
     fe.score(
         result["output"],
         context=["Paris is the capital of France."]
@@ -484,7 +484,7 @@ def test_agent_generation(test_agent):
 
 ### Configurable Mock Fixtures
 
-For tests that need different mock behaviors:
+When different tests need different mock behaviors:
 
 ```python
 import pytest
@@ -508,7 +508,7 @@ def test_with_specific_context(agent_factory):
 
 ## Mocking Tool Calls
 
-When agents use external tools, mock them to control behavior and test tool trajectory evaluation.
+When your agents use external tools, mock them so you can control behavior and test tool trajectory evaluation.
 
 ### Basic Tool Mocking
 
@@ -524,9 +524,9 @@ def test_agent_searches_correctly(mock_search):
     mock_search.return_value = {
         "results": [{"id": 1, "name": "John Doe"}]
     }
-    
+
     response, tool_calls = agent.invoke("Find user John")
-    
+
     # Verify correct tool was called with right intent
     expected = [ExpectedTool(name="search_database")]
     fe.score(response, tool_calls=tool_calls, expected_tools=expected)
@@ -543,9 +543,9 @@ from fasteval import ExpectedTool
 @fe.tool_args_match(threshold=0.9)
 def test_booking_arguments(mock_book):
     mock_book.return_value = {"confirmation": "ABC123"}
-    
+
     response, tool_calls = agent.invoke("Book a flight to NYC tomorrow")
-    
+
     expected = [
         ExpectedTool(
             name="book_flight",
@@ -571,9 +571,9 @@ def test_booking_workflow(mock_confirm, mock_book, mock_search):
     mock_search.return_value = {"flights": [{"id": "F1", "price": 200}]}
     mock_book.return_value = {"confirmation": "ABC123"}
     mock_confirm.return_value = {"sent": True}
-    
+
     response, tool_calls = agent.invoke("Book the cheapest flight to NYC")
-    
+
     # Verify tools called in correct order
     expected = [
         ExpectedTool(name="search_flights"),
@@ -596,9 +596,9 @@ from fasteval import ExpectedTool
 def test_rag_agent_with_tools(mock_search):
     mock_context = ["Company policy: Returns accepted within 30 days."]
     mock_search.return_value = {"documents": mock_context}
-    
+
     response, tool_calls = agent.invoke("What's the return policy?")
-    
+
     expected_tools = [ExpectedTool(name="search_knowledge_base")]
     fe.score(
         response,
