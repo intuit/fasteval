@@ -23,18 +23,11 @@ sidebar:
 
 # Production Runtime Monitoring
 
-This cookbook shows how to monitor and evaluate LLM agents in production using the **fasteval-observe** plugin.
+Running evals in CI is one thing. Running them against live traffic is a different game entirely. This cookbook covers the `fasteval-observe` plugin -- sampling, async evaluation, and alerting without blocking your request path.
 
 ## Overview
 
-Production monitoring requires a different approach than testing:
-
-- **Sampling**: Can't evaluate every request (cost/latency)
-- **Async**: Evaluation must not block request path
-- **Observability**: Need structured logs for external collectors
-- **Adaptive**: Sample more on errors/anomalies
-
-The `fasteval-observe` plugin handles all of this:
+Production monitoring has different constraints than testing. You can't evaluate every request (cost and latency would kill you), evaluation has to happen off the critical path, and you need structured logs that external collectors can parse. The `fasteval-observe` plugin handles all of this:
 
 ```python
 from fasteval_observe import observe
@@ -60,19 +53,17 @@ pip install fasteval-core fasteval-observe
 
 ### Configuration
 
-Create a configuration file for your environment:
-
 ```python
 # config/production.py
 from fasteval_observe import ObserveConfig, configure_observe
 
 configure_observe(ObserveConfig(
     enabled=True,
-    
+
     # Privacy: Don't log sensitive data in production
     include_inputs=False,
     include_outputs=False,
-    
+
     # Performance
     max_queue_size=10000,
     flush_interval_seconds=5.0,
@@ -113,7 +104,7 @@ shutdown_observer()
 
 ### Observation Output
 
-Logs are JSON-formatted for easy parsing:
+Logs come out as JSON for easy parsing:
 
 ```json
 {
@@ -159,11 +150,11 @@ async def agent(query: str) -> str:
     return await llm.invoke(query)
 ```
 
-**Use when:** Steady-state monitoring, budget constraints
+Good for steady-state monitoring and budget constraints.
 
 ### Adaptive (Error-Aware)
 
-Increase sampling on errors and slow responses:
+This is what we recommend for most teams. It keeps baseline costs low but automatically cranks up sampling when things go wrong.
 
 ```python
 from fasteval_observe.sampling import AdaptiveSamplingStrategy
@@ -182,11 +173,9 @@ async def agent(query: str) -> str:
     return await llm.invoke(query)
 ```
 
-**Use when:** Debugging performance issues, incident response
-
 ### Token Budget (Cost-Aware)
 
-Limit evaluation costs by token budget:
+If you've got a strict budget, cap evaluation costs by token spend per hour:
 
 ```python
 from fasteval_observe.sampling import TokenBudgetSamplingStrategy
@@ -201,8 +190,6 @@ from fasteval_observe.sampling import TokenBudgetSamplingStrategy
 async def agent(query: str) -> str:
     return await llm.invoke(query)
 ```
-
-**Use when:** Strict budget constraints, high-volume production
 
 ### Composable (Combined Strategies)
 
@@ -256,9 +243,9 @@ async def lifespan(app: FastAPI):
         include_outputs=False,
     ))
     initialize_observer()
-    
+
     yield
-    
+
     # Shutdown
     shutdown_observer()
 
@@ -302,7 +289,7 @@ async def health_check():
     """Health check with queue monitoring."""
     queue = get_observation_queue()
     queue_size = queue._queue.qsize() if queue._queue else 0
-    
+
     return {
         "status": "healthy",
         "observer": {
@@ -317,7 +304,7 @@ async def health_check():
 
 ### Logging to Stdout (Sidecar Collection)
 
-Default configuration logs to stdout for collection by log aggregators:
+By default, observations log to stdout. A Fluentd sidecar picks them up for your log aggregator:
 
 ```yaml
 # deployment.yaml
@@ -342,7 +329,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
-      
+
       # Fluentd sidecar to collect logs
       - name: fluentd
         image: fluent/fluentd-kubernetes-daemonset:v1-debian-elasticsearch
@@ -380,7 +367,7 @@ async def my_agent(query: str) -> str:
 
 ### Custom Logger (Direct to Service)
 
-Send logs directly to your logging service:
+If you'd rather skip the sidecar and send logs straight to a remote service:
 
 ```python
 import logging
@@ -462,12 +449,12 @@ from fasteval_observe import set_logger
 
 class ElasticsearchHandler(logging.Handler):
     """Log observations to Elasticsearch."""
-    
+
     def __init__(self, es_client: AsyncElasticsearch, index: str):
         super().__init__()
         self.es = es_client
         self.index = index
-    
+
     def emit(self, record):
         """Send log record to Elasticsearch."""
         try:
@@ -496,26 +483,26 @@ from datetime import datetime, timedelta
 
 class ScoreMonitor:
     """Monitor evaluation scores and alert on degradation."""
-    
+
     def __init__(self, window_minutes: int = 60):
         self.window = timedelta(minutes=window_minutes)
         self.scores = deque()
-    
+
     def add_score(self, score: float):
         """Add a new score."""
         now = datetime.utcnow()
         self.scores.append((now, score))
-        
+
         # Remove old scores outside window
         cutoff = now - self.window
         while self.scores and self.scores[0][0] < cutoff:
             self.scores.popleft()
-    
+
     def check_degradation(self, threshold: float = 0.7) -> bool:
         """Check if average score dropped below threshold."""
         if len(self.scores) < 10:  # Need minimum samples
             return False
-        
+
         avg_score = sum(s for _, s in self.scores) / len(self.scores)
         return avg_score < threshold
 
@@ -527,7 +514,7 @@ def process_observation(obs):
     if obs.get("evaluation_results"):
         score = obs["evaluation_results"]["aggregate_score"]
         monitor.add_score(score)
-        
+
         if monitor.check_degradation(threshold=0.7):
             send_alert("Agent quality degraded!")
 ```
@@ -548,7 +535,7 @@ async def send_pagerduty_alert(message: str, severity: str = "error"):
             "source": "fasteval-observe",
         }
     }
-    
+
     async with httpx.AsyncClient() as client:
         await client.post(
             "https://events.pagerduty.com/v2/enqueue",
@@ -565,13 +552,13 @@ if result.aggregate_score < 0.6:
 
 ## Best Practices
 
-1. **Start with low sampling rates** (1-5%) and increase as needed
-2. **Use adaptive sampling** to catch errors without high costs
-3. **Monitor queue health** in your health checks
-4. **Don't log PII** in production (set `include_inputs=False`)
-5. **Set up alerting** on score degradation
-6. **Review metrics weekly** to catch trends
-7. **Test sampling strategies** in staging first
+We've learned a few things running this in production:
+
+- **Start with low sampling rates** (1-5%) and increase as needed. You can always turn it up.
+- **Use adaptive sampling** to catch errors without blowing your budget.
+- **Monitor the observation queue** in health checks -- if it backs up, you've got a problem.
+- **Don't log PII** in production (`include_inputs=False`). Seriously.
+- **Set up alerting on score degradation** before you need it, not after.
 
 ## Next Steps
 

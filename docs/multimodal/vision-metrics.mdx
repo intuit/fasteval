@@ -6,7 +6,7 @@ order: 2
 
 # Vision Metrics
 
-Evaluate vision-language models (VLMs) that take images + text and produce text responses.
+These metrics are built for vision-language models (VLMs) — systems that take images plus text and produce text responses.
 
 ## Installation
 
@@ -18,7 +18,7 @@ pip install fasteval-core[vision]
 
 ### `@fe.image_understanding`
 
-Evaluates if the model correctly understands and describes image content.
+Does the model actually understand what's in the image? This metric checks.
 
 ```python
 import fasteval as fe
@@ -46,7 +46,7 @@ def test_vision_qa():
 
 ### `@fe.ocr_accuracy`
 
-Evaluates text extraction accuracy from images/documents.
+Evaluates text extraction accuracy from images and documents. It supports two modes: field-based extraction using `expected_fields` for comparing specific values, and full text comparison using `expected_output` for the entire extracted text.
 
 ```python
 @fe.ocr_accuracy(threshold=0.95)
@@ -58,10 +58,6 @@ def test_document_extraction():
     )
 ```
 
-Supports two modes:
-1. **Field-based extraction** - Compare specific fields using `expected_fields`
-2. **Full text comparison** - Compare entire extracted text using `expected_output`
-
 **Parameters:**
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
@@ -70,7 +66,7 @@ Supports two modes:
 
 ### `@fe.chart_interpretation`
 
-Evaluates correct reading of charts, graphs, and data visualizations.
+Evaluates correct reading of charts, graphs, and data visualizations. It checks numerical values, trend and pattern identification, and whether labels, legends, and axes are interpreted correctly.
 
 ```python
 @fe.chart_interpretation(threshold=0.8)
@@ -87,14 +83,9 @@ def test_chart_reading():
     )
 ```
 
-Checks:
-- Numerical values read correctly
-- Trends and patterns identified accurately
-- Labels, legends, and axes interpreted correctly
-
 ### `@fe.visual_grounding`
 
-Evaluates if response correctly references specific image regions.
+Can the model point to the right place? This metric evaluates whether responses correctly reference specific image regions — object identification, spatial references (left, right, top, bottom), and relative positions between objects.
 
 ```python
 @fe.visual_grounding(threshold=0.8)
@@ -110,14 +101,9 @@ def test_object_location():
     )
 ```
 
-Checks:
-- Correct object identification
-- Accurate spatial references (left, right, top, bottom)
-- Relative positions between objects
-
 ### `@fe.image_faithfulness`
 
-Evaluates if the response is grounded in what the image shows (no hallucinations).
+Catches hallucinations. This metric verifies that every claim in the response is actually visible in the image — no hallucinated details, no misattributions.
 
 ```python
 @fe.image_faithfulness(threshold=0.85)
@@ -128,11 +114,6 @@ def test_faithful_description():
         image="photo.jpg"
     )
 ```
-
-Checks:
-- All claims are verifiable in the image
-- No hallucinated details
-- No misattributions
 
 ## Image Input Formats
 
@@ -186,7 +167,7 @@ class MyVisionMetric(BaseVisionMetric):
 
     def get_evaluation_prompt(self, eval_input: EvalInput) -> str:
         return f"""Evaluate the image response.
-        
+
 Query: {eval_input.input}
 Response: {eval_input.actual_output}
 
@@ -202,7 +183,4 @@ def test_custom():
 
 ## Best Practices
 
-1. **Use vision-capable models** - Set `model="gpt-4-vision-preview"` or similar
-2. **Resize large images** - Images are automatically resized to max 2048px
-3. **Provide context** - Include the original query in `input` for better evaluation
-4. **Use expected_fields for extraction** - More precise than full text comparison
+Make sure you're using a vision-capable model — set `model="gpt-4-vision-preview"` or similar. Large images get automatically resized to max 2048px, but it's still worth keeping input sizes reasonable. Always include the original query in `input` so the evaluator has proper context. For extraction tasks, `expected_fields` gives you much more precise results than full text comparison.

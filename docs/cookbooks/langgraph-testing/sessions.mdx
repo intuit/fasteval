@@ -19,11 +19,11 @@ sidebar:
 
 # Multi-turn Sessions [Open in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/sessions.ipynb)
 
-This page covers multi-turn conversation testing with the `fasteval-langgraph` harness: sessions with shared state, conversation metrics, state seeding, and human-in-the-loop interrupt/resume flows.
+Single-turn tests only get you so far. Real agents carry state across turns, and that's where bugs hide. This page covers sessions (shared threads), conversation-specific metrics, state seeding, and interrupt/resume testing.
 
 ## Creating a Session
 
-While `.chat()` creates a new thread per call, `.session()` gives you a shared thread for multi-turn conversations:
+While `.chat()` creates a new thread per call, `.session()` gives you a shared thread where state accumulates:
 
 ```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/sessions.ipynb#scrollTo=create_session)
 from fasteval_langgraph import harness
@@ -39,7 +39,7 @@ async with graph.session() as s:
     print(r2.state["call_count"])  # 2
 ```
 
-Sessions can also be used without the context manager:
+You can also skip the context manager:
 
 ```python
 s = graph.session()
@@ -56,7 +56,7 @@ print(s.thread_id)  # UUID string
 
 ### Session-level Config and Context
 
-Pass session-wide overrides that apply to all turns:
+Pass session-wide overrides that apply to every turn:
 
 ```python
 async with graph.session(
@@ -71,7 +71,7 @@ async with graph.session(
 
 ## Conversation Metrics
 
-fasteval provides three conversation-specific metrics that work naturally with sessions:
+fasteval ships three conversation-specific metrics that pair naturally with sessions:
 
 | Metric | What it checks |
 |--------|---------------|
@@ -81,7 +81,7 @@ fasteval provides three conversation-specific metrics that work naturally with s
 
 ### Context Retention
 
-Test that your agent remembers user information across turns:
+Test that your agent actually remembers what the user said:
 
 ```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/sessions.ipynb#scrollTo=context_retention)
 import fasteval as fe
@@ -105,7 +105,7 @@ async def test_remembers_user_name():
 
 ### Consistency
 
-Verify the agent doesn't contradict earlier responses:
+Catch contradictions between turns:
 
 ```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/sessions.ipynb#scrollTo=consistency)
 @fe.consistency(threshold=0.85)
@@ -127,7 +127,7 @@ async def test_price_consistency():
 
 ### Topic Drift
 
-Ensure the agent stays on topic:
+Make sure the agent doesn't wander off:
 
 ```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/sessions.ipynb#scrollTo=topic_drift)
 @fe.topic_drift(threshold=0.8)
@@ -168,7 +168,7 @@ async with graph.session() as s:
     print(s.history[2].response)  # Response to "Third message"
 ```
 
-Use history to build the conversation context for `fe.score()`:
+Handy helper for building the `history` arg for `fe.score()`:
 
 ```python
 def build_history_from_session(session):
@@ -182,7 +182,7 @@ def build_history_from_session(session):
 
 ## State Seeding
 
-Use `update_state()` to pre-load data into the graph state before continuing the conversation:
+Use `update_state()` to inject data into the graph state before the conversation continues. This is useful when you want to test a specific scenario without simulating all the turns that would normally produce that state:
 
 ```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/sessions.ipynb#scrollTo=state_seeding)
 async with graph.session() as s:
@@ -196,15 +196,11 @@ async with graph.session() as s:
     r1 = await s.chat("What features do I have access to?")
 ```
 
-This is useful for:
-
-- Setting up user context without simulating earlier turns
-- Testing specific states that are hard to reach organically
-- Providing mock retrieval results or tool outputs
+In practice, we use this for setting up user context without faking earlier turns, testing states that are hard to reach organically, and providing mock retrieval results or tool outputs.
 
 ## Interrupt and Resume
 
-For human-in-the-loop agents that use `interrupt()`, the session automatically detects the interrupt and uses `resume_fn` on the next `.chat()` call:
+For human-in-the-loop agents that use `interrupt()`, the session auto-detects the interrupt and sends a `Command(resume=...)` on the next `.chat()` call:
 
 ```python
 from langgraph.graph import StateGraph, START, END
@@ -262,7 +258,7 @@ async with graph.session() as s:
 
 ### Custom resume_fn
 
-By default, the harness uses `Command(resume=msg)`. Override with a custom `resume_fn`:
+By default, the harness uses `Command(resume=msg)`. Override it when you need a different shape:
 
 ```python
 from langgraph.types import Command
@@ -275,7 +271,7 @@ graph = harness(
 
 ## Designing Multi-turn Test Suites
 
-When testing multi-turn agents, organize your tests by conversation scenario:
+Organize tests by conversation scenario. Each test class covers one flow:
 
 ```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/sessions.ipynb#scrollTo=test_suite_design)
 import pytest
@@ -327,8 +323,7 @@ class TestSupportFlow:
 
 ### Tips
 
-- **Isolate scenarios**: Each test class covers one conversation flow
-- **Build history progressively**: Accumulate the `history` list as the conversation progresses
+- **Isolate scenarios**: One test class per conversation flow
+- **Build history progressively**: Accumulate the `history` list as the conversation goes
 - **Test edge cases**: Off-topic messages, topic switches, user corrections
-- **Use `update_state()`**: Skip to specific conversation states for targeted testing
-- **Parametrize**: Use `@pytest.mark.parametrize` for variations of the same flow
+- **Use `update_state()`** to skip to specific conversation states for targeted testing

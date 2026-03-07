@@ -15,7 +15,7 @@ sidebar:
 
 # Relevance Metric
 
-A correct answer is useless if it doesn't address the question. The relevance metric ensures your LLM actually responds to what the user asked, not something tangentially related.
+A correct answer is useless if it doesn't address the question. The relevance metric catches when your LLM goes off-topic, answering something the user didn't ask about.
 
 ## Quick Example
 
@@ -63,8 +63,8 @@ def test_support_relevance():
     fe.score(response, input=query)
 ```
 
-A response like "We're open 9-5 Monday through Friday" → high score.
-A response about return policies → low score.
+A response like "We're open 9-5 Monday through Friday" gets a high score.
+A response about return policies gets a low score.
 
 ### With Correctness
 
@@ -105,7 +105,7 @@ test_support_relevance PASSED
 
 Evaluation Results:
   ✓ relevance: 0.88 (threshold: 0.70)
-    Reasoning: The response directly addresses the business hours 
+    Reasoning: The response directly addresses the business hours
     question with specific times and days of operation.
 ```
 
@@ -116,23 +116,14 @@ test_support_relevance FAILED
 
 Evaluation Results:
   ✗ relevance: 0.42 (threshold: 0.70)
-    Reasoning: The user asked about business hours but the response 
-    discusses the company's history and mission statement without 
+    Reasoning: The user asked about business hours but the response
+    discusses the company's history and mission statement without
     mentioning operating hours.
 ```
 
 ## When to Use Relevance
 
-**Essential for:**
-- All chatbots and conversational AI
-- Customer support systems
-- Search and Q&A applications
-- Any user-facing LLM interaction
-
-**Commonly paired with:**
-- `@fe.correctness()` — relevant AND accurate
-- `@fe.toxicity()` — relevant AND safe
-- `@fe.hallucination()` — relevant AND grounded
+Relevance is essential for all chatbots and conversational AI, customer support systems, search and Q&A applications — really any user-facing LLM interaction. Pair it with `@fe.correctness()` for relevant AND accurate, `@fe.toxicity()` for relevant AND safe, or `@fe.hallucination()` for relevant AND grounded.
 
 ## Relevance vs Correctness
 
@@ -147,13 +138,10 @@ These are complementary, not interchangeable:
 
 **Example:** User asks "What's the capital of France?"
 
-- "The capital of France is Paris" → Relevance: High, Correctness: High
-- "The capital of France is Lyon" → Relevance: High, Correctness: Low  
-- "France has beautiful beaches" → Relevance: Low, Correctness: N/A
+- "The capital of France is Paris" — Relevance: High, Correctness: High
+- "The capital of France is Lyon" — Relevance: High, Correctness: Low
+- "France has beautiful beaches" — Relevance: Low, Correctness: N/A
 
 ## Best Practices
 
-1. **Always include the input**: Relevance requires the original query
-2. **Pair with correctness**: Relevant doesn't mean correct
-3. **Test edge cases**: Try ambiguous or multi-part questions
-4. **Consider context length**: Very long contexts may dilute relevance
+Always include the input — relevance can't work without it. Pair with correctness, because a relevant wrong answer is still wrong. Test edge cases with ambiguous or multi-part questions; those are where LLMs tend to latch onto one part and ignore the rest. And watch out with very long contexts — they can dilute relevance scores since there's more surface area for tangents.

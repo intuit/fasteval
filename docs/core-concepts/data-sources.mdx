@@ -15,7 +15,7 @@ sidebar:
 
 # Data Sources
 
-Single test cases are great for specific scenarios, but real-world evaluation requires testing across many examples. fasteval provides three ways to scale your tests.
+One-off test cases only get you so far. Eventually you'll need to throw hundreds of examples at your LLM and see what sticks. fasteval gives you three ways to do that.
 
 ## CSV Files
 
@@ -44,7 +44,7 @@ fasteval runs the test **once per row**, reporting individual results.
 
 ### CSV Column Mapping
 
-Column names become function parameters. You can use any columns you need:
+Column names become function parameters. Use whatever columns you need:
 
 ```csv
 input,expected_output,context,difficulty
@@ -188,7 +188,7 @@ from langfuse import Langfuse
 def get_langfuse_traces():
     langfuse = Langfuse()
     traces = langfuse.get_traces(limit=100)
-    
+
     for trace in traces:
         yield EvalInput(
             actual_output=trace.output,
@@ -201,17 +201,11 @@ def get_langfuse_traces():
 
 ![Data Sources Comparison](docs/assets/data-sources-comparison.svg)
 
-| Scenario | Recommended |
-|----------|-------------|
-| **Known test cases** | CSV with curated examples |
-| **Multi-turn testing** | Conversation decorator |
-| **Production monitoring** | Traces from your observability platform |
-| **Regression testing** | CSV updated when bugs are found |
-| **CI/CD pipeline** | Small CSV for fast feedback |
+If you've got a known set of test cases you want to track over time, CSV's your best bet — curate the examples and check them into git. For multi-turn testing where conversation history matters, use the conversation decorator. When you're ready to evaluate against real traffic, pull traces from your observability platform. In practice, we've found that regression testing works well with a CSV you update every time a bug surfaces. And for CI/CD, keep a small CSV so you get fast feedback on every push.
 
 ## Combining Sources
 
-Different sources for different purposes:
+Use different sources for different purposes:
 
 ```python
 # test_curated.py - Fast, reliable, runs in CI

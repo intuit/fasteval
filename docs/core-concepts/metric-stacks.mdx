@@ -19,7 +19,7 @@ sidebar:
 
 # Metric Stacks
 
-When you find yourself applying the same set of metrics to multiple tests, **metric stacks** let you define that combination once and reuse it everywhere. This keeps your tests DRY and ensures consistent evaluation standards across your test suite.
+You're applying the same three metrics to every test. Copy-paste everywhere. **Metric stacks** fix that. Define the combination once, reuse it anywhere, and stop repeating yourself.
 
 ![Metric Stack Composition](docs/assets/metric-stack-composition.svg)
 
@@ -27,7 +27,7 @@ When you find yourself applying the same set of metrics to multiple tests, **met
 
 ## Why Use Metric Stacks?
 
-Without stacks, repeating the same metrics is tedious and error-prone:
+Without stacks, you end up copying the same decorators across every test. It's tedious, and it'll bite you when you need to change a threshold:
 
 ```python
 # Repetitive - same metrics copied to every test
@@ -90,7 +90,7 @@ def quality_metrics():
     pass  # Placeholder - body is never executed
 ```
 
-The function body is never executed—it's just a placeholder. The function name becomes the stack name.
+The function body doesn't run — it's just a placeholder. The function name becomes the stack name.
 
 > **Why at the top?** Python decorators execute bottom-to-top. By placing `@fe.stack()` at the top, it runs last and can capture all metrics that were attached by the decorators below it.
 
@@ -119,7 +119,7 @@ When this test runs, it evaluates against **all three metrics** (correctness, re
 
 ## Combining Stacks
 
-Stacks compose naturally. You can:
+Stacks compose naturally. You've got a few options.
 
 ### Stack + Additional Metrics
 
@@ -158,7 +158,7 @@ This evaluates: correctness, relevance, toxicity (from quality_metrics) + faithf
 
 ### Order Doesn't Matter
 
-Stacks can be applied in any order—all metrics are collected and evaluated:
+Stacks can be applied in any order — all metrics get collected and evaluated regardless:
 
 ```python
 # These are equivalent:
@@ -173,7 +173,7 @@ def test_b(): ...
 
 ## Domain-Specific Stacks
 
-Define stacks for different evaluation needs in your project:
+In practice, we recommend defining stacks around the domains you're actually testing:
 
 ### Customer Support Stack
 
@@ -218,7 +218,7 @@ def safety_metrics():
 
 ### Production-Ready Stack
 
-Combine domain stacks for comprehensive evaluation:
+Combine domain stacks for full-coverage evaluation:
 
 ```python
 @safety_metrics
@@ -232,7 +232,7 @@ def test_production_chatbot():
 
 ### 1. Keep Stacks Focused
 
-Create small, purpose-specific stacks rather than one giant stack:
+Small, single-purpose stacks beat one massive stack. You can always combine them — that's the whole point.
 
 ```python
 # Good: Focused stacks (each with @fe.stack() at the top)
@@ -263,7 +263,7 @@ def test_rag(): ...
 
 ### 2. Define Stacks in a Central Location
 
-Keep stack definitions in a shared module:
+Put your stack definitions in a shared module so every test file can import them:
 
 ```python
 # conftest.py or stacks.py
@@ -285,7 +285,7 @@ def test_something():
 
 ### 3. Document Your Thresholds
 
-Include comments explaining threshold choices:
+Future-you will thank present-you. Add comments explaining why you picked each number:
 
 ```python
 @fe.stack()
@@ -299,7 +299,7 @@ def production_metrics():
 
 ### 4. Version Your Stacks
 
-When changing thresholds, create new stacks rather than breaking existing tests:
+If you're tightening thresholds, don't break existing tests. Create a new stack instead:
 
 ```python
 @fe.stack()
@@ -316,12 +316,7 @@ def quality_v2():
 
 ## Key Behaviors
 
-| Scenario | Behavior |
-|----------|----------|
-| Stack used alone | All captured metrics apply |
-| Stack + additional metrics | Both stack and additional metrics apply |
-| Multiple stacks combined | All metrics from all stacks apply (union) |
-| Same metric in stack and explicit | Both instances run (no deduplication) |
+When you use a stack on its own, all captured metrics apply to the test — nothing surprising there. If you layer additional metrics on top of a stack, both the stack's metrics and the extras run. Combining multiple stacks works the same way: you get the union of all metrics from every stack. One thing to watch out for — if the same metric appears in a stack *and* as an explicit decorator, both instances run. There's no deduplication, so you'll get duplicate evaluations.
 
 ## Introspecting Stacks
 

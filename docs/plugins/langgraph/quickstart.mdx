@@ -15,7 +15,7 @@ sidebar:
 
 # Quickstart
 
-Get started testing LangGraph agents with fasteval in under 5 minutes.
+Five minutes to your first LangGraph test with fasteval. Let's go.
 
 ## Install
 
@@ -38,7 +38,7 @@ compiled = build_graph().compile(checkpointer=MemorySaver())
 graph = harness(compiled)
 ```
 
-`harness()` auto-detects whether your graph uses `MessagesState` or plain `TypedDict` and sets up input/output handling automatically.
+`harness()` auto-detects whether your graph uses `MessagesState` or plain `TypedDict` and sets up input/output handling accordingly.
 
 ## Write Your First Test
 
@@ -76,7 +76,7 @@ result.nodes_ran    # list[str] -- node names in order
 
 ## State Assertions
 
-Combine fasteval LLM metrics with plain pytest assertions:
+You can combine fasteval's LLM metrics with plain pytest assertions in the same test:
 
 ```python
 @fe.criteria("Does the agent correctly classify the user intent?")

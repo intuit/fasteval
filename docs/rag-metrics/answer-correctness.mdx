@@ -15,7 +15,7 @@ sidebar:
 
 # Answer Correctness Metric
 
-The ultimate test for your RAG system: is the answer actually correct? This metric goes beyond semantic similarity to perform detailed factual comparison—identifying what's correct, what's missing, and what's wrong.
+Is your RAG system's answer actually right? That's what this metric tells you. It goes beyond surface-level similarity and does a claim-by-claim factual comparison -- identifying what's correct, what's missing, and what's flat-out wrong.
 
 ## Quick Example
 
@@ -26,10 +26,10 @@ import fasteval as fe
 def test_rag_accuracy():
     query = "When was the Eiffel Tower built?"
     expected = "The Eiffel Tower was built in 1889."
-    
+
     docs = retriever.search(query)
     response = rag_agent(query, context=docs)
-    
+
     fe.score(response, expected, context=docs, input=query)
 ```
 
@@ -42,7 +42,7 @@ def test_rag_accuracy():
 
 ## How It Works
 
-Answer correctness performs detailed claim analysis:
+Answer correctness breaks down claims and classifies each one:
 
 ```
 Expected: "Python was created in 1991 by Guido van Rossum in the Netherlands."
@@ -70,7 +70,7 @@ Test your RAG against a curated set of correct answers:
 def test_against_golden_set(query, correct_answer):
     docs = retriever.search(query)
     response = rag_agent(query, context=docs)
-    
+
     fe.score(response, correct_answer, context=docs, input=query)
 ```
 
@@ -85,7 +85,7 @@ def test_rag_config(config_name, config):
         response = rag.answer(query)
         fe.score(response, expected)
         print(f"{config_name}: {result.score}")
-    
+
     return inner_test()
 
 # Compare different configurations
@@ -96,16 +96,16 @@ test_rag_config("hybrid_search", hybrid_config)
 
 ### Detecting Contradictions
 
-Answer correctness specifically catches conflicting information:
+This metric specifically catches conflicting information:
 
 ```python
 @fe.answer_correctness(threshold=0.9)
 def test_no_contradictions():
     expected = "Our return policy is 30 days."
-    
+
     docs = retriever.search("return policy")
     response = rag_agent("What's the return policy?", context=docs)
-    
+
     # Will fail if response says "60 days" or "no returns"
     fe.score(response, expected, context=docs)
 ```
@@ -147,20 +147,13 @@ Evaluation Results:
 | `answer_correctness` | Claim-by-claim factual comparison | RAG with ground truth |
 | `correctness` | Overall semantic similarity | General LLM outputs |
 
-**Use `answer_correctness` when:**
-- You have "golden" correct answers
-- Factual precision matters (legal, medical, financial)
-- You want to catch contradictions
-- Evaluating RAG system quality
+Reach for `answer_correctness` when you've got "golden" correct answers and factual precision matters -- think legal, medical, or financial use cases where contradictions are deal-breakers. It's also the go-to for measuring overall RAG system quality.
 
-**Use `correctness` when:**
-- Semantic equivalence is sufficient
-- No ground truth exists
-- Evaluating creative or open-ended outputs
+`correctness` works better when semantic equivalence is enough, you don't have ground truth, or you're evaluating creative and open-ended outputs.
 
 ## Complete RAG Evaluation Stack
 
-For production RAG systems, test multiple dimensions:
+For production RAG systems, we recommend testing multiple dimensions:
 
 ```python
 @fe.faithfulness(threshold=0.85)          # Grounded in context?
@@ -170,10 +163,10 @@ For production RAG systems, test multiple dimensions:
 def test_production_rag():
     query = "What are the symptoms of flu?"
     expected = "Flu symptoms include fever, cough, body aches, and fatigue."
-    
+
     docs = retriever.search(query)
     response = rag_agent(query, context=docs)
-    
+
     fe.score(response, expected, context=docs, input=query)
 ```
 
@@ -188,8 +181,7 @@ def test_production_rag():
 
 ## Best Practices
 
-1. **Write precise expected answers**: Be specific about facts that matter
-2. **Include all key facts**: Missing facts in expected answer won't be checked
-3. **Test with varied phrasings**: Same fact can be expressed differently
-4. **Combine with faithfulness**: Correct answer must also be grounded
-5. **Log contradictions**: These indicate serious issues to investigate
+1. **Write precise expected answers** -- be specific about the facts that matter.
+2. **Include all key facts** -- anything missing from the expected answer won't get checked.
+3. **Test with varied phrasings** -- the same fact can be expressed many ways.
+4. **Combine with faithfulness** -- a correct answer still needs to be grounded in context.

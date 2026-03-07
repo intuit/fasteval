@@ -6,21 +6,11 @@ order: 1
 
 # Multi-Modal Evaluation [Open in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/multimodal-overview.ipynb)
 
-fasteval provides first-class support for evaluating **multi-modal AI systems** - vision-language models, audio/speech systems, image generation, and multi-modal RAG.
-
-## Why Multi-Modal?
-
-Modern AI is multi-modal:
-- **GPT-4V, Claude Vision, Gemini Pro Vision** understand images
-- **Whisper, speech-to-text** systems transcribe audio
-- **DALL-E, Midjourney, Stable Diffusion** generate images
-- **Multi-modal RAG** retrieves from documents with text, tables, and figures
-
-fasteval is the first evaluation framework with native multi-modal support across all these use cases.
+AI doesn't just do text anymore. Vision-language models read images, Whisper transcribes audio, DALL-E generates images, and RAG pipelines pull from documents packed with tables and figures. fasteval is the first evaluation framework with native support across all of these.
 
 ## Installation
 
-Multi-modal features are **optional dependencies** - install only what you need:
+Multi-modal features are optional dependencies — install only what you need:
 
 ```bash
 # Core (text-only) - no extra dependencies
@@ -165,7 +155,7 @@ generated = GeneratedImage(
 
 ## Extended `fe.score()` API
 
-The `fe.score()` function now accepts multi-modal parameters:
+The `fe.score()` function accepts multi-modal parameters alongside the standard ones:
 
 ```python
 fe.score(
@@ -173,7 +163,7 @@ fe.score(
     expected_output="The chart shows 25% growth",
     input=query,
     context=docs,
-    
+
     # Multi-modal parameters
     image="chart.png",                    # Single image
     images=["img1.png", "img2.png"],      # Multiple images

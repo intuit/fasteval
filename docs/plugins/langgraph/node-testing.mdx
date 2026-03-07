@@ -17,11 +17,11 @@ sidebar:
 
 # Node Testing
 
-Execute individual nodes in isolation and inspect their state updates, routing, and responses.
+You don't always need to run the full graph. `.node()` lets you execute a single node in isolation, inspect its state updates, and verify its routing decisions.
 
 ## Single Node Execution
 
-Use `.node(name).run()` to execute a single node with specific input state:
+Call `.node(name).run()` with the input state you want:
 
 ```python
 from fasteval_langgraph import harness
@@ -64,7 +64,7 @@ assert result2.updates["intent"] == "FAQ"
 
 ## Combining with Assertions
 
-Mix deterministic assertions with fasteval LLM evaluation:
+Mix hard assertions with fasteval's LLM evaluation in the same test:
 
 ```python
 import fasteval as fe
@@ -90,7 +90,7 @@ async def test_classifier():
 
 ## Trace Inspection
 
-When using `.chat()`, the trace shows every node that executed:
+When you use `.chat()`, the trace captures every node that executed:
 
 ```python
 result = await graph.chat("My API returns 401")

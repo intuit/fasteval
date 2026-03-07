@@ -15,7 +15,7 @@ sidebar:
 
 # Tool Call Accuracy
 
-The `tool_call_accuracy` metric evaluates whether an agent called the correct tools. This is a **deterministic metric** - no LLM calls required.
+Did your agent call the right tools? `tool_call_accuracy` answers that question. It's a **deterministic metric** -- no LLM calls required.
 
 ![Tool Trajectory Evaluation Flow](docs/assets/tool-trajectory-flow.svg)
 
@@ -28,12 +28,12 @@ from fasteval import ExpectedTool
 @fe.tool_call_accuracy(threshold=0.8)
 def test_booking_agent():
     response, tool_calls = agent("Book a flight to NYC")
-    
+
     expected = [
         ExpectedTool(name="search_flights"),
         ExpectedTool(name="book_flight"),
     ]
-    
+
     fe.score(response, tool_calls=tool_calls, expected_tools=expected)
 ```
 
@@ -52,9 +52,7 @@ def test_booking_agent():
 score = matched_tools / max(expected_required, actual_count)
 ```
 
-1. Compares actual tool names against expected tool patterns
-2. Counts how many required tools were called
-3. Optionally penalizes extra tool calls
+The metric compares actual tool names against expected tool patterns, counts how many required tools were called, and optionally penalizes extra tool calls.
 
 ## The `ExpectedTool` Model
 
@@ -64,10 +62,10 @@ from fasteval import ExpectedTool
 expected = [
     # Required tool with argument expectations
     ExpectedTool(name="search_flights", args={"destination": "NYC"}),
-    
+
     # Optional tool (won't fail if not called)
     ExpectedTool(name="validate_user", required=False),
-    
+
     # Required tool, no args to check
     ExpectedTool(name="book_flight"),
 ]
@@ -115,8 +113,7 @@ By default, extra tool calls reduce the score:
 
 ## Best Practices
 
-- Use `required=False` for optional tools in workflows
-- Use wildcards for flexible tool name matching
-- Set `ignore_extra=True` when tool order/extras don't matter
-- Combine with `tool_sequence` for order checking
-- Combine with `tool_args_match` for argument validation
+1. **Use `required=False`** for optional tools in workflows where the agent might skip a step.
+2. **Use wildcards** for flexible tool name matching when exact names aren't stable.
+3. **Set `ignore_extra=True`** when you only care that the right tools were called, not that extras were avoided.
+4. **Combine with `tool_sequence` and `tool_args_match`** for full workflow validation -- right tools, right order, right arguments.

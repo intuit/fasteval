@@ -19,13 +19,13 @@ sidebar:
 
 ![Evaluation Flow](docs/assets/evaluation-flow-animated.svg)
 
-## The Evaluation Pipeline
+## The Pipeline
 
-fasteval's evaluation flow consists of five distinct stages that transform your test into a quality assessment:
+fasteval runs your test through five stages. You write a test, decorate it with metrics, call `fe.score()`, and we handle the rest.
 
 ![Evaluation Pipeline Steps](docs/assets/evaluation-pipeline-steps.svg)
 
-Each stage has a specific responsibility, creating a clean separation between your application logic and evaluation logic.
+Each stage does one thing. Your app logic stays separate from evaluation logic.
 
 ## Step-by-Step Walkthrough
 
@@ -42,7 +42,7 @@ def test_customer_support():
     ...
 ```
 
-**What happens**: Decorators register their metrics and thresholds to a test context. Multiple decorators stack—the test must pass ALL metrics.
+Decorators register their metrics and thresholds to a test context. Stack as many as you want — the test must pass ALL of them.
 
 ### Step 2: Test
 
@@ -57,7 +57,7 @@ def test_customer_support():
     ...
 ```
 
-**What happens**: Your code runs exactly as it would in production. fasteval doesn't modify or intercept your application—it only observes outputs.
+Your code runs exactly as it would in production. We don't modify or intercept anything — we just observe the output.
 
 ### Step 3: Score
 
@@ -68,7 +68,7 @@ Record the output for evaluation using `fe.score()`:
 @fe.toxicity(threshold=0.95)
 def test_customer_support():
     response = support_agent("How do I cancel my subscription?")
-    
+
     # Record what to evaluate
     fe.score(
         actual_output=response,
@@ -77,11 +77,11 @@ def test_customer_support():
     )
 ```
 
-**What happens**: `fe.score()` captures the actual output, expected output, and any context. It doesn't evaluate yet—it stores the data for the evaluation phase.
+Nothing gets evaluated yet. `fe.score()` just captures the actual output, expected output, and context — think of it as staging data for the evaluation phase.
 
 ### Step 4: Evaluate
 
-After the test function completes, fasteval's pytest plugin triggers evaluation:
+After your test function returns, fasteval's pytest plugin kicks in:
 
 ```python
 # This happens automatically after your test function returns
@@ -95,11 +95,11 @@ for metric in registered_metrics:
     # score: 0.0 - 1.0
 ```
 
-**What happens**: Each metric constructs an evaluation prompt and calls an LLM judge. The judge assesses the output and returns a score with reasoning.
+Each metric builds an evaluation prompt and calls an LLM judge. The judge scores the output and explains why.
 
 ### Step 5: Result
 
-Scores are compared against thresholds to determine pass/fail:
+Scores get compared against thresholds. Pass or fail.
 
 ```
 $ pytest test_support.py -v
@@ -109,11 +109,11 @@ test_support.py::test_customer_support PASSED
 Evaluation Results:
   correctness: 0.92 (threshold: 0.80) ✓
   toxicity: 0.98 (threshold: 0.95) ✓
-  
+
   Aggregate Score: 0.95
 ```
 
-**What happens**: If ALL metrics meet their thresholds, the test passes. If ANY metric falls below its threshold, the test fails with detailed reasoning.
+If ALL metrics hit their thresholds, the test passes. If ANY metric falls short, the test fails — and you get detailed reasoning explaining what went wrong.
 
 ## Under the Hood
 
@@ -128,11 +128,11 @@ You are an evaluation judge assessing the correctness of an AI response.
 
 **Expected Answer**: Go to Account Settings > Subscription > Cancel
 
-**Actual Response**: To cancel your subscription, navigate to your Account 
-Settings, find the Subscription section, and click Cancel. You'll be asked 
+**Actual Response**: To cancel your subscription, navigate to your Account
+Settings, find the Subscription section, and click Cancel. You'll be asked
 to confirm.
 
-**Task**: Rate how correctly the actual response answers the query compared 
+**Task**: Rate how correctly the actual response answers the query compared
 to the expected answer. Consider semantic equivalence, not exact wording.
 
 Provide:
@@ -147,9 +147,9 @@ The LLM judge returns structured output:
 ```json
 {
   "score": 0.92,
-  "reasoning": "The response correctly describes the cancellation process 
-               and matches the expected navigation path. It provides 
-               additional helpful context about confirmation without 
+  "reasoning": "The response correctly describes the cancellation process
+               and matches the expected navigation path. It provides
+               additional helpful context about confirmation without
                contradicting the expected answer."
 }
 ```
@@ -165,46 +165,23 @@ else:
 
 ## Metric Types
 
-fasteval provides two categories of metrics with different evaluation mechanisms:
+fasteval ships two kinds of metrics, and they work very differently.
 
 ### LLM-Based Metrics
 
-Use an LLM judge for semantic evaluation:
+These call an LLM judge for semantic evaluation. **`correctness`** checks factual accuracy against your expected output. **`relevance`** measures how well the response actually answers the query. **`toxicity`** flags unsafe or inappropriate content. **`hallucination`** catches fabricated information — stuff the model just made up. **`faithfulness`** checks whether the response stays grounded in the context you provided. And **`coherence`** looks at logical flow and internal consistency.
 
-| Metric | What It Measures |
-|--------|------------------|
-| `correctness` | Factual accuracy against expected output |
-| `relevance` | Alignment with the original query |
-| `toxicity` | Safety and appropriateness |
-| `hallucination` | Detection of fabricated information |
-| `faithfulness` | Grounding in provided context |
-| `coherence` | Logical flow and consistency |
-
-**Characteristics**:
-- Semantic understanding (paraphrase-tolerant)
-- Requires LLM API call (~100-500ms)
-- Returns score + reasoning
+In practice, these take ~100-500ms because of the API call. But they understand paraphrasing, so you're not stuck doing brittle string matching. Every LLM-based metric returns both a score and reasoning, which is invaluable when debugging failures.
 
 ### Deterministic Metrics
 
-Use programmatic checks for instant evaluation:
+These are instant — no API call, pure code. **`contains`** checks for substring presence. **`exact_match`** does strict string equality. **`regex`** handles pattern matching. **`json_schema`** validates JSON structure. **`word_count`** enforces length constraints.
 
-| Metric | What It Measures |
-|--------|------------------|
-| `contains` | Substring presence |
-| `exact_match` | Exact string equality |
-| `regex` | Pattern matching |
-| `json_schema` | JSON structure validation |
-| `word_count` | Length constraints |
-
-**Characteristics**:
-- Instant execution (no API call)
-- Binary or threshold-based
-- Ideal for format validation
+They're either binary or threshold-based, and they're what you want for format validation. No ambiguity, no latency.
 
 ### Combining Metrics
 
-Stack decorators to create comprehensive evaluations:
+Stack decorators to mix both types in a single test:
 
 ```python
 @fe.correctness(threshold=0.8)     # LLM-based
@@ -216,11 +193,11 @@ def test_comprehensive():
     fe.score(response, expected, schema=my_schema)
 ```
 
-All metrics run in parallel for efficiency. The test passes only if ALL metrics meet their thresholds.
+All metrics run in parallel. The test passes only if every single one meets its threshold.
 
 ## Pytest Integration
 
-fasteval integrates with pytest through a custom plugin that hooks into the test lifecycle:
+fasteval plugs into pytest's lifecycle through a custom plugin. You don't need to learn a new test runner or change your workflow.
 
 ```
 pytest discovers test_*.py
@@ -261,7 +238,7 @@ pytest discovers test_*.py
 
 ## Next Steps
 
-Now that you understand how fasteval works:
+Now that you know how fasteval works:
 
 - [**Installation**](/docs/getting-started/installation) — Set up fasteval and configure your LLM provider
 - [**Quick Start**](/docs/getting-started/quickstart) — Write your first evaluation test

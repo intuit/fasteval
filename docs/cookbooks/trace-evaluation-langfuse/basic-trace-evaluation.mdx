@@ -29,7 +29,7 @@ sidebar:
 
 # Basic Trace Evaluation [Open in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langfuse-trace-evaluation/basic-trace-evaluation.ipynb)
 
-Evaluate production traces to understand how your application performs in the wild. This page covers the `@langfuse_traces` decorator, parameter extraction, metric stacking, and score reporting.
+Evaluate production traces to see how your application actually performs in the wild. This page covers the `@langfuse_traces` decorator, parameter extraction, metric stacking, and score reporting.
 
 ## How It Works
 
@@ -38,13 +38,13 @@ Evaluate production traces to understand how your application performs in the wi
 The `@langfuse_traces` decorator handles the full pipeline:
 
 1.  **Fetch** — Queries the Langfuse API for traces matching your filters (project, tags, time range).
-2.  **Extract** — Automatically pulls `input`, `output`, `context`, and `metadata` from each trace.
+2.  **Extract** — Pulls `input`, `output`, `context`, and `metadata` from each trace automatically.
 3.  **Evaluate** — Calls your test function once per trace, running the stacked metric decorators.
-4.  **Report** — Pushes scores back to Langfuse so they appear on the trace in the dashboard.
+4.  **Report** — Pushes scores back to Langfuse so they show up on the trace in the dashboard.
 
 ## Your First Evaluation
 
-A minimal example that evaluates the correctness of traces from the last 24 hours:
+A minimal example that evaluates correctness of traces from the last 24 hours:
 
 ```python
 # test_production_eval.py
@@ -79,7 +79,7 @@ Scores pushed to Langfuse with prefix "fasteval_"
 
 ## Function Parameters
 
-The test function receives these parameters, automatically extracted from the Langfuse trace:
+Your test function receives these parameters, extracted automatically from the Langfuse trace:
 
 | Parameter | Type | Description | Extraction Logic |
 |-----------|------|-------------|------------------|
@@ -89,7 +89,7 @@ The test function receives these parameters, automatically extracted from the La
 | `context` | `str` or `None` | Retrieved documents (RAG) | Extracted from metadata keys: `context`, `retrieved_docs`, `documents`, `retrieval_context`, `docs` |
 | `metadata` | `dict` | Full trace metadata | `trace.metadata` - everything else lives here |
 
-You only need to declare the parameters you use. If you don't need `context`, leave it out of the signature:
+You only need to declare the parameters you use. Don't need `context`? Leave it out of the signature:
 
 ```python
 @langfuse_traces(project="production")
@@ -105,7 +105,7 @@ When `trace.input` or `trace.output` is a dictionary, the plugin tries common ke
 
 **Output**: `response` → `output` → `answer` → `completion` → `result` → first string value
 
-If the value is already a string, it is used directly.
+If the value is already a string, it's used directly.
 
 ## Decorator Parameters
 
@@ -181,7 +181,7 @@ def test_recent_rag_traces(trace_id, input, output, context, metadata):
 
 ## Stacking Metrics
 
-Apply multiple metric decorators to evaluate different quality dimensions on the same trace. Each decorator generates its own score.
+Stack multiple metric decorators to evaluate different quality dimensions on the same trace. Each decorator produces its own score.
 
 ### Common Combinations
 
@@ -192,7 +192,7 @@ Apply multiple metric decorators to evaluate different quality dimensions on the
 | Safety-critical | `correctness` + `toxicity` + `bias` | 3 judge calls |
 | Customer support | `correctness` + `relevance` + `hallucination` | 3 judge calls |
 
-### Example: Comprehensive Quality Check
+### Example: Full Quality Check
 
 ```python
 @fe.correctness(threshold=0.8)
@@ -218,14 +218,14 @@ def test_api_responses(trace_id, input, output, metadata):
 
 ## RAG Evaluation
 
-For Retrieval-Augmented Generation applications, use specialized metrics that assess both retrieval and generation quality:
+For Retrieval-Augmented Generation apps, specialized metrics assess both retrieval and generation quality:
 
 | Metric | What It Measures | Requires |
 |--------|-----------------|----------|
 | `faithfulness` | Is the response grounded in the retrieved context? | `context` |
 | `answer_correctness` | Does the response correctly answer the question? | `expected_output` (optional) |
 | `contextual_precision` | Are the retrieved documents relevant to the question? | `context` |
-| `contextual_recall` | Do the retrieved documents cover what is needed? | `context` + `expected_output` |
+| `contextual_recall` | Do the retrieved documents cover what's needed? | `context` + `expected_output` |
 | `relevance` | Is the response relevant to the user's question? | `input` |
 
 ```python
@@ -249,7 +249,7 @@ def test_rag_pipeline(trace_id, input, output, context, metadata):
 
 ## Handling Missing Data
 
-Production traces can be messy. Use defensive patterns to handle missing or malformed data:
+Production traces can be messy. Use defensive patterns:
 
 ```python
 @fe.correctness(threshold=0.7)
@@ -288,7 +288,7 @@ For each evaluated trace, these scores are created:
 | `fasteval_faithfulness` | 0.0 - 1.0 | Individual metric score |
 | `fasteval_aggregate` | 0.0 - 1.0 | Average of all metric scores |
 
-Each score also includes the **judge's reasoning** in the comment field, explaining why the score was given.
+Each score also includes the judge's reasoning in the comment field, explaining why it was given.
 
 ### Viewing Scores in Langfuse
 
@@ -322,7 +322,7 @@ def test_local_only(trace_id, input, output, metadata):
 
 ## Debugging Failures
 
-When a test fails, inspect the `EvalResult` for root cause analysis:
+When a test fails, inspect the `EvalResult` to find the root cause:
 
 ```python
 @fe.correctness(threshold=0.9)
@@ -344,7 +344,7 @@ def test_with_debugging(trace_id, input, output, context, metadata):
 
 ## Running with pytest
 
-In production, evaluations are run as part of your test suite:
+In production, evaluations run as part of your test suite:
 
 ```bash
 # Run all trace evaluations

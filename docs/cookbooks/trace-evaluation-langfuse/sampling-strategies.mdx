@@ -27,11 +27,11 @@ sidebar:
 
 # Sampling Strategies [Open in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langfuse-trace-evaluation/sampling-strategies.ipynb)
 
-Evaluating 100% of production traffic is expensive and slow. **Sampling** gives you statistically significant quality signals at a fraction of the cost.
+Evaluating 100% of production traffic is expensive and slow. **Sampling** gets you statistically meaningful quality signals at a fraction of the cost.
 
 ## Why Sample?
 
-Every metric evaluation requires one LLM judge call. The costs compound quickly:
+Every metric evaluation costs one LLM judge call. That adds up fast:
 
 | Daily Traces | Metrics | Judge Calls/Day | GPT-4o-mini Cost | GPT-4o Cost |
 |--------------|---------|-----------------|------------------|-------------|
@@ -42,13 +42,11 @@ Every metric evaluation requires one LLM judge call. The costs compound quickly:
 
 *Approximate. Actual cost depends on trace length and metric complexity.*
 
-**Sampling at 2%** of 10k traces with 3 metrics = 600 calls instead of 30,000. That is a **98% cost reduction** while still producing statistically meaningful quality signals.
+**Sampling at 2%** of 10k traces with 3 metrics = 600 calls instead of 30,000. That's a 98% cost reduction while still producing statistically meaningful quality signals.
 
 ### When NOT to Sample
 
-*   **Small projects**: < 100 traces/day — evaluate everything.
-*   **Post-incident audits**: You need 100% coverage of the incident window.
-*   **Dataset evaluations**: Datasets are already curated; always evaluate all items.
+Don't sample if you have fewer than 100 traces/day — just evaluate everything. Same goes for post-incident audits where you need 100% coverage of the incident window. And dataset evaluations are already curated, so always evaluate all items there.
 
 ## Strategy Overview
 
@@ -98,7 +96,7 @@ def test_production_quality(trace_id, input, output, context, metadata):
 
 **Best for:** Ensuring fairness across user segments — e.g., free vs. paid, different regions.
 
-Groups traces by a metadata key and samples evenly from each group, preventing the most active segment from dominating.
+Groups traces by a metadata key and samples evenly from each group. This prevents the most active segment from dominating your eval results.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
@@ -129,7 +127,7 @@ If a group has fewer traces than `samples_per_stratum`, all traces from that gro
 
 **Best for:** Failure analysis — spend your evaluation budget where it matters most.
 
-Oversamples traces with low existing scores (e.g., user ratings) and undersamples high-scoring traces. This is the most cost-effective strategy for finding and understanding failures.
+This strategy oversamples traces with low existing scores (e.g., user ratings) and undersamples high-scoring ones. In practice, it's the most cost-effective way to find and understand failures.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
@@ -166,7 +164,7 @@ def test_low_rated_interactions(trace_id, input, output, context, metadata):
 
 **Best for:** Post-deployment monitoring — catch regressions as fast as possible.
 
-Uses exponential decay so that newer traces are much more likely to be selected than older ones.
+Uses exponential decay so newer traces are much more likely to be selected than older ones.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
@@ -207,15 +205,11 @@ def test_incident_audit(trace_id, input, output, context, metadata):
 
 ## Scheduling Patterns
 
-Different strategies fit different schedules:
+Different strategies fit different schedules.
 
 ### Pattern A: Hourly Quick Check
 
-*   **Goal:** Is the system healthy right now?
-*   **Strategy:** `RandomSamplingStrategy(sample_size=20)`
-*   **Metrics:** 1-2 core metrics (`correctness`)
-*   **Time range:** `last_1h`
-*   **Cost:** ~20 judge calls/hour
+**Goal:** Is the system healthy right now? Use `RandomSamplingStrategy(sample_size=20)` with 1-2 core metrics over `last_1h`. That's roughly 20 judge calls per hour.
 
 ```python
 @fe.correctness(threshold=0.8)
@@ -229,11 +223,7 @@ def test_hourly_health(trace_id, input, output, metadata):
 
 ### Pattern B: Nightly Deep Dive
 
-*   **Goal:** Comprehensive quality report across all dimensions.
-*   **Strategy:** `ScoreBasedSamplingStrategy` or `StratifiedSamplingStrategy`
-*   **Metrics:** Full stack (3-5 metrics)
-*   **Time range:** `last_24h`
-*   **Cost:** ~500-1000 judge calls/night
+**Goal:** Full quality report across all dimensions. Use `ScoreBasedSamplingStrategy` or `StratifiedSamplingStrategy` with 3-5 metrics over `last_24h`. Expect 500-1000 judge calls per night.
 
 ```python
 @fe.correctness(threshold=0.8)
@@ -255,10 +245,7 @@ def test_nightly_deep_dive(trace_id, input, output, context, metadata):
 
 ### Pattern C: Post-Incident Audit
 
-*   **Goal:** What went wrong during the incident?
-*   **Strategy:** `NoSamplingStrategy` (evaluate everything)
-*   **Metrics:** Full stack
-*   **Time range:** Specific absolute window
+**Goal:** What went wrong during the incident? Use `NoSamplingStrategy` with a full metric stack over a specific absolute time window.
 
 ```python
 @fe.correctness(threshold=0.7)
@@ -306,11 +293,7 @@ jobs:
         run: pytest tests/test_nightly_eval.py -v --tb=short
 ```
 
-**Tips for automation:**
-
-*   **Always set `limit` or `sample_size`** to prevent surprise bills if traffic spikes overnight.
-*   **Use `seed` in Random sampling** for reproducible CI runs you can debug later.
-*   **Separate test files** by schedule: `test_hourly.py`, `test_nightly.py`, `test_regression.py`.
+A few things we've learned from running these in practice: always set `limit` or `sample_size` to prevent surprise bills if traffic spikes overnight. Use `seed` in random sampling for reproducible CI runs you can debug later. And keep separate test files by schedule — `test_hourly.py`, `test_nightly.py`, `test_regression.py`.
 
 ## Cost Optimization
 
@@ -322,4 +305,4 @@ jobs:
 | **Score-based sampling** | ~20x | 100% failures + 5% successes |
 | **Hourly/nightly split** | ~5x | Lightweight hourly, deep nightly |
 
-**Rule of thumb:** Start with `RandomSamplingStrategy(sample_size=50)` and 1-2 metrics. Add more as you understand your quality patterns and failure modes.
+We recommend starting with `RandomSamplingStrategy(sample_size=50)` and 1-2 metrics. Add more as you understand your quality patterns and failure modes.

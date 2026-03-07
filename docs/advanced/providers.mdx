@@ -13,9 +13,9 @@ sidebar:
 
 # LLM Providers
 
-fasteval uses LLM providers to power evaluation metrics like correctness, relevance, and hallucination detection.
+Every LLM-based metric — correctness, relevance, hallucination detection — needs a provider behind it. This page covers setup for each supported provider and how to bring your own.
 
-For a complete guide on setting up providers, see the [LLM Setup Guide](/docs/core-concepts/llm-setup).
+For the full setup walkthrough, see the [LLM Setup Guide](/docs/core-concepts/llm-setup).
 
 ## Quick Reference
 
@@ -40,6 +40,8 @@ set_default_provider(client)
 ```
 
 ### Environment Variables (Zero Config)
+
+If you'd rather skip explicit setup, fasteval auto-detects from your environment:
 
 ```bash
 # fasteval auto-detects from environment
@@ -75,7 +77,7 @@ import fasteval as fe
 class LangChainClient:
     def __init__(self, llm):
         self.llm = llm
-    
+
     async def invoke(self, messages: list) -> str:
         lc_messages = []
         for msg in messages:
@@ -95,7 +97,7 @@ fe.set_default_provider(LangChainClient(llm))
 
 ## Per-Metric Overrides
 
-Override the provider for specific metrics:
+You don't have to use the same provider everywhere. Override it on specific metrics when it makes sense:
 
 ```python
 import fasteval as fe
@@ -110,10 +112,10 @@ def test_qa():
 
 ## Provider Priority
 
-Resolution order (highest to lowest):
+fasteval resolves the provider in this order (highest to lowest):
 
 1. Per-metric `llm=` parameter
-2. Per-metric `model=` parameter  
+2. Per-metric `model=` parameter
 3. Global `set_default_provider()`
 4. Environment variable auto-detection
 

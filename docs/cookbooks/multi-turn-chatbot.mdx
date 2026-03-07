@@ -14,12 +14,12 @@ sidebar:
   - title: Topic Drift
     anchor: testing-topic-drift
   - title: Combining Metrics
-    anchor: comprehensive-testing
+    anchor: full-conversation-testing
 ---
 
 # Evaluating Multi-Turn Chatbots
 
-This cookbook covers testing chatbots and conversational AI systems using fasteval's conversation metrics. We'll evaluate context retention, response consistency, and topic adherence across multi-turn dialogues.
+This cookbook walks through testing chatbots with fasteval's conversation metrics — context retention, response consistency, and topic adherence across multi-turn dialogues.
 
 ## Overview
 
@@ -48,25 +48,25 @@ class CustomerSupportBot:
         Be friendly, accurate, and helpful. Remember context from earlier in the conversation.
         Our products: TechPhone ($999), TechWatch ($399), TechPad ($799).
         Our policies: 30-day returns, 1-year warranty, free shipping over $50."""
-    
+
     def chat(self, user_message: str) -> str:
         """Process a message and return response."""
         self.history.append(HumanMessage(content=user_message))
-        
+
         messages = [SystemMessage(content=self.system_prompt)] + self.history
         response = self.llm.invoke(messages)
-        
+
         self.history.append(response)
         return response.content
-    
+
     def get_history(self) -> list:
         """Get conversation history in dict format."""
         return [
-            {"role": "user" if isinstance(m, HumanMessage) else "assistant", 
+            {"role": "user" if isinstance(m, HumanMessage) else "assistant",
              "content": m.content}
             for m in self.history
         ]
-    
+
     def reset(self):
         """Clear conversation history."""
         self.history = []
@@ -94,7 +94,7 @@ def test_pronoun_resolution(bot):
     bot.chat("I'm interested in the TechPhone")
     bot.chat("How much does it cost?")  # "it" = TechPhone
     response = bot.chat("Does it come with a warranty?")  # "it" = TechPhone
-    
+
     # The bot should understand "it" refers to TechPhone
     fe.score(
         actual_output=response,
@@ -109,7 +109,7 @@ def test_remembers_user_info(bot):
     bot.chat("My name is Sarah and I bought a TechWatch last month")
     bot.chat("I'm having issues with the battery")
     response = bot.chat("Can you help me with a return?")
-    
+
     # Bot should remember: name is Sarah, product is TechWatch
     fe.score(
         actual_output=response,
@@ -125,7 +125,7 @@ def test_follows_conversation_thread(bot):
     bot.chat("And what about the TechPhone?")
     bot.chat("Which one has better battery life?")
     response = bot.chat("I'll go with the cheaper option")
-    
+
     # Bot should know we're comparing TechPad ($799) and TechPhone ($999)
     # Cheaper = TechPad
     fe.score(
@@ -145,7 +145,7 @@ def test_price_consistency(bot):
     """Test that price information is consistent across turns."""
     response1 = bot.chat("How much is the TechPhone?")
     response2 = bot.chat("Just to confirm, what's the TechPhone price again?")
-    
+
     # Both responses should state $999
     fe.score(
         actual_output=response2,
@@ -160,7 +160,7 @@ def test_policy_consistency(bot):
     bot.chat("What's your return policy?")
     bot.chat("I want to return something I bought 25 days ago")
     response = bot.chat("So I can still return it, right?")
-    
+
     # Should consistently say yes (30-day policy)
     fe.score(
         actual_output=response,
@@ -175,7 +175,7 @@ def test_no_contradictions(bot):
     bot.chat("Is there free shipping?")  # Free over $50
     bot.chat("I want to order a TechWatch")  # $399, so free shipping
     response = bot.chat("Will I pay for shipping?")
-    
+
     # Should say no (TechWatch is $399 > $50 threshold)
     fe.score(
         actual_output=response,
@@ -186,7 +186,7 @@ def test_no_contradictions(bot):
 
 ## Testing Topic Drift
 
-Verify the chatbot stays on topic and handles off-topic requests appropriately.
+Verify the chatbot stays on topic and handles off-topic requests well.
 
 ```python
 @fe.topic_drift(threshold=0.75)
@@ -195,7 +195,7 @@ def test_stays_on_topic(bot):
     bot.chat("I need help with my TechPhone order")
     bot.chat("The screen is cracked")
     response = bot.chat("Can you help me get this fixed?")
-    
+
     # Should stay on topic: helping with cracked screen
     fe.score(
         actual_output=response,
@@ -210,7 +210,7 @@ def test_handles_off_topic_gracefully(bot):
     bot.chat("I want to buy a TechPhone")
     bot.chat("By the way, what's the weather like?")  # Off-topic
     response = bot.chat("Anyway, back to the TechPhone")
-    
+
     # Bot should refocus on TechPhone
     fe.score(
         actual_output=response,
@@ -226,7 +226,7 @@ def test_maintains_task_focus(bot):
     bot.chat("Show me the TechWatch")
     bot.chat("And the TechPad too")
     response = bot.chat("Help me decide which to buy")
-    
+
     # Should help with purchase decision, not drift
     fe.score(
         actual_output=response,
@@ -235,16 +235,16 @@ def test_maintains_task_focus(bot):
     )
 ```
 
-## Comprehensive Testing
+## Full Conversation Testing
 
-Combine all conversation metrics for thorough evaluation.
+Combine all conversation metrics for a thorough evaluation.
 
 ```python
 @fe.context_retention(threshold=0.8)
 @fe.consistency(threshold=0.85)
 @fe.topic_drift(threshold=0.75)
 def test_full_conversation_quality(bot):
-    """Comprehensive conversation quality test."""
+    """End-to-end conversation quality test."""
     # Build a realistic conversation
     bot.chat("Hi, I'm looking at the TechWatch")
     bot.chat("How much is it?")
@@ -252,7 +252,7 @@ def test_full_conversation_quality(bot):
     bot.chat("I bought one last week actually")
     bot.chat("But I'm thinking of returning it")
     response = bot.chat("Can you help me with that?")
-    
+
     fe.score(
         actual_output=response,
         history=bot.get_history(),
@@ -299,9 +299,9 @@ def test_conversation_scenarios(bot, scenario):
     """Test various conversation scenarios."""
     for turn in scenario["turns"]:
         bot.chat(turn)
-    
+
     response = bot.chat(scenario["final_query"])
-    
+
     fe.score(
         actual_output=response,
         history=bot.get_history(),
@@ -311,7 +311,7 @@ def test_conversation_scenarios(bot, scenario):
 
 ## Adding Response Quality Metrics
 
-Combine conversation metrics with general quality metrics:
+You can combine conversation metrics with general quality metrics:
 
 ```python
 @fe.context_retention(threshold=0.8)
@@ -321,7 +321,7 @@ def test_helpful_and_safe_conversation(bot):
     """Test that responses are contextual, relevant, and safe."""
     bot.chat("I'm frustrated - my order is late!")
     response = bot.chat("This is unacceptable, I want answers!")
-    
+
     # Response should:
     # - Acknowledge the context (late order)
     # - Be relevant to the complaint

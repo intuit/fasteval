@@ -1,0 +1,302 @@
+---
+title: Code as a Judge
+description: Using plain Python functions to evaluate LLM outputs with full control and zero latency
+order: 2
+sidebar:
+  - title: What is Code-as-Judge?
+    anchor: what-is-code-as-judge
+  - title: How It Works
+    anchor: how-it-works
+  - title: When to Use It
+    anchor: when-to-use-code-as-judge
+  - title: Function Signatures
+    anchor: function-signatures
+  - title: Return Types
+    anchor: return-types
+  - title: Code vs LLM Judge
+    anchor: code-as-judge-vs-llm-as-judge
+  - title: Examples
+    anchor: examples
+  - title: Best Practices
+    anchor: best-practices
+---
+
+# Code as a Judge
+
+Code-as-Judge is the other side of [LLM-as-Judge](/docs/concepts/llm-as-judge). Instead of asking an LLM to score an output, you write a Python function that does the scoring directly. No API calls, no latency, fully deterministic.
+
+## What is Code-as-Judge?
+
+You write a plain function that takes evaluation data — the actual output, expected output, context, whatever you need — and returns a score between 0 and 1. Pass that function to `@fe.judge()` on your test, and fasteval handles the rest.
+
+![Code as a Judge Flow](docs/assets/code-as-judge-flow.svg)
+
+**Example:**
+
+```python
+import fasteval as fe
+
+def check_word_count(actual_output: str) -> float:
+    """Penalize responses that are too short or too long."""
+    words = len(actual_output.split())
+    if words < 10:
+        return 0.2
+    if words > 500:
+        return 0.3
+    return 1.0
+
+@fe.judge(check_word_count, threshold=0.8)
+def test_response_length():
+    response = my_agent("Explain quantum computing")
+    fe.score(response, input="Explain quantum computing")
+```
+
+That scoring function is just a regular Python function. No base classes, no decorators on the function itself, no async boilerplate. Test it in isolation, import it across files, compose however you want.
+
+## How It Works
+
+1. You define a scoring function that accepts any subset of `EvalInput` fields
+2. You pass it to `@fe.judge(fn, threshold=...)` on your test function
+3. When `fe.score()` runs, fasteval inspects your function's parameter names, extracts the matching fields from the evaluation input, and calls your function
+4. The return value is normalized into a `MetricResult` with score, pass/fail, and optional reasoning
+
+## When to Use Code-as-Judge
+
+**Use code when:**
+
+- The check is deterministic (length limits, keyword presence, format validation)
+- You need zero latency and zero cost
+- You want fully reproducible scores across runs
+- The logic involves computation (math, regex, parsing, API calls to your own services)
+- You're validating structure rather than semantics
+
+**Use [LLM-as-Judge](/docs/concepts/llm-as-judge) instead when:**
+
+- You need semantic understanding (paraphrase detection, factual accuracy)
+- The criteria are subjective or hard to express as code (tone, helpfulness)
+- You're evaluating open-ended natural language quality
+
+**Use both together** for full coverage:
+
+```python
+def check_has_disclaimer(actual_output: str) -> float:
+    return 1.0 if "consult a professional" in actual_output.lower() else 0.0
+
+@fe.judge(check_has_disclaimer, threshold=1.0)   # Deterministic: disclaimer present
+@fe.correctness(threshold=0.8)                    # Semantic: answer is correct
+@fe.toxicity(threshold=0.95)                      # Semantic: not toxic
+def test_medical_response():
+    response = health_bot("What should I take for a headache?")
+    fe.score(response, expected="Common OTC options include...", input="What should I take for a headache?")
+```
+
+## Function Signatures
+
+![Function Signatures and Return Types](docs/assets/code-as-judge-signatures.svg)
+
+Your scoring function declares what data it needs through its parameter names. fasteval matches them against `EvalInput` fields automatically — you just name the parameters and it figures out the wiring.
+
+### Minimal — just the output
+
+```python
+def check_length(actual_output: str) -> float:
+    return 1.0 if len(actual_output) < 1000 else 0.5
+```
+
+### With expected output and input
+
+```python
+def check_answer(actual_output: str, expected_output: str, input: str) -> float:
+    if expected_output.lower() in actual_output.lower():
+        return 1.0
+    return 0.0
+```
+
+### With RAG context
+
+```python
+def check_grounding(actual_output: str, context: list) -> float:
+    if not context:
+        return 0.5
+    ctx_text = " ".join(context).lower()
+    claims = actual_output.lower().split(". ")
+    grounded = sum(1 for c in claims if any(word in ctx_text for word in c.split()))
+    return grounded / len(claims) if claims else 0.0
+```
+
+### Full EvalInput access
+
+If you need access to everything, declare an `eval_input` parameter:
+
+```python
+from fasteval import EvalInput
+
+def check_everything(eval_input: EvalInput) -> float:
+    score = 1.0
+    if not eval_input.actual_output:
+        score -= 0.5
+    if eval_input.tool_calls and not eval_input.expected_tools:
+        score -= 0.2
+    return max(score, 0.0)
+```
+
+### With **kwargs
+
+Use `**kwargs` to receive all fields while naming the ones you care about:
+
+```python
+def check_format(actual_output: str, **kwargs) -> float:
+    try:
+        import json
+        json.loads(actual_output)
+        return 1.0
+    except (json.JSONDecodeError, TypeError):
+        return 0.0
+```
+
+### Async functions
+
+Async scoring functions work too:
+
+```python
+async def check_with_external_api(actual_output: str) -> float:
+    result = await my_validation_service.validate(actual_output)
+    return 1.0 if result.is_valid else 0.0
+```
+
+## Return Types
+
+Your function can return any of these formats:
+
+### Float (score only)
+
+```python
+def check(actual_output: str) -> float:
+    return 1.0 if actual_output else 0.0
+```
+
+### Tuple (score + reasoning)
+
+```python
+def check(actual_output: str) -> tuple:
+    words = len(actual_output.split())
+    if words > 200:
+        return (0.3, f"Too long: {words} words")
+    return (1.0, f"Good length: {words} words")
+```
+
+The reasoning shows up in test failure reports, so you'll actually know *why* something failed.
+
+### Dict (score + reasoning + details)
+
+```python
+def check(actual_output: str) -> dict:
+    has_greeting = "hello" in actual_output.lower()
+    return {
+        "score": 1.0 if has_greeting else 0.0,
+        "reasoning": "Greeting detected" if has_greeting else "No greeting found",
+        "details": {"has_greeting": has_greeting},
+    }
+```
+
+### MetricResult (full control)
+
+```python
+from fasteval import MetricResult
+
+def check(actual_output: str) -> MetricResult:
+    score = 1.0 if actual_output else 0.0
+    return MetricResult(
+        metric_name="my_check",
+        score=score,
+        passed=score >= 0.8,
+        threshold=0.8,
+        reasoning="Custom logic",
+        details={"raw_length": len(actual_output)},
+    )
+```
+
+## Code-as-Judge vs LLM-as-Judge
+
+![Code vs LLM Judge](docs/assets/code-vs-llm-judge.svg)
+
+| Aspect | Code-as-Judge | LLM-as-Judge |
+|--------|--------------|--------------|
+| **Latency** | Microseconds | 1-5 seconds |
+| **Cost** | Free | ~$0.001/eval |
+| **Determinism** | Fully deterministic | Varies across runs |
+| **Semantic understanding** | None (exact logic only) | Strong |
+| **Maintenance** | You maintain the logic | Prompt engineering |
+| **Debugging** | Step through code | Read reasoning |
+| **Best for** | Structure, format, rules | Meaning, quality, tone |
+
+## Examples
+
+### Validate JSON structure
+
+```python
+import json
+
+def valid_json_with_fields(actual_output: str) -> tuple:
+    try:
+        data = json.loads(actual_output)
+    except (json.JSONDecodeError, TypeError):
+        return (0.0, "Invalid JSON")
+    required = {"id", "status", "message"}
+    missing = required - set(data.keys())
+    if missing:
+        return (0.0, f"Missing fields: {missing}")
+    return (1.0, "Valid JSON with all required fields")
+
+@fe.judge(valid_json_with_fields, threshold=1.0)
+def test_api_response():
+    response = my_agent("Get order status for #12345")
+    fe.score(response)
+```
+
+### Check response language
+
+```python
+def is_english(actual_output: str) -> float:
+    ascii_ratio = sum(1 for c in actual_output if ord(c) < 128) / max(len(actual_output), 1)
+    return 1.0 if ascii_ratio > 0.9 else 0.0
+
+@fe.judge(is_english, threshold=1.0)
+@fe.correctness(threshold=0.8)
+def test_english_response():
+    response = my_agent("What is the capital of France?")
+    fe.score(response, expected="Paris", input="What is the capital of France?")
+```
+
+### Multiple code judges on one test
+
+```python
+def no_pii(actual_output: str) -> tuple:
+    import re
+    if re.search(r'\b\d{3}-\d{2}-\d{4}\b', actual_output):
+        return (0.0, "Contains SSN pattern")
+    if re.search(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', actual_output):
+        return (0.0, "Contains email address")
+    return (1.0, "No PII detected")
+
+def under_token_limit(actual_output: str) -> float:
+    return 1.0 if len(actual_output.split()) <= 150 else 0.5
+
+@fe.judge(no_pii, threshold=1.0)
+@fe.judge(under_token_limit, threshold=0.8)
+def test_safe_concise_response():
+    response = my_agent(query)
+    fe.score(response, input=query)
+```
+
+## Best Practices
+
+1. **Keep functions focused.** One function, one check. Stack multiple judges on the same test instead of cramming everything into one function.
+
+2. **Return reasoning.** Use tuple or dict returns so failure reports tell you *why* something failed, not just that it did.
+
+3. **Test your scoring functions independently.** They're plain functions — call them directly in unit tests to nail down edge cases before wiring them into evaluations.
+
+4. **Pair with LLM metrics.** Code judges for structural/deterministic checks, LLM judges for semantic quality. Together you get fast, cheap coverage plus deep understanding.
+
+5. **Use descriptive function names.** The function name becomes the metric name by default, so `check_has_disclaimer` reads way better in reports than `check1`.

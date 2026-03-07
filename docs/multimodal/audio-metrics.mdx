@@ -6,7 +6,7 @@ order: 3
 
 # Audio Metrics
 
-Evaluate speech-to-text, voice assistants, and audio understanding systems.
+Got a speech-to-text pipeline, voice assistant, or audio understanding system? Here's how to evaluate it.
 
 ## Installation
 
@@ -18,9 +18,7 @@ pip install fasteval-core[audio]
 
 ### `@fe.word_error_rate`
 
-Calculate Word Error Rate (WER) - the industry standard metric for ASR.
-
-WER measures the minimum number of word-level edits needed to transform the hypothesis into the reference.
+Word Error Rate (WER) is the industry standard for ASR. It measures the minimum word-level edits needed to transform the hypothesis into the reference.
 
 ```python
 import fasteval as fe
@@ -34,10 +32,7 @@ def test_whisper():
     )
 ```
 
-**Score Interpretation:**
-- Score = 1.0 - WER (inverted so higher is better)
-- WER of 0.05 (5%) → Score of 0.95
-- Threshold of 0.95 means WER must be < 5%
+The score is inverted (1.0 - WER) so higher is better. A WER of 5% gives a score of 0.95, meaning a threshold of 0.95 requires WER under 5%.
 
 **Parameters:**
 | Parameter | Type | Default | Description |
@@ -47,12 +42,7 @@ def test_whisper():
 
 ### `@fe.character_error_rate`
 
-Calculate Character Error Rate (CER) for detailed accuracy analysis.
-
-Useful for:
-- Languages without clear word boundaries (Chinese, Japanese)
-- Name/entity recognition
-- When exact character accuracy matters
+Character Error Rate (CER) gives you finer-grained accuracy analysis. It's especially useful for languages without clear word boundaries like Chinese or Japanese, for name/entity recognition, or when exact character accuracy matters.
 
 ```python
 @fe.character_error_rate(threshold=0.95)
@@ -66,7 +56,7 @@ def test_asr_detailed():
 
 ### `@fe.match_error_rate`
 
-Calculate Match Error Rate (MER) - a variant of WER bounded between 0 and 1.
+Match Error Rate (MER) is a WER variant that's always bounded between 0 and 1.
 
 ```python
 @fe.match_error_rate(threshold=0.9)
@@ -80,9 +70,7 @@ def test_asr():
 
 ### `@fe.transcription_accuracy`
 
-LLM-based semantic evaluation of transcription accuracy.
-
-Unlike WER/CER, this evaluates if the transcription captures the semantic meaning, even if exact words differ.
+This one uses an LLM to evaluate semantic accuracy rather than exact word matching. Unlike WER/CER, it doesn't penalize you for minor word variations ("gonna" vs "going to"), different number formats ("5" vs "five"), or synonyms that carry the same meaning.
 
 ```python
 @fe.transcription_accuracy(threshold=0.9)
@@ -94,14 +82,9 @@ def test_semantic_accuracy():
     )
 ```
 
-Useful when:
-- Minor word variations are acceptable ("gonna" vs "going to")
-- Numbers can be written differently ("5" vs "five")
-- Synonyms are equivalent
-
 ### `@fe.speaker_diarization`
 
-Evaluate speaker identification accuracy in multi-speaker transcriptions.
+Evaluates speaker identification accuracy in multi-speaker transcriptions. It checks whether speakers are correctly identified, turn boundaries are accurate, and labeling stays consistent throughout.
 
 ```python
 @fe.speaker_diarization(threshold=0.8)
@@ -113,14 +96,9 @@ def test_speaker_id():
     )
 ```
 
-Checks:
-- Speakers correctly identified
-- Turn boundaries accurate
-- Consistent labeling throughout
-
 ### `@fe.audio_sentiment`
 
-Evaluate tone/emotion detection accuracy from audio.
+Evaluates tone and emotion detection accuracy from audio.
 
 ```python
 @fe.audio_sentiment(threshold=0.8)
@@ -150,7 +128,7 @@ import fasteval as fe
 def test_comprehensive_asr():
     """Evaluate both exact accuracy and semantic correctness."""
     transcript = whisper.transcribe("meeting_recording.mp3")
-    
+
     fe.score(
         actual_output=transcript,
         expected_output=ground_truth,
@@ -178,7 +156,4 @@ audio = AudioInput(
 
 ## Best Practices
 
-1. **Normalize text** - Enable `normalize_text=True` (default) to ignore case and punctuation differences
-2. **Use appropriate metrics** - WER for general ASR, CER for character-level
-3. **Combine deterministic and LLM metrics** - WER for exact accuracy, transcription_accuracy for semantic
-4. **Set realistic thresholds** - Industry-standard WER is ~5% for clean audio, higher for challenging conditions
+We recommend enabling `normalize_text=True` (the default) to ignore case and punctuation differences. Pick the right metric for the job: WER for general ASR, CER for character-level work. In practice, combining deterministic and LLM metrics works best — use WER for exact accuracy and `transcription_accuracy` for semantic correctness. For thresholds, industry-standard WER sits around 5% for clean audio, but you'll want to be more lenient for noisy or challenging conditions.

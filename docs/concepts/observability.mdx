@@ -19,35 +19,25 @@ sidebar:
 
 # Observability
 
-Observability in LLM applications extends beyond traditional metrics like latency and error rates. Understanding the semantic quality of outputs—whether responses are correct, relevant, safe, and helpful—requires specialized evaluation telemetry. This guide covers how to integrate fasteval with observability platforms to monitor evaluation quality in production.
+LLM apps don't just break in the usual ways. Sure, you've still got latency and error rates to worry about. But the harder question is whether your outputs are actually good — correct, relevant, safe, not hallucinating. You need eval-aware monitoring to answer that. This guide walks through how to wire up fasteval with observability platforms so you can keep tabs on quality in production.
 
 ## Why Observability Matters
 
-LLM applications present unique observability challenges that differ from traditional software:
+LLM applications present observability challenges you won't find in traditional software.
 
 ![Observability Benefits](docs/assets/observability-benefits.svg)
 
 ### Traditional vs LLM Observability
 
-| Traditional Observability | LLM Observability |
-|--------------------------|-------------------|
-| Request latency | + Evaluation scores |
-| Error rates | + Quality degradation detection |
-| Resource utilization | + Hallucination tracking |
-| Request/response logging | + Semantic content analysis |
-| Uptime monitoring | + Safety incident detection |
+With traditional apps, you're watching request latency, error rates, resource utilization, request/response logs, and uptime. That's table stakes. LLM apps need all of that *plus* evaluation scores, quality degradation detection, hallucination tracking, semantic content analysis, and safety incident detection. It's a fundamentally different surface area — and if you're only watching the traditional metrics, you're flying blind on the stuff that actually matters to your users.
 
 ### Key Observability Goals
 
-1. **Quality Monitoring**: Track evaluation scores over time to detect degradation
-2. **Root Cause Analysis**: Trace evaluation failures back to specific inputs and model behaviors
-3. **Alerting**: Receive notifications when quality drops below thresholds
-4. **Trend Analysis**: Identify patterns in evaluation results across time, users, and input types
-5. **Cost Tracking**: Monitor evaluation costs alongside application costs
+You want to track eval scores over time so you can spot degradation before users do. You want to trace failures back to specific inputs and model behaviors — root cause analysis, not guesswork. Alerting matters too: you should know immediately when quality drops below your thresholds. In practice, we've found that trend analysis across time, users, and input types reveals patterns you'd never catch by eyeballing individual results. And don't forget cost tracking — eval costs add up alongside your application costs, and you want visibility into both.
 
 ## Observability Architecture
 
-A complete LLM observability stack typically includes:
+A complete LLM observability stack typically looks like this:
 
 | Component | Purpose | Examples |
 |-----------|---------|----------|
@@ -59,15 +49,15 @@ A complete LLM observability stack typically includes:
 
 ### Data Flow
 
-1. Application generates LLM output
-2. fasteval evaluates output quality
-3. Evaluation results are logged to observability platform
-4. Platform aggregates, visualizes, and alerts on results
-5. Teams analyze trends and investigate incidents
+1. Your app generates an LLM output
+2. fasteval runs evals against it
+3. Results get shipped to your observability platform
+4. The platform aggregates, visualizes, and fires alerts
+5. Your team spots trends and digs into incidents
 
 ## Langfuse Integration
 
-[Langfuse](https://langfuse.com) is an open-source LLM observability platform designed specifically for LLM applications. It provides tracing, evaluation, and analytics capabilities.
+[Langfuse](https://langfuse.com) is an open-source observability platform built specifically for LLM apps. It handles tracing, evaluation, and analytics out of the box.
 
 ### Setup
 
@@ -87,7 +77,7 @@ export LANGFUSE_HOST=https://cloud.langfuse.com  # or self-hosted URL
 
 ### Wrapping the Judge Client
 
-Create a Langfuse-instrumented client wrapper for tracing evaluation calls:
+You'll want a Langfuse-instrumented wrapper around the client so eval calls get traced automatically:
 
 ```python
 from langfuse import Langfuse
@@ -98,11 +88,11 @@ langfuse = Langfuse()
 
 class LangfuseTracedClient:
     """Wrap fasteval's LLM client with Langfuse tracing."""
-    
+
     def __init__(self, model: str = "gpt-4o-mini"):
         self.client = OpenAIClient(model=model)
         self.model = model
-    
+
     @observe(as_type="generation")
     async def invoke(self, messages: list) -> str:
         """Traced LLM call for evaluation."""
@@ -116,7 +106,7 @@ set_default_provider(traced_client)
 
 ### Tracing Evaluation Runs
 
-Wrap your test functions with Langfuse traces:
+Wrap your test functions with Langfuse traces to get full visibility:
 
 ```python
 from langfuse.decorators import observe
@@ -128,36 +118,32 @@ import fasteval as fe
 def test_qa_quality():
     response = my_agent("What is machine learning?")
     result = fe.score(response, expected="Machine learning is...")
-    
+
     # Log score to Langfuse trace
     langfuse.score(
         trace_id=langfuse.get_trace_id(),
         name="correctness",
         value=result.aggregate_score
     )
-    
+
     return result
 ```
 
 ### Using fasteval-langfuse Plugin
 
-For deeper integration, use the dedicated plugin:
+For a deeper integration, there's a dedicated plugin that handles the plumbing for you:
 
 ```bash
 pip install fasteval-langfuse
 ```
 
-The plugin provides:
-- Automatic trace evaluation from Langfuse
-- Dataset integration for batch evaluation
-- Score reporting back to Langfuse
-- Sampling strategies for production monitoring
+It gives you automatic trace evaluation from Langfuse, dataset integration for batch evaluation, score reporting back to Langfuse, and sampling strategies for production monitoring.
 
 See [Langfuse Plugin Documentation](/docs/plugins/langfuse/overview) for complete details.
 
 ### Viewing in Langfuse
 
-After running evaluations, you'll see in the Langfuse dashboard:
+Once you've run some evaluations, the Langfuse dashboard shows you:
 
 - **Trace timeline**: Visual representation of evaluation flow
 - **Generation spans**: Each LLM call with input/output
@@ -167,7 +153,7 @@ After running evaluations, you'll see in the Langfuse dashboard:
 
 ## LangSmith Integration
 
-[LangSmith](https://smith.langchain.com) is LangChain's observability platform, providing tracing, evaluation, and dataset management.
+[LangSmith](https://smith.langchain.com) is LangChain's observability platform. It covers tracing, evaluation, and dataset management.
 
 ### Setup
 
@@ -185,7 +171,7 @@ export LANGCHAIN_PROJECT=fasteval-evals
 
 ### Using LangChain Models with Tracing
 
-LangChain models automatically trace to LangSmith:
+If you're already using LangChain models, tracing to LangSmith happens automatically — no extra wiring needed:
 
 ```python
 from langchain_openai import ChatOpenAI
@@ -194,10 +180,10 @@ import fasteval as fe
 
 class LangSmithTracedClient:
     """Use LangChain models for automatic LangSmith tracing."""
-    
+
     def __init__(self, model: str = "gpt-4o-mini"):
         self.llm = ChatOpenAI(model=model, temperature=0)
-    
+
     async def invoke(self, messages: list) -> str:
         # Convert to LangChain format
         lc_messages = []
@@ -206,7 +192,7 @@ class LangSmithTracedClient:
                 lc_messages.append(SystemMessage(content=msg["content"]))
             elif msg["role"] == "user":
                 lc_messages.append(HumanMessage(content=msg["content"]))
-        
+
         # LangSmith automatically traces this call
         response = await self.llm.ainvoke(lc_messages)
         return response.content
@@ -217,7 +203,7 @@ fe.set_default_provider(LangSmithTracedClient())
 
 ### Logging Evaluation Results
 
-Log evaluation results as LangSmith dataset examples:
+You can log results as LangSmith dataset examples for later analysis:
 
 ```python
 from langsmith import Client
@@ -228,7 +214,7 @@ client = Client()
 def test_with_langsmith_logging():
     response = agent(query)
     result = fe.score(response, expected)
-    
+
     # Log as a dataset example for future analysis
     client.create_example(
         dataset_name="eval-results",
@@ -244,7 +230,7 @@ def test_with_langsmith_logging():
 
 ## Custom Integrations
 
-For observability platforms not directly supported, fasteval evaluation results can be exported to any system.
+If your observability platform doesn't have a built-in integration, no worries — fasteval results are just data, and you can send them anywhere.
 
 ### Generic Webhook Integration
 
@@ -275,7 +261,7 @@ async def log_to_webhook(result, webhook_url: str, context: dict = None):
         "output": result.eval_input.actual_output,
         "context": context or {},
     }
-    
+
     async with httpx.AsyncClient() as client:
         await client.post(webhook_url, json=payload)
 
@@ -301,7 +287,7 @@ Base = declarative_base()
 
 class EvalResult(Base):
     __tablename__ = "eval_results"
-    
+
     id = Column(Integer, primary_key=True)
     timestamp = Column(DateTime)
     test_name = Column(String)
@@ -368,7 +354,7 @@ def record_prometheus_metrics(result):
 
 ### Runtime Monitoring with fasteval-observe
 
-For production monitoring with automatic sampling and structured logging, use the **fasteval-observe** plugin:
+For production monitoring with automatic sampling and structured logging, we recommend the **fasteval-observe** plugin:
 
 ```bash
 pip install fasteval-observe
@@ -403,19 +389,13 @@ async def my_agent(query: str) -> str:
 shutdown_observer()
 ```
 
-**Benefits of fasteval-observe:**
-
-- **Async Evaluation**: Non-blocking background processing
-- **Smart Sampling**: Multiple strategies (fixed rate, adaptive, token budget)
-- **Structured Logging**: JSON logs ready for log aggregators
-- **Minimal Latency Impact**: Designed for production performance
-- **Production Metrics**: Latency, errors, evaluation scores
+In practice, fasteval-observe is doing a lot of heavy lifting here. It runs evals asynchronously in the background so your production latency barely notices. The sampling strategies are flexible — fixed rate, adaptive, token budget — so you're not burning money evaluating every single request. Logs come out as structured JSON, ready for whatever log aggregator you're already using. And it tracks the usual production metrics (latency, errors, eval scores) without you having to wire that up yourself.
 
 See [fasteval-observe documentation](/docs/plugins/observe/overview) for complete details.
 
 ### Score Trending and Analysis
 
-Monitor evaluation score trends over time to detect quality degradation:
+Keep an eye on eval score trends to catch quality degradation early:
 
 ```python
 import pandas as pd
@@ -423,21 +403,21 @@ from datetime import datetime, timedelta
 
 def analyze_score_trends(db_session):
     """Analyze evaluation score trends and detect degradation."""
-    
+
     # Query last 7 days of results
     results = db_session.query(EvalResult).filter(
         EvalResult.timestamp > datetime.utcnow() - timedelta(days=7)
     ).all()
-    
+
     df = pd.DataFrame([{
         "timestamp": r.timestamp,
         "metric": r.metric_name,
         "score": r.score,
     } for r in results])
-    
+
     # Calculate daily averages
     daily_avg = df.groupby([df["timestamp"].dt.date, "metric"])["score"].mean()
-    
+
     # Detect degradation (>10% drop)
     for metric in df["metric"].unique():
         metric_scores = daily_avg.xs(metric, level=1)
@@ -472,12 +452,12 @@ async def check_alerts(metric: str, recent_scores: list):
     rule = ALERT_RULES.get(metric)
     if not rule:
         return
-    
+
     if len(recent_scores) < rule["min_samples"]:
         return  # Not enough samples for statistical significance
-    
+
     avg_score = sum(recent_scores) / len(recent_scores)
-    
+
     if avg_score < rule["threshold"]:
         await send_alert(
             severity=rule["severity"],
@@ -487,8 +467,8 @@ async def check_alerts(metric: str, recent_scores: list):
 
 ### Observability Best Practices
 
-1. **Sample intelligently**: Use adaptive sampling to balance coverage and cost
-2. **Alert on trends**: Single failures may be noise; sustained degradation is signal
-3. **Correlate with changes**: Link quality changes to deployments, prompt updates, or model changes
-4. **Retain context**: Store enough information to reproduce and debug issues
-5. **Set appropriate thresholds**: Alert thresholds should be lower than test thresholds to catch degradation early
+1. **Sample intelligently.** Use adaptive sampling so you're not paying to evaluate every request. Balance coverage against cost.
+2. **Alert on trends, not blips.** A single failure might just be noise. Sustained degradation? That's the real signal.
+3. **Correlate with changes.** When quality shifts, link it back to deployments, prompt updates, or model swaps. You'll save yourself hours of debugging.
+4. **Retain enough context.** Store the inputs, outputs, and reasoning so you can actually reproduce and debug issues later.
+5. **Set alert thresholds below test thresholds.** You want to catch degradation *before* it hits the level that'd fail your tests. Early warning beats late discovery every time.

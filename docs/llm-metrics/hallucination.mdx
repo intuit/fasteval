@@ -19,11 +19,11 @@ sidebar:
 
 # Hallucination Metric
 
-The hallucination metric detects fabricated or unsupported information in LLM outputs. It evaluates whether claims made in responses are grounded in provided context or established factual knowledge, catching instances where models confidently generate plausible but incorrect information.
+LLMs will confidently make things up. The hallucination metric catches fabricated or unsupported claims by checking whether statements in a response are actually grounded in the provided context or established facts.
 
 ## Overview
 
-Hallucination is one of the most significant challenges in LLM deployment. Research has shown that language models can generate convincing but entirely fabricated information—from fictional citations to invented statistics. This behavior poses risks in any application requiring factual accuracy.
+Hallucination is one of the hardest problems in LLM deployment. Models generate convincing but entirely fabricated information — fictional citations, invented statistics, made-up product features. If your app needs factual accuracy, you need to test for this.
 
 ### The Hallucination Problem
 
@@ -36,10 +36,7 @@ Hallucination is one of the most significant challenges in LLM deployment. Resea
 
 ### Why It Matters
 
-- **Trust**: Users cannot distinguish hallucinated content from accurate information
-- **Liability**: Incorrect information can cause real-world harm
-- **Compliance**: Many domains require factual accuracy (legal, medical, financial)
-- **User Experience**: Hallucinations erode user confidence in AI systems
+Users can't tell the difference between hallucinated content and accurate information. That's the core problem. In legal, medical, or financial contexts, wrong information creates real liability. And once users catch your app making things up, trust is gone — they'll second-guess every response after that.
 
 ## Understanding Hallucination
 
@@ -55,12 +52,9 @@ The metric evaluates every factual claim in the response against available conte
 | **0.3-0.5** | Significant hallucination | Major unsupported or contradictory claims |
 | **0.0-0.3** | Extensive fabrication | Little connection to provided context |
 
-### What the Metric Evaluates
+### What Gets Evaluated
 
-1. **Claim identification**: Extracts factual statements from the response
-2. **Context matching**: Checks each claim against provided context
-3. **Factual verification**: For claims not in context, assesses general accuracy
-4. **Contradiction detection**: Identifies statements that contradict the context
+The metric extracts factual claims from the response, then checks each one against the provided context. For claims that aren't in the context, it assesses general factual accuracy. It also specifically looks for contradictions — statements that directly conflict with what the context says.
 
 ## Parameters
 
@@ -89,14 +83,14 @@ import fasteval as fe
 def test_rag_grounding():
     docs = retriever.search("refund policy")
     context = "\n".join([doc.text for doc in docs])
-    
+
     response = my_rag_agent("What's your refund policy?", context=context)
     fe.score(response, context=context)
 ```
 
 ### Knowledge Base Q&A
 
-Verify the LLM does not invent information beyond what exists in your knowledge base:
+Verify the LLM doesn't invent information beyond what's in your knowledge base:
 
 ```python
 @fe.hallucination(threshold=0.9)
@@ -106,7 +100,7 @@ def test_kb_accuracy():
     Price: $99
     Features: Wireless, Waterproof, 2-year warranty
     """
-    
+
     response = my_llm("Describe Widget Pro", context=kb_entry)
     fe.score(response, context=kb_entry)
 ```
@@ -115,14 +109,14 @@ If the LLM says "Widget Pro has a 3-year warranty" when the context says 2 years
 
 ### Combining with Correctness
 
-Use both metrics for comprehensive accuracy evaluation:
+Use both metrics for thorough accuracy evaluation:
 
 ```python
 @fe.hallucination(threshold=0.85)  # Grounded in context
 @fe.correctness(threshold=0.8)     # Semantically correct
 def test_accurate_and_grounded():
     context = "The Eiffel Tower is 330 meters tall and was completed in 1889."
-    
+
     response = my_llm("How tall is the Eiffel Tower?", context=context)
     fe.score(
         actual_output=response,
@@ -140,7 +134,7 @@ For medical, legal, or financial content, use strict thresholds:
 @fe.contains()  # Required disclaimers
 def test_medical_information():
     medical_context = load_verified_medical_content()
-    
+
     response = health_bot("What are the symptoms of diabetes?", context=medical_context)
     fe.score(response, context=medical_context)
     fe.score(response, "consult a healthcare professional")  # Disclaimer check
@@ -148,7 +142,7 @@ def test_medical_information():
 
 ## Hallucination vs Faithfulness
 
-Both metrics detect fabricated information, but they are optimized for different scenarios:
+Both metrics detect fabricated information, but they're optimized for different scenarios:
 
 | Aspect | Hallucination | Faithfulness |
 |--------|--------------|--------------|
@@ -157,21 +151,7 @@ Both metrics detect fabricated information, but they are optimized for different
 | **Focus** | All factual claims | Grounding in retrieved docs |
 | **Best for** | Knowledge Q&A, general chatbots | RAG pipelines |
 
-### When to Use Each
-
-**Use Hallucination when:**
-- Testing general knowledge accuracy
-- Context is optional or minimal
-- Evaluating standalone factual claims
-
-**Use Faithfulness when:**
-- Building RAG systems
-- Multiple retrieved documents form context
-- Strict adherence to source material required
-
-**Use Both when:**
-- Building production RAG systems
-- Maximum coverage of grounding issues
+Use hallucination when you're testing general knowledge accuracy, when context is optional, or when evaluating standalone factual claims. Use faithfulness when you're building RAG systems with multiple retrieved documents where strict adherence to source material matters. For production RAG systems, we recommend using both — you get maximum coverage of grounding issues.
 
 ```python
 @fe.hallucination(threshold=0.85)
@@ -186,7 +166,7 @@ def test_rag_quality():
 
 ### Always Provide Context When Available
 
-The metric works best when it has context to verify against:
+The metric works best with context to verify against:
 
 ```python
 # Good: Context provided for verification
@@ -203,25 +183,20 @@ def test_without_context():
     fe.score(response)  # Limited verification possible
 ```
 
-### Threshold Selection by Domain
+### Pick the Right Threshold
 
-| Domain | Recommended Threshold | Rationale |
-|--------|----------------------|-----------|
-| Creative/conversational | 0.7 - 0.8 | Some creative license acceptable |
-| General knowledge Q&A | 0.8 - 0.85 | Standard accuracy expectations |
-| RAG systems | 0.85 - 0.9 | Must stay grounded in sources |
-| Medical/legal/financial | 0.9+ | No tolerance for fabrication |
+Creative and conversational apps can work at 0.7-0.8 since some creative license is fine. General knowledge Q&A should target 0.8-0.85. RAG systems need 0.85-0.9 to stay grounded in sources. And for medical, legal, or financial content, push it to 0.9 or above — there's no room for fabrication.
 
-### Monitor for Specific Hallucination Patterns
+### Track Hallucination Patterns
 
-Track common failure modes:
+A common mistake is treating hallucination failures as one-offs. Track them over time — you'll often find the same types of claims getting fabricated repeatedly:
 
 ```python
 @fe.hallucination(threshold=0.85)
 def test_and_analyze():
     response = my_agent(query, context=context)
     result = fe.score(response, context=context)
-    
+
     if not result.passed:
         # Log for pattern analysis
         log_hallucination_failure(
@@ -241,7 +216,7 @@ test_rag_grounding PASSED
 
 Evaluation Results:
   hallucination: 0.95 (threshold: 0.85)
-    Reasoning: All factual claims in the response are directly 
+    Reasoning: All factual claims in the response are directly
     supported by the provided context documents.
 ```
 
@@ -252,7 +227,7 @@ test_rag_grounding FAILED
 
 Evaluation Results:
   hallucination: 0.62 (threshold: 0.85)
-    Reasoning: The response claims "refunds are processed within 
-    24 hours" but the context only states "refunds are processed 
+    Reasoning: The response claims "refunds are processed within
+    24 hours" but the context only states "refunds are processed
     within 5-7 business days."
 ```

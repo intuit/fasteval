@@ -183,9 +183,9 @@ jobs:
 
       - name: Commit version bump
         run: |
-          git pull --rebase origin main
           git add "${{ steps.version.outputs.pyproject_path }}"
           git commit -m "chore: bump ${{ matrix.package }} version to ${{ steps.version.outputs.version }}"
+          git pull --rebase origin main
           git push origin HEAD:main
 
       - name: Purge shields.io badge cache

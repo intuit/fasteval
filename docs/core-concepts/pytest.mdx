@@ -23,7 +23,7 @@ fasteval works as a pytest plugin. You don't need to learn a new test runner—j
 
 ![Pytest Integration Flow](docs/assets/pytest-integration-flow.svg)
 
-The plugin registers automatically when you `pip install fasteval-core`. No additional setup required.
+The plugin registers automatically when you `pip install fasteval-core`. No config, no extra setup.
 
 ## Running Tests
 
@@ -70,7 +70,7 @@ tests/test_agent.py::test_support_flow FAILED
 Evaluation Results:
   ✓ correctness: 0.85 (threshold: 0.80)
   ✗ toxicity: 0.72 (threshold: 0.95)
-    Reasoning: Response contains dismissive language that may 
+    Reasoning: Response contains dismissive language that may
     be perceived as unhelpful or rude.
 ```
 
@@ -108,7 +108,7 @@ def strict_client():
 
 ### Environment-Based Configuration
 
-Use different settings for CI vs local development:
+You can use different settings for CI vs local development:
 
 ```python
 # conftest.py
@@ -132,7 +132,7 @@ def pytest_configure(config):
 def test_with_evaluator(evaluator):
     """Access the underlying evaluator for advanced use cases."""
     from fasteval.models import EvalInput, MetricConfig
-    
+
     result = await evaluator.evaluate(
         eval_input=EvalInput(
             actual_output="Paris is the capital",
@@ -141,7 +141,7 @@ def test_with_evaluator(evaluator):
         ),
         metrics=[MetricConfig(name="correctness", threshold=0.8)]
     )
-    
+
     assert result.passed
 ```
 
@@ -195,10 +195,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      
+
       - name: Install dependencies
         run: pip install -e ".[test]"
-      
+
       - name: Run evaluations
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -207,7 +207,7 @@ jobs:
 
 ### Separating Fast and Slow Tests
 
-Use pytest markers to separate deterministic (fast) from LLM (slow) tests:
+Use pytest markers to split deterministic (fast) tests from LLM (slow) ones:
 
 ```python
 # conftest.py
@@ -239,21 +239,21 @@ pytest
 
 ### Tests Not Discovered
 
-Ensure test files match `test_*.py` and functions start with `test_`:
+Make sure test files match `test_*.py` and functions start with `test_`:
 
 ```python
 # Correct
 def test_my_agent():
     ...
 
-# Wrong - not discovered
+# Wrong - won't be discovered
 def my_agent_test():
     ...
 ```
 
 ### Async Test Issues
 
-Use `pytest-asyncio` for async tests:
+You'll need `pytest-asyncio` for async tests:
 
 ```bash
 pip install pytest-asyncio
@@ -271,11 +271,10 @@ async def test_async_agent():
 
 ### Timeout Issues
 
-LLM evaluations can take a few seconds. Increase timeout if needed:
+LLM evaluations can take a few seconds. Bump the timeout if you're hitting limits:
 
 ```toml
 # pyproject.toml
 [tool.pytest.ini_options]
 timeout = 60
-```
 ```

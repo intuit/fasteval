@@ -15,7 +15,7 @@ sidebar:
 
 # Tool Sequence
 
-The `tool_sequence` metric evaluates whether an agent called tools in the correct order. This is a **deterministic metric** - no LLM calls required.
+Order matters. A payment agent that charges a card before validating it isn't just wrong -- it's dangerous. `tool_sequence` checks whether your agent called tools in the right order. It's a **deterministic metric**, no LLM calls needed.
 
 ## Usage
 
@@ -26,13 +26,13 @@ from fasteval import ExpectedTool
 @fe.tool_sequence(threshold=0.8)
 def test_workflow():
     response, tool_calls = agent("Process the order")
-    
+
     expected = [
         ExpectedTool(name="validate_order"),
         ExpectedTool(name="charge_payment"),
         ExpectedTool(name="send_confirmation"),
     ]
-    
+
     fe.score(response, tool_calls=tool_calls, expected_tools=expected)
 ```
 
@@ -50,21 +50,17 @@ def test_workflow():
 
 ### Non-Strict Mode (Default)
 
-Uses **Longest Common Subsequence (LCS)** algorithm:
+Uses the **Longest Common Subsequence (LCS)** algorithm:
 
 ```
 score = LCS_length / max(expected_length, actual_length)
 ```
 
-This allows for:
-- Extra tools in between expected tools
-- Some tools out of order (partial credit)
+This gives partial credit when extra tools appear between expected ones, or when some tools are out of order.
 
 ### Strict Mode
 
-Requires exact sequence match:
-- Score = 1.0 if sequences match exactly
-- Score = 0.0 otherwise
+All or nothing. The sequences must match exactly -- score is 1.0 if they do, 0.0 if they don't.
 
 ```python
 @fe.tool_sequence(strict=True)  # All or nothing

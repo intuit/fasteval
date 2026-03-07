@@ -15,11 +15,11 @@ sidebar:
 
 # Configuration
 
-fasteval can be configured at multiple levels: globally via config files, programmatically in code, or per-test with decorator parameters.
+fasteval picks up settings from several places: config files, code, or individual decorator parameters. Here's how they all fit together.
 
 ## Configuration Hierarchy
 
-Settings are resolved in this order (highest priority first):
+Settings resolve in this order (highest priority first):
 
 ![Configuration Hierarchy](docs/assets/configuration-hierarchy.svg)
 
@@ -30,7 +30,7 @@ Settings are resolved in this order (highest priority first):
 
 ## Global Configuration (pyproject.toml)
 
-Recommended for project-wide defaults:
+We recommend `pyproject.toml` for project-wide defaults. It keeps config out of your code and works the same way for every team member:
 
 ```toml
 [tool.fasteval]
@@ -51,7 +51,7 @@ log_level = "WARNING"
 
 ## Programmatic Configuration
 
-For runtime configuration or conditional settings:
+When you need runtime logic or conditional settings, `fe.configure()` does the job:
 
 ```python
 import fasteval as fe
@@ -85,7 +85,7 @@ else:
 
 ### conftest.py Configuration
 
-For pytest-specific setup:
+For pytest-specific setup, fixtures are the natural home:
 
 ```python
 # conftest.py
@@ -108,7 +108,7 @@ def strict_evaluator():
 
 ## Per-Test Configuration
 
-Override defaults on individual metrics:
+You can override defaults on any individual metric:
 
 ```python
 @fe.correctness(
@@ -120,7 +120,7 @@ def test_critical_functionality():
     fe.score(response, expected)
 ```
 
-Mix defaults and overrides:
+Mix defaults and overrides freely:
 
 ```python
 @fe.correctness(threshold=0.9)           # High threshold, default model
@@ -163,6 +163,8 @@ def test_mixed_config():
 
 ## CI/CD Recommendations
 
+In practice, we've found these CI defaults work well. Use a cheaper model, loosen the threshold a bit, and set a tight timeout so slow calls don't hang your pipeline:
+
 ```toml
 # pyproject.toml for CI
 
@@ -182,7 +184,7 @@ env:
 
 ## Multiple Configurations
 
-For different test suites with different needs:
+If different test suites need different settings, use separate fixtures:
 
 ```python
 # tests/conftest.py
@@ -192,7 +194,7 @@ def fast_config():
     """Configuration for quick smoke tests."""
     fe.configure(model="gpt-4o-mini")
 
-@pytest.fixture  
+@pytest.fixture
 def accurate_config():
     """Configuration for thorough evaluation."""
     fe.configure(model="gpt-4o")

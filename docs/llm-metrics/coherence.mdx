@@ -15,7 +15,7 @@ sidebar:
 
 # Coherence Metric
 
-The coherence metric evaluates the readability and logical flow of responses. It checks whether ideas connect naturally, the structure is well-organized, and the language is clear and grammatically correct.
+Does the response actually make sense? Coherence measures whether ideas connect naturally, the structure holds together, and the language reads clearly. It's the difference between a well-organized explanation and a jumbled mess of loosely related sentences.
 
 ## Quick Example
 
@@ -48,11 +48,7 @@ The LLM judge evaluates multiple aspects of coherence:
 
 ### What Gets Evaluated
 
-1. **Logical Flow**: Do ideas connect naturally from one to the next?
-2. **Structure**: Is the response well-organized with clear progression?
-3. **Clarity**: Is the language clear and easy to understand?
-4. **Grammar**: Is the writing grammatically correct?
-5. **Consistency**: Does the response maintain a consistent tone?
+The judge looks at logical flow — do ideas connect naturally from one to the next? It checks structure: is there a clear progression, or does the response jump around randomly? Clarity and grammar matter too. And it checks whether the tone stays consistent throughout, since a response that shifts between casual and academic mid-paragraph feels off even if the facts are right.
 
 ## Practical Examples
 
@@ -111,29 +107,15 @@ Evaluation Results:
 
 ## Choosing Your Threshold
 
-| Use Case | Suggested Threshold |
-|----------|---------------------|
-| Quick answers | 0.7 - 0.75 |
-| General explanations | 0.75 - 0.8 |
-| Technical documentation | 0.8 - 0.85 |
-| Published content | 0.85+ |
+Quick answers can get away with 0.7-0.75. General explanations should target 0.75-0.8. Technical documentation needs 0.8-0.85, and anything you're publishing should hit 0.85 or above.
 
 ## When to Use Coherence
 
-**Good for:**
-- Educational content
-- Technical explanations
-- Multi-step instructions
-- Any content where readability matters
-
-**Consider alternatives for:**
-- Factual accuracy — use `@fe.correctness()`
-- Completeness of coverage — use `@fe.completeness()`
-- Specific format requirements — use `@fe.instruction_following()`
+Coherence shines for educational content, technical explanations, multi-step instructions — basically anything where readability matters. If you need to check factual accuracy instead, reach for `@fe.correctness()`. For coverage of a topic, use `@fe.completeness()`. And for specific formatting requirements, `@fe.instruction_following()` is the better fit.
 
 ## Combining with Other Metrics
 
-For comprehensive quality evaluation:
+For well-rounded quality evaluation:
 
 ```python
 @fe.coherence(threshold=0.8)      # Is it well-written?
@@ -145,4 +127,4 @@ def test_educational_content():
     fe.score(response, input=question)
 ```
 
-This ensures the response is readable, accurate, and comprehensive.
+What we've found is that stacking these three gives you a solid baseline for any educational or explanatory use case.

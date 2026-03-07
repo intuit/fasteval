@@ -6,7 +6,7 @@ order: 4
 
 # Image Generation Metrics
 
-Evaluate image generation models like DALL-E, Midjourney, and Stable Diffusion.
+Testing image generation models like DALL-E, Midjourney, or Stable Diffusion? fasteval gives you metrics for quality, prompt adherence, safety, aesthetics, and text-image alignment.
 
 ## Installation
 
@@ -22,7 +22,7 @@ pip install fasteval-core[image-gen]
 
 ### `@fe.image_quality`
 
-Evaluate the visual quality of generated images.
+Evaluates visual quality of generated images — clarity, sharpness, freedom from artifacts, composition, and technical quality like lighting and perspective.
 
 ```python
 import fasteval as fe
@@ -36,12 +36,6 @@ def test_generated_image():
     )
 ```
 
-**Checks:**
-- Visual clarity and sharpness
-- Freedom from artifacts
-- Appropriate composition
-- Technical quality (lighting, perspective)
-
 **Parameters:**
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
@@ -50,7 +44,7 @@ def test_generated_image():
 
 ### `@fe.prompt_adherence`
 
-Evaluate if the generated image matches the prompt description.
+Checks whether the generated image actually matches what was asked for. It looks at whether all prompt elements are present, attributes are correct (colors, sizes, positions), and style matches the description.
 
 ```python
 @fe.prompt_adherence(threshold=0.8)
@@ -62,14 +56,9 @@ def test_prompt_match():
     )
 ```
 
-**Checks:**
-- All prompt elements present
-- Attributes correct (colors, sizes, positions)
-- Style matches description
-
 ### `@fe.safety_check`
 
-Check generated images for NSFW or harmful content.
+Screens generated images for NSFW content, violence, hate symbols, dangerous activities, and content harmful to minors.
 
 ```python
 @fe.safety_check(threshold=0.95)
@@ -81,16 +70,9 @@ def test_safe_generation():
     )
 ```
 
-**Checks:**
-- NSFW content
-- Violence or gore
-- Hate symbols
-- Dangerous activities
-- Content harmful to minors
-
 ### `@fe.aesthetic_score`
 
-Evaluate visual appeal, composition, and artistic merit.
+Judges visual appeal and artistic merit — composition (balance, rule of thirds), color harmony, lighting quality, and creativity.
 
 ```python
 @fe.aesthetic_score(threshold=0.7)
@@ -102,15 +84,9 @@ def test_image_aesthetics():
     )
 ```
 
-**Evaluates:**
-- Composition (balance, rule of thirds)
-- Color harmony and contrast
-- Lighting quality
-- Artistic merit and creativity
-
 ### `@fe.clip_score`
 
-Evaluate image-text alignment (CLIP-style semantic similarity).
+Measures image-text alignment using CLIP-style semantic similarity.
 
 ```python
 @fe.clip_score(threshold=0.7)
@@ -126,7 +102,7 @@ def test_image_alignment():
 
 ## Combining Metrics
 
-Stack multiple metrics for comprehensive evaluation:
+Stack multiple decorators for a thorough evaluation:
 
 ```python
 @fe.image_quality(threshold=0.7)
@@ -181,7 +157,7 @@ from datetime import datetime
 @fe.aesthetic_score(threshold=0.7)
 def test_model_comparison():
     prompt = "A cozy coffee shop interior with warm lighting"
-    
+
     # Generate with model A
     image_a = model_a.generate(prompt)
     result_a = fe.score(
@@ -189,23 +165,19 @@ def test_model_comparison():
         input=prompt,
         metadata={"model": "A"}
     )
-    
-    # Generate with model B  
+
+    # Generate with model B
     image_b = model_b.generate(prompt)
     result_b = fe.score(
         generated_image=image_b,
         input=prompt,
         metadata={"model": "B"}
     )
-    
+
     print(f"Model A: {result_a.aggregate_score:.2f}")
     print(f"Model B: {result_b.aggregate_score:.2f}")
 ```
 
 ## Best Practices
 
-1. **Use safety checks in production** - Always include `@fe.safety_check` for user-facing applications
-2. **Balance quality vs adherence** - High aesthetic score doesn't mean good prompt following
-3. **Test edge cases** - Include complex prompts with multiple elements
-4. **Track generation parameters** - Use `GeneratedImage` model to track seeds and settings
-5. **Use appropriate thresholds** - Image generation is inherently variable; set realistic expectations
+Always include `@fe.safety_check` for user-facing applications — it's non-negotiable. Keep in mind that a high aesthetic score doesn't mean the image followed the prompt well, so we recommend testing both dimensions separately. Include complex prompts with multiple elements in your test suite to catch edge cases. Use the `GeneratedImage` model to track seeds and settings so you can reproduce results. And set realistic thresholds — image generation is inherently variable, so don't expect perfection.

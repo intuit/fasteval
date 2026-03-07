@@ -23,17 +23,11 @@ sidebar:
 
 ![Progress Timeline](docs/assets/quickstart-progress.svg)
 
-This guide walks you through writing, running, and understanding your first LLM evaluation test. By the end, you'll have a working evaluation and understand the core fasteval workflow.
+Five minutes. That's all you need to write your first LLM eval, run it, and actually understand what the scores mean.
 
 ## Prerequisites
 
-Before starting, ensure you have:
-
-| Requirement | Check |
-|-------------|-------|
-| fasteval installed | `pip install fasteval-core` |
-| LLM provider configured | `echo $OPENAI_API_KEY` returns your key |
-| pytest knowledge | Basic familiarity with Python testing |
+You'll need fasteval installed (`pip install fasteval-core`), an LLM provider configured (run `echo $OPENAI_API_KEY` to confirm your key is set), and basic familiarity with pytest.
 
 ```bash
 # Quick setup if needed
@@ -61,13 +55,7 @@ def test_geography_qa():
     fe.score(response, expected_output="Paris")
 ```
 
-### What Each Part Does
-
-| Component | Purpose |
-|-----------|---------|
-| `@fe.correctness(threshold=0.7)` | Evaluate factual correctness; pass if score ≥ 0.7 |
-| `my_agent(query)` | Your LLM function (replace with your real code) |
-| `fe.score(response, expected_output)` | Record actual vs expected for evaluation |
+Here's what's going on. The `@fe.correctness(threshold=0.7)` decorator tells fasteval to evaluate factual correctness — the test passes if the score hits 0.7 or above. `my_agent(query)` is a stand-in for your real LLM function; swap it out with whatever you've actually built. And `fe.score(response, expected_output)` records the actual vs expected output so fasteval can do its thing.
 
 ## Step 2: Run the Test
 
@@ -84,7 +72,7 @@ test_agent.py::test_geography_qa PASSED
 
 Evaluation Results:
   correctness: 0.95 (threshold: 0.70) ✓
-    Reasoning: The response correctly identifies Paris as the capital 
+    Reasoning: The response correctly identifies Paris as the capital
     of France and provides accurate additional context.
 ```
 
@@ -110,23 +98,15 @@ Every evaluation includes reasoning that explains the score:
 
 ```
 correctness: 0.45 (threshold: 0.70) ✗
-  Reasoning: The response mentions the topic but provides outdated 
+  Reasoning: The response mentions the topic but provides outdated
   information. The current capital is Berlin, not Bonn.
 ```
 
-Use reasoning to understand:
-- Why scores are lower than expected
-- What specific aspects need improvement
-- Whether your expected output needs adjustment
+This is where the real value lives. The reasoning tells you *why* a score landed where it did, what specifically needs fixing, and whether your expected output is even the right target.
 
 ### Threshold Selection
 
-| Use Case | Threshold | Why |
-|----------|-----------|-----|
-| Development | 0.5 - 0.6 | Flexibility for iteration |
-| CI/CD | 0.7 - 0.8 | Catch regressions |
-| Production gates | 0.8 - 0.9 | High quality bar |
-| Safety-critical | 0.95+ | Minimize risk |
+In practice, we've found it's best to start loose and tighten over time. Use 0.5–0.6 during active development — it gives you room to iterate without fighting your test suite. Bump to 0.7–0.8 for CI/CD so you catch regressions before they ship. Production gates should sit at 0.8–0.9. Safety-critical paths? Go 0.95 or higher — don't compromise there.
 
 > **Tip:** Start with lower thresholds (0.6-0.7) when developing, then raise them as your system matures.
 
@@ -148,10 +128,7 @@ def test_customer_support():
     )
 ```
 
-**Key points:**
-- All metrics are evaluated independently
-- Test passes only if **all** thresholds are met
-- Each metric reports its own score and reasoning
+Each metric gets evaluated on its own. The test only passes if *all* thresholds are met, and every metric reports its own score and reasoning independently.
 
 ## Step 5: Iterate and Improve
 
@@ -163,7 +140,7 @@ test_agent.py::test_customer_support FAILED
 Evaluation Results:
   correctness: 0.85 (threshold: 0.70) ✓
   relevance: 0.55 (threshold: 0.70) ✗
-    Reasoning: The response provides general information about account 
+    Reasoning: The response provides general information about account
     management but doesn't specifically address subscription cancellation.
 
 AssertionError: Metric 'relevance' failed: 0.55 < 0.70
@@ -171,19 +148,14 @@ AssertionError: Metric 'relevance' failed: 0.55 < 0.70
 
 ### Debugging Workflow
 
-1. **Read the reasoning** — Understand exactly why it failed
-2. **Check expected output** — Is it appropriate for this test?
-3. **Review threshold** — Too strict for current stage?
-4. **Improve your agent** — Or adjust expectations
+1. **Read the reasoning** — it'll tell you exactly what went wrong
+2. **Check your expected output** — maybe it's too specific, or just off
+3. **Revisit the threshold** — too strict for where you are right now?
+4. **Fix the actual problem** — improve the agent, or adjust expectations
 
 ### Common Fixes
 
-| Issue | Likely Cause | Solution |
-|-------|--------------|----------|
-| Low scores | Expected output too specific | Use semantic descriptions |
-| Inconsistent scores | Non-deterministic output | Set temperature=0 |
-| All tests fail | API key issue | Check `$OPENAI_API_KEY` |
-| Timeouts | Network/large inputs | Increase timeout |
+**Low scores?** Your expected output is probably too specific. Use semantic descriptions instead of exact phrasing. **Inconsistent scores across runs?** That's non-deterministic output — set `temperature=0`. **Everything failing at once?** Almost always an API key issue; check `$OPENAI_API_KEY`. **Timeouts?** Network problems or oversized inputs — bump the timeout.
 
 ## Common Patterns
 
@@ -250,13 +222,11 @@ def test_relevant_response():
 
 ## What's Next?
 
-You've learned the fasteval fundamentals. Here's where to go deeper:
+You've got the fundamentals down. Here's where to go deeper:
 
-| Goal | Resource |
-|------|----------|
-| Explore all metrics | [Metrics Overview](/docs/core-concepts/metrics) |
-| Configure LLM providers | [LLM Setup](/docs/core-concepts/llm-setup) |
-| Evaluate RAG pipelines | [RAG Metrics](/docs/rag-metrics/faithfulness) |
-| Build custom metrics | [Custom Metrics](/docs/advanced/custom-metrics) |
-| Set up CI/CD | [CI/CD Setup](/docs/cookbooks/ci-cd-setup) |
-| Monitor production | [fasteval-observe](/docs/plugins/observe/overview) |
+- **Explore all metrics** — [Metrics Overview](/docs/core-concepts/metrics)
+- **Configure LLM providers** — [LLM Setup](/docs/core-concepts/llm-setup)
+- **Evaluate RAG pipelines** — [RAG Metrics](/docs/rag-metrics/faithfulness)
+- **Build custom metrics** — [Custom Metrics](/docs/advanced/custom-metrics)
+- **Set up CI/CD** — [CI/CD Setup](/docs/cookbooks/ci-cd-setup)
+- **Monitor production** — [fasteval-observe](/docs/plugins/observe/overview)

@@ -15,16 +15,13 @@ sidebar:
 
 # Production Traces
 
-The ultimate test of your LLM system is how it performs on real user interactions. The `@fe.traces()` decorator lets you evaluate production data, catching issues that don't show up in test scenarios.
+Test suites can only cover scenarios you've thought of. Real user interactions are where your LLM system actually gets tested. The `@fe.traces()` decorator lets you run your metrics against production data — catching problems that synthetic tests miss entirely.
 
 ![Trace Evaluation Pipeline](docs/assets/trace-evaluation-pipeline.svg)
 
 ## Why Evaluate Production Traces?
 
-- **Discover edge cases**: Real users ask things you never imagined
-- **Monitor quality drift**: Catch degradation early
-- **Validate fixes**: Confirm improvements work on actual data
-- **Build regression tests**: Turn production failures into test cases
+Real users ask things you never imagined, which means edge cases surface fast. Running evals on production data also catches quality drift early, validates that your fixes actually work on real inputs, and gives you a pipeline for turning failures into regression tests.
 
 ## Basic Usage
 
@@ -41,7 +38,7 @@ def evaluate_production_traces():
         start_date="yesterday",
         limit=100
     )
-    
+
     for trace in traces:
         yield EvalInput(
             actual_output=trace.response,
@@ -59,7 +56,7 @@ pytest test_traces.py -v
 
 ## The EvalInput Object
 
-`EvalInput` tells fasteval what to evaluate:
+`EvalInput` tells fasteval what to evaluate. Only `actual_output` is required — everything else depends on which metrics you're using:
 
 ```python
 EvalInput(
@@ -74,7 +71,7 @@ EvalInput(
 
 ### Evaluating RAG Traces
 
-For retrieval-augmented systems, include the retrieved context:
+For retrieval-augmented systems, include the retrieved context so faithfulness metrics can do their job:
 
 ```python
 @fe.faithfulness(threshold=0.85)
@@ -91,7 +88,7 @@ def evaluate_rag_traces():
 
 ### Traces Without Ground Truth
 
-When you don't have expected outputs, use metrics that don't require them:
+When you don't have expected outputs, pick metrics that don't need them:
 
 ```python
 @fe.toxicity(threshold=0.95)
@@ -109,7 +106,7 @@ def evaluate_safety_and_relevance():
 
 ### Sampling Strategies
 
-For high-volume systems, sample intelligently:
+For high-volume systems, you'll want to sample. Grab a random slice for general health checks, and target specific problem areas separately:
 
 ```python
 @fe.correctness(threshold=0.8)
@@ -117,12 +114,12 @@ For high-volume systems, sample intelligently:
 def evaluate_sampled_traces():
     # Random sample
     traces = db.query("""
-        SELECT * FROM traces 
+        SELECT * FROM traces
         WHERE created_at > NOW() - INTERVAL '1 day'
         ORDER BY RANDOM()
         LIMIT 100
     """)
-    
+
     for trace in traces:
         yield EvalInput(
             actual_output=trace.response,
@@ -135,13 +132,13 @@ def evaluate_sampled_traces():
 def evaluate_edge_cases():
     """Focus on potentially problematic traces."""
     traces = db.query("""
-        SELECT * FROM traces 
+        SELECT * FROM traces
         WHERE response_time > 5000  -- Slow responses
            OR user_rating < 3        -- Poor ratings
            OR confidence_score < 0.5 -- Low confidence
         LIMIT 50
     """)
-    
+
     for trace in traces:
         yield EvalInput(
             actual_output=trace.response,
@@ -162,7 +159,7 @@ from langfuse import Langfuse
 def evaluate_langfuse_traces():
     langfuse = Langfuse()
     traces = langfuse.get_traces(limit=100)
-    
+
     for trace in traces:
         yield EvalInput(
             actual_output=trace.output,
@@ -180,11 +177,11 @@ def evaluate_from_s3():
     """Load traces from S3 log files."""
     import boto3
     import json
-    
+
     s3 = boto3.client('s3')
     response = s3.get_object(Bucket='my-logs', Key='traces/2024-01-15.json')
     traces = json.loads(response['Body'].read())
-    
+
     for trace in traces:
         yield EvalInput(
             actual_output=trace['response'],
@@ -213,16 +210,16 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      
+
       - name: Install dependencies
         run: pip install -e ".[test]"
-      
+
       - name: Run trace evaluation
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: pytest tests/test_traces.py -v --tb=short
-      
+
       - name: Alert on failures
         if: failure()
         run: |
@@ -231,7 +228,7 @@ jobs:
 
 ### Creating Regression Tests from Failures
 
-When you find a problematic trace, convert it to a permanent test:
+When a trace fails evaluation, turn it into a permanent test. That way you'll catch the same problem if it ever resurfaces:
 
 ```python
 # test_regressions.py
@@ -241,15 +238,14 @@ def test_regression_order_cancellation():
     """Regression test from trace #12345 - incorrect cancellation info."""
     query = "How do I cancel my order?"
     expected = "You can cancel within 24 hours of placing the order."
-    
+
     response = my_agent(query)
     fe.score(response, expected, input=query)
 ```
 
 ## Best Practices
 
-1. **Sample strategically**: Focus on edge cases and user-flagged issues
-2. **Run regularly**: Nightly or weekly evaluation catches drift early
-3. **Track over time**: Plot scores to visualize quality trends
-4. **Turn failures into tests**: Build a regression suite from production issues
-5. **Use appropriate metrics**: Not all traces have ground truth—choose metrics accordingly
+1. **Sample strategically** — focus on edge cases and user-flagged issues first
+2. **Run regularly** — nightly or weekly evals catch drift before it compounds
+3. **Track scores over time** — plotting trends makes degradation obvious
+4. **Turn failures into tests** — build your regression suite from real production issues

@@ -17,7 +17,7 @@ sidebar:
 
 # Quick Start
 
-Get fasteval-observe running in 5 minutes.
+Two pip installs, one decorator, and you're monitoring production traffic. Here's the full setup.
 
 ## Installation
 
@@ -64,18 +64,11 @@ async def evaluated_agent(query: str) -> str:
 
 ### How Input Extraction Works
 
-When `run_evaluations=True`, the decorator builds `EvalInput` for fasteval metrics:
-
-| EvalInput Field | Extracted From |
-|----------------|----------------|
-| `actual_output` | Function return value |
-| `input` | All function arguments (formatted string) |
-| `input_kwargs` | Raw kwargs dictionary |
-| `context` | Via `context_fn` callback (explicit extraction) |
+When `run_evaluations=True`, the decorator builds `EvalInput` for fasteval metrics. `actual_output` comes from the function return value, `input` is all function arguments formatted as a string, `input_kwargs` is the raw kwargs dictionary, and `context` comes from a `context_fn` callback if you provide one.
 
 ### Extracting Context for RAG Metrics
 
-For RAG metrics like `faithfulness` that need context, use `context_fn` to extract it:
+RAG metrics like `faithfulness` need context. Use `context_fn` to extract it.
 
 **Simple extraction from kwargs:**
 
@@ -119,10 +112,7 @@ async def search_agent(query: str, results: list[dict]) -> str:
 )
 ```
 
-**Return types:**
-- `List[str]` - List of context documents (preferred)
-- `str` - Single document (converted to list automatically)
-- `None` - No context available
+`context_fn` can return `List[str]` (preferred), `str` (auto-converted to a list), or `None` if there's no context.
 
 **Example with RAG:**
 
@@ -153,18 +143,18 @@ result = await rag_agent(
 
 | Metric | Works at Runtime | Notes |
 |--------|-----------------|-------|
-| `relevance` | ✅ | Uses input + actual_output |
-| `toxicity` | ✅ | Uses actual_output only |
-| `bias` | ✅ | Uses actual_output only |
-| `hallucination` | ✅ | Uses context + actual_output (requires `context_fn`) |
-| `faithfulness` | ✅ | Uses context + actual_output (requires `context_fn`) |
-| `correctness` | ⚠️ | Needs `expected_output` (unavailable at runtime) |
+| `relevance` | Yes | Uses input + actual_output |
+| `toxicity` | Yes | Uses actual_output only |
+| `bias` | Yes | Uses actual_output only |
+| `hallucination` | Yes | Uses context + actual_output (requires `context_fn`) |
+| `faithfulness` | Yes | Uses context + actual_output (requires `context_fn`) |
+| `correctness` | Partial | Needs `expected_output` (unavailable at runtime) |
 
-> **Note:** Metrics that require `expected_output` (like `correctness`) cannot be fully evaluated at runtime since the expected response isn't known during live inference.
+> **Note:** Metrics that require `expected_output` (like `correctness`) can't be fully evaluated at runtime since the expected response isn't known during live inference.
 
 ### Application Lifecycle
 
-For production apps, initialize and shutdown the observer:
+For production apps, initialize and shut down the observer:
 
 ```python
 from fasteval_observe import initialize_observer, shutdown_observer
@@ -196,7 +186,7 @@ app = FastAPI(lifespan=lifespan)
 
 ## Sampling Strategies
 
-Choose based on your needs:
+Pick the one that fits your situation:
 
 ```python
 from fasteval_observe.sampling import (
@@ -232,11 +222,11 @@ from fasteval_observe import configure_observe, ObserveConfig
 
 configure_observe(ObserveConfig(
     enabled=True,
-    
+
     # Privacy
     include_inputs=False,  # Don't log inputs
     include_outputs=False, # Don't log outputs
-    
+
     # Performance
     max_queue_size=10000,
     flush_interval_seconds=5.0,
@@ -260,7 +250,7 @@ async def my_agent(query: str) -> str:
 
 ### Custom Logging
 
-By default, observations are logged as JSON to stdout. To customize, provide your own logger:
+By default, observations go to stdout as JSON. To customize, provide your own logger:
 
 ```python
 import logging
@@ -279,7 +269,7 @@ my_logger.addHandler(file_handler)
 set_logger(my_logger)
 ```
 
-This integrates with your existing logging infrastructure - send to files, cloud logging services, or any other destination.
+This plugs into whatever logging infrastructure you already have -- files, cloud services, or anything else.
 
 ### Per-Function Overrides
 
@@ -298,7 +288,7 @@ async def debug_agent(query: str) -> str:
 
 ### Stdout (Default)
 
-By default, logs go to stdout as JSON lines:
+Logs go to stdout as JSON lines by default:
 
 ```json
 {"timestamp":"2026-02-03T10:15:30.123Z","source":"fasteval_observe","function_name":"my_agent","sampling_strategy":"FixedRateSamplingStrategy","metrics":{"latency_ms":1234.56,"success":true}}

@@ -17,15 +17,11 @@ sidebar:
 
 # Node Mocking
 
-Replace any graph node with a controlled fake to isolate the node under test.
+Sometimes you need to swap out a real node for a fake. Maybe the RAG service is slow, or you want to feed exact state to a downstream node. That's what mocking is for.
 
 ## Overview
 
-Node mocking lets you:
-- **Isolate nodes** -- Test the planner without calling the real RAG service
-- **Control inputs** -- Feed specific state to downstream nodes
-- **Test routing** -- Verify that nodes route correctly with `.goto()`
-- **Speed up tests** -- Skip slow LLM calls in upstream nodes
+Node mocking lets you isolate the node under test by replacing its dependencies with controlled fakes. In practice, we use this to test the planner without calling the real RAG service, feed specific state to downstream nodes, verify routing with `.goto()`, and skip slow LLM calls in upstream nodes.
 
 ## Fluent Builder API
 
@@ -91,7 +87,7 @@ assert result2.state["docs"] != ["fake"]  # real node runs
 
 ## Dynamic Mocks
 
-Use `.fn()` for mocks that read state:
+Use `.fn()` when your mock needs to read state:
 
 ```python
 with graph.mocked(
@@ -103,8 +99,7 @@ with graph.mocked(
     assert "doc for FAQ" in result.state["docs"][0]
 ```
 
-The handler receives the current state dict and should return a dict of state updates.
-For both updates and routing, return `{"updates": {...}, "goto": "..."}`:
+The handler receives the current state dict and should return a dict of state updates. If you need both updates and routing, return `{"updates": {...}, "goto": "..."}`:
 
 ```python
 mock("smart_router").fn(lambda state: {
@@ -115,7 +110,7 @@ mock("smart_router").fn(lambda state: {
 
 ## Combining with fasteval
 
-Mock upstream nodes and evaluate the node under test with fasteval decorators:
+Mock upstream nodes, then evaluate the node under test with fasteval decorators:
 
 ```python
 import fasteval as fe

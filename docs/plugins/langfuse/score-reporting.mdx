@@ -21,42 +21,23 @@ sidebar:
 
 ## Understanding Score Reporting
 
-One of the key benefits of the fasteval-langfuse integration is automatic score synchronization. When you evaluate traces, the resulting quality scores are pushed back to Langfuse and attached to the original traces. This creates a unified observability layer where production metrics and quality assessments coexist.
+When you evaluate traces, the plugin pushes quality scores back to Langfuse and attaches them to the original traces. This means your quality data and operational data live in the same place.
 
-### Why Score Reporting Matters
+### Why This Matters
 
-**Unified Quality Dashboard**
+Without score reporting, evaluation results only live in pytest output — useful for CI/CD gates but invisible to the rest of the team. With it, quality metrics show up in Langfuse alongside everything else, accessible to anyone with dashboard access.
 
-Without score reporting, evaluation results live only in pytest output—useful for CI/CD gates but invisible to the broader team. With score reporting, quality metrics appear alongside operational data in Langfuse, accessible to anyone with dashboard access.
-
-**Historical Quality Tracking**
-
-Scores attached to traces persist in Langfuse. This enables trend analysis over time: "How has correctness evolved over the past month?" Historical data helps identify gradual degradation that single evaluations miss.
-
-**Trace-Level Investigation**
-
-When aggregate scores indicate a problem, you can filter Langfuse to show only low-scoring traces. This direct link between quality metrics and specific traces accelerates debugging.
-
-**Alerting Integration**
-
-Langfuse supports alerting based on score values. Once evaluation scores flow to Langfuse, you can configure alerts: "Notify the team when average correctness drops below 0.75."
+Scores persist in Langfuse, so you can track trends over time. When aggregate scores flag a problem, you can filter down to the exact low-scoring traces and dig in. And since Langfuse supports alerting on score values, you can get notified automatically when quality drops.
 
 ### The Reporting Workflow
 
-Score reporting happens automatically as part of trace evaluation:
-
-1. **Evaluation completes**: fasteval metrics assess a trace's quality
-2. **Scores are computed**: Each metric produces a score (0.0–1.0)
-3. **API call to Langfuse**: The plugin pushes scores via Langfuse's score API
-4. **Scores attach to trace**: In Langfuse, the trace now displays these scores
-
-This happens for each evaluated trace, typically in batches for efficiency.
+Score reporting happens as part of trace evaluation. After fasteval metrics assess a trace's quality (producing scores from 0.0 to 1.0), the plugin pushes those scores via Langfuse's API, and they attach to the original trace. This happens per-trace, typically batched for efficiency.
 
 ## What Gets Reported
 
 ### Individual Metric Scores
 
-Each fasteval metric you configure produces a separate score in Langfuse:
+Each metric you configure produces a separate score in Langfuse:
 
 ```python
 @fe.correctness(threshold=0.8)
@@ -78,13 +59,11 @@ def test_quality(trace_id, input, output, context, metadata):
 
 ### Aggregate Score
 
-In addition to individual metrics, an aggregate score is always reported. This represents the overall quality assessment, typically an average of individual metric scores.
-
-The aggregate score provides a single number for quick quality assessment, useful for dashboards and alerting.
+An aggregate score is always reported alongside individual metrics. It's typically the average of all metric scores and gives you a single number for dashboards and alerting.
 
 ### Score Reasoning (Comments)
 
-When the LLM judge provides reasoning (explanation for its score), this reasoning is stored in the score's comment field:
+When the LLM judge provides an explanation, it's stored in the score's comment field:
 
 ```json
 {
@@ -95,30 +74,15 @@ When the LLM judge provides reasoning (explanation for its score), this reasonin
 }
 ```
 
-This reasoning is visible in Langfuse when viewing individual scores, aiding root cause analysis.
+This reasoning shows up in Langfuse when viewing individual scores, which helps with root cause analysis.
 
 ## Score Names and Prefixes
 
 ### Default Naming Convention
 
-By default, all scores are prefixed with `fasteval_`:
-
-| Metric | Score Name in Langfuse |
-|--------|------------------------|
-| correctness | `fasteval_correctness` |
-| relevance | `fasteval_relevance` |
-| hallucination | `fasteval_hallucination` |
-| aggregate | `fasteval_aggregate` |
-
-This prefix serves several purposes:
-
-- **Namespacing**: Distinguishes fasteval scores from other scoring systems
-- **Filtering**: Enables queries like `score.fasteval_* < 0.7`
-- **Clarity**: Anyone viewing the trace knows the score's origin
+All scores get prefixed with `fasteval_` by default: `fasteval_correctness`, `fasteval_relevance`, `fasteval_hallucination`, `fasteval_aggregate`. The prefix provides namespacing (so you can tell fasteval scores from other systems), easy filtering (`score.fasteval_* < 0.7`), and clarity about where the score came from.
 
 ### Custom Prefixes
-
-Configure a different prefix via `LangfuseConfig`:
 
 ```python
 from fasteval_langfuse import configure_langfuse, LangfuseConfig
@@ -133,18 +97,11 @@ configure_langfuse(LangfuseConfig(
 # - quality_aggregate
 ```
 
-**Use Cases for Custom Prefixes:**
-
-| Scenario | Prefix | Example |
-|----------|--------|---------|
-| Environment-specific | `prod_`, `staging_` | `prod_correctness` |
-| Version-specific | `v2_`, `2026q1_` | `v2_correctness` |
-| Team-specific | `nlp_`, `ml_` | `nlp_correctness` |
-| No prefix | `""` | `correctness` |
+You might use `prod_` / `staging_` for environment separation, `v2_` for version tracking, or `nlp_` / `ml_` for team separation.
 
 ### No Prefix
 
-For simpler score names, remove the prefix entirely:
+For simpler names, drop the prefix entirely:
 
 ```python
 configure_langfuse(LangfuseConfig(
@@ -157,13 +114,13 @@ configure_langfuse(LangfuseConfig(
 # - aggregate
 ```
 
-Be cautious with this approach if you have other systems writing scores to Langfuse—name collisions may occur.
+Be careful with this if other systems also write scores to Langfuse — you might get name collisions.
 
 ## Viewing Scores in Langfuse
 
 ### Trace Detail View
 
-In the Langfuse UI, navigate to any evaluated trace to see its scores:
+Navigate to any evaluated trace in the Langfuse UI to see its scores:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -193,54 +150,31 @@ In the Langfuse UI, navigate to any evaluated trace to see its scores:
 
 ### Filtering by Score
 
-Use Langfuse's filter capabilities to find traces by score value:
+Use Langfuse's filters to find traces by score:
 
 ```
 Filter: score.fasteval_correctness < 0.7
 → Shows all traces that failed correctness evaluation
 ```
 
-Common filter patterns:
-
-| Filter | Purpose |
-|--------|---------|
-| `score.fasteval_aggregate < 0.7` | Low overall quality |
-| `score.fasteval_hallucination < 0.8` | Potential hallucinations |
-| `score.fasteval_correctness IS NULL` | Not yet evaluated |
-| `score.fasteval_aggregate > 0.9` | High-quality examples |
+Common patterns: `score.fasteval_aggregate < 0.7` for low overall quality, `score.fasteval_hallucination < 0.8` for potential hallucinations, `score.fasteval_correctness IS NULL` for unevaluated traces, and `score.fasteval_aggregate > 0.9` for high-quality examples worth promoting to datasets.
 
 ### Analytics and Dashboards
 
-Langfuse provides analytics views for scores:
-
-**Score Distribution**
-
-View histograms of score values to understand quality distribution. A bimodal distribution (peaks at high and low values) suggests distinct success/failure modes.
-
-**Score Trends**
-
-Track average scores over time. Gradual declines indicate systemic issues; sudden drops suggest specific incidents.
-
-**Score Correlation**
-
-Compare fasteval scores against user ratings or other metrics. Strong correlation validates your evaluation approach.
+Langfuse gives you analytics views for scores. **Score distribution** histograms show your quality spread — a bimodal distribution (peaks at high and low) suggests distinct success/failure modes. **Score trends** track averages over time; gradual declines mean systemic issues, sudden drops point to specific incidents. **Score correlation** lets you compare fasteval scores against user ratings to validate your evaluation approach.
 
 ### Setting Up Alerts
 
-Configure Langfuse alerts based on score thresholds:
+To get proactive notifications:
 
-1. Navigate to Langfuse **Alerts** section
-2. Create new alert with condition: `avg(score.fasteval_aggregate) < 0.75`
-3. Set time window (e.g., last 1 hour)
-4. Configure notification channel (Slack, email, webhook)
-
-This enables proactive quality monitoring without manual dashboard watching.
+1. Go to **Alerts** in Langfuse
+2. Set a condition like `avg(score.fasteval_aggregate) < 0.75`
+3. Pick a time window (e.g., last 1 hour)
+4. Choose your notification channel (Slack, email, webhook)
 
 ## Configuration Options
 
 ### Enabling/Disabling Auto-Push
-
-Control whether scores are automatically pushed after evaluation:
 
 ```python
 # Global: disable for all tests
@@ -254,16 +188,9 @@ def test_with_push(trace_id, input, output, context, metadata):
     fe.score(output, input=input)
 ```
 
-**When to Disable Auto-Push:**
-
-- Development/debugging (avoid polluting production data)
-- Dry-run evaluations to preview results
-- Custom score handling logic
-- When you need to transform scores before pushing
+Turn off auto-push for dev/debugging (to avoid polluting data), dry runs, or when you've got custom score handling logic.
 
 ### Score Name Prefix
-
-Configure the prefix for all score names:
 
 ```python
 configure_langfuse(LangfuseConfig(
@@ -277,39 +204,23 @@ configure_langfuse(LangfuseConfig(
 
 ### Retry Behavior
 
-Configure retry behavior for failed score pushes:
-
 ```python
 configure_langfuse(LangfuseConfig(
     retry_on_failure=True  # Default: retry on transient errors
 ))
 ```
 
-Network issues or Langfuse API errors may cause occasional push failures. With retries enabled, the plugin attempts to push again before giving up.
+Network blips or Langfuse API hiccups can cause occasional push failures. With retries on, the plugin tries again before giving up.
 
 ## Operational Considerations
 
 ### Score Push Timing
 
-Scores are pushed after each trace evaluation, not in a single batch at the end. This means:
-
-- **Real-time visibility**: Scores appear in Langfuse as evaluation progresses
-- **Partial results on failure**: If evaluation crashes mid-run, earlier scores are already pushed
-- **API call volume**: Each trace generates API calls (one per score plus aggregate)
+Scores are pushed after each trace evaluation, not batched at the end. This means you get real-time visibility as evaluation progresses, partial results survive if evaluation crashes mid-run, and each trace generates API calls (one per score plus the aggregate).
 
 ### Network and API Limits
 
-Consider these factors for large-scale evaluation:
-
-**API Rate Limits**
-
-Langfuse has API rate limits. The plugin handles this gracefully with batching and backoff, but extremely high volume may cause delays.
-
-**Network Latency**
-
-Each score push involves network round-trips. For evaluations with thousands of traces, this adds up. The plugin batches operations where possible.
-
-**Batching Configuration**
+For large evaluations, keep these in mind. Langfuse has rate limits — the plugin handles this with batching and backoff, but very high volume may cause delays. Network latency also adds up across thousands of traces.
 
 ```python
 configure_langfuse(LangfuseConfig(
@@ -319,17 +230,11 @@ configure_langfuse(LangfuseConfig(
 
 ### Handling Push Failures
 
-If score pushing fails (network error, API issue):
-
-1. **With retry enabled**: Plugin retries the push
-2. **If retry fails**: Error is logged; evaluation continues
-3. **End of run**: Summary shows any failed pushes
-
-Evaluation results are still reported in pytest output even if Langfuse pushes fail.
+If a push fails: with retry enabled, the plugin retries. If that also fails, the error gets logged and evaluation continues. A summary at the end shows any failed pushes. Evaluation results still appear in pytest output regardless.
 
 ### Flushing Scores
 
-The plugin automatically flushes pending scores at the end of evaluation. For explicit control:
+The plugin flushes pending scores automatically at the end of evaluation. For explicit control:
 
 ```python
 from fasteval_langfuse import LangfuseClient
@@ -341,15 +246,11 @@ client.flush()  # Ensure all pending scores are pushed
 
 ### Idempotency
 
-Pushing the same score twice (e.g., re-running an evaluation) updates the existing score rather than creating duplicates. This makes re-runs safe.
+Pushing the same score twice updates the existing score rather than creating a duplicate. Re-runs are safe.
 
 ### Data Volume
 
-Each score adds data to your Langfuse storage. For high-volume evaluation:
-
-- Consider evaluation frequency (hourly vs. daily)
-- Use sampling to reduce evaluated traces
-- Review Langfuse storage/retention policies
+Each score adds to your Langfuse storage. For high-volume evaluation, think about evaluation frequency (hourly vs. daily), use sampling to reduce traced evaluated, and review Langfuse's storage/retention policies.
 
 ## Use Case Examples
 
@@ -366,22 +267,15 @@ def test_hourly_quality(trace_id, input, output, context, metadata):
     fe.score(output, input=input)
 ```
 
-After running, Langfuse has scores for 100 traces. Configure an alert:
-- Condition: `avg(score.fasteval_aggregate) < 0.75` over last hour
-- Action: Slack notification to #quality-alerts
+After this runs, 100 traces have scores in Langfuse. Set an alert: `avg(score.fasteval_aggregate) < 0.75` over the last hour, notify #quality-alerts on Slack.
 
 ### Debugging with Score Filters
 
-When investigating quality issues:
-
-1. Run evaluation against relevant time period
-2. In Langfuse, filter: `score.fasteval_correctness < 0.6`
-3. Review low-scoring traces to identify patterns
-4. Examine score comments for judge reasoning
+When investigating quality issues: run evaluation against the relevant time period, filter in Langfuse for `score.fasteval_correctness < 0.6`, review the low-scoring traces, and check the score comments for the judge's reasoning.
 
 ### Environment-Specific Scores
 
-Use different prefixes for different environments:
+Keep environments separate with different prefixes:
 
 ```python
 import os
@@ -395,8 +289,6 @@ configure_langfuse(LangfuseConfig(
 # Production scores: fasteval_production_correctness
 # Staging scores: fasteval_staging_correctness
 ```
-
-This keeps scores separate and enables environment-specific dashboards.
 
 ## Next Steps
 

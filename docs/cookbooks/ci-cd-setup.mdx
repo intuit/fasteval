@@ -1,6 +1,6 @@
 ---
 title: CI/CD Integration
-description: Complete guide to integrating fasteval tests into CI/CD pipelines
+description: Integrating fasteval tests into CI/CD pipelines
 order: 4
 sidebar:
   - title: Overview
@@ -21,18 +21,11 @@ sidebar:
 
 # CI/CD Integration
 
-Integrating LLM evaluation into your CI/CD pipeline ensures that quality standards are maintained throughout development. This guide covers practical strategies for running fasteval tests in GitHub Actions, GitLab CI, and other platforms while managing costs and handling the unique challenges of LLM-based testing.
+Running fasteval in CI/CD keeps your LLM quality from silently regressing between deploys. This cookbook covers practical setups for GitHub Actions and GitLab CI, with strategies for keeping costs down and dealing with the inherent flakiness of LLM-based tests.
 
 ## Overview
 
-Effective CI/CD integration for LLM evaluation requires balancing several factors:
-
-| Factor | Challenge | Solution |
-|--------|-----------|----------|
-| **Cost** | LLM API calls add up across many CI runs | Tiered testing, sampling, model selection |
-| **Speed** | LLM evaluations take 1-3 seconds each | Parallelization, deterministic test prioritization |
-| **Reliability** | LLM outputs have variance | Retry mechanisms, threshold margins |
-| **Coverage** | Need comprehensive testing without excessive cost | Strategic test selection per trigger type |
+Getting CI/CD right for LLM evaluation means juggling a few things at once. **Cost** adds up fast when every CI run fires off API calls — we recommend tiered testing, sampling, and cheaper models for routine checks. **Speed** matters too, since each LLM eval takes 1-3 seconds; parallelize where you can and prioritize deterministic tests. **Reliability** is tricky because LLM outputs naturally vary, so you'll want retries and some threshold margin. And for **coverage**, the trick is picking the right tests for each trigger type — you don't need the full suite on every commit.
 
 ![CI/CD Integration Architecture](docs/assets/cicd-integration-arch.svg)
 
@@ -100,15 +93,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'
-      
+
       - name: Install dependencies
         run: pip install -e ".[test]"
-      
+
       - name: Run fast tests
         run: pytest tests/ -m "not slow" -v --tb=short
 
@@ -118,15 +111,15 @@ jobs:
     needs: fast-tests  # Only run if fast tests pass
     steps:
       - uses: actions/checkout@v4
-      
+
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'
-      
+
       - name: Install dependencies
         run: pip install -e ".[test]"
-      
+
       - name: Run LLM tests
         env:
           OPENAI_API_KEY: \${{ secrets.OPENAI_API_KEY }}
@@ -161,18 +154,18 @@ jobs:
             test-type: 'slow'
           - python-version: '3.12'
             test-type: 'slow'
-    
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - uses: actions/setup-python@v5
         with:
           python-version: \${{ matrix.python-version }}
           cache: 'pip'
-      
+
       - name: Install dependencies
         run: pip install -e ".[test]"
-      
+
       - name: Run tests
         env:
           OPENAI_API_KEY: \${{ secrets.OPENAI_API_KEY }}
@@ -200,27 +193,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      
+
       - name: Install dependencies
         run: pip install -e ".[test]"
-      
+
       - name: Run full test suite
         env:
           OPENAI_API_KEY: \${{ secrets.OPENAI_API_KEY }}
           FASTEVAL_MODEL: gpt-4o  # Use best model for nightly
         run: pytest tests/ -v --tb=long --junitxml=results.xml
-      
+
       - name: Upload results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: evaluation-results
           path: results.xml
-      
+
       - name: Notify on failure
         if: failure()
         uses: slackapi/slack-github-action@v1
@@ -322,7 +315,7 @@ def pytest_configure(config):
 def configure_fasteval():
     """Configure fasteval based on environment."""
     model = os.getenv("FASTEVAL_MODEL", "gpt-4o-mini")
-    
+
     if os.getenv("CI"):
         # CI: Use specified model, typically cheaper
         fe.set_default_provider(OpenAIClient(model=model, temperature=0))
@@ -333,7 +326,7 @@ def configure_fasteval():
 def pytest_collection_modifyitems(config, items):
     """Modify test collection based on CI context."""
     ci_context = os.getenv("CI_CONTEXT", "full")
-    
+
     if ci_context == "pr":
         skip_expensive = pytest.mark.skip(reason="Skipped in PR builds")
         for item in items:
@@ -400,7 +393,7 @@ Estimate CI costs before implementing:
 
 ### Retry Flaky Tests
 
-LLM outputs have natural variance. Use retries for stability:
+LLM outputs naturally vary — that's just how it goes. Use retries to keep things stable:
 
 ```yaml
 - name: Install retry plugin
@@ -412,7 +405,7 @@ LLM outputs have natural variance. Use retries for stability:
 
 ### Threshold Margins
 
-Account for variance in your thresholds:
+Don't forget to leave some wiggle room in your thresholds — LLM scores bounce around a bit between runs:
 
 ```python
 import os
@@ -433,7 +426,7 @@ jobs:
     steps:
       - name: Run critical tests
         run: pytest tests/critical/ -v
-      
+
       - name: Run experimental tests
         continue-on-error: true  # Allow failure without blocking
         run: pytest tests/experimental/ -v
@@ -452,10 +445,10 @@ def check_score_trends(current_results_file: str, threshold_drop: float = 0.1):
     """Alert if scores dropped significantly from baseline."""
     with open(current_results_file) as f:
         current = json.load(f)
-    
+
     with open("baseline_scores.json") as f:
         baseline = json.load(f)
-    
+
     alerts = []
     for metric, current_score in current.items():
         if metric in baseline:
@@ -465,13 +458,13 @@ def check_score_trends(current_results_file: str, threshold_drop: float = 0.1):
                     f"{metric}: {baseline_score:.2f} -> {current_score:.2f} "
                     f"(dropped {baseline_score - current_score:.2f})"
                 )
-    
+
     if alerts:
         print("Score degradation detected:")
         for alert in alerts:
             print(f"  - {alert}")
         sys.exit(1)
-    
+
     print("All scores within acceptable range")
 
 if __name__ == "__main__":

@@ -15,7 +15,7 @@ sidebar:
 
 # Instruction Following Metric
 
-The instruction following metric evaluates whether responses adhere to a specific list of instructions or requirements. This is essential for applications where output format, style, or content constraints must be followed.
+You gave the LLM a list of rules. Did it follow them? This metric checks whether responses actually adhere to specific instructions — format requirements, style guidelines, content constraints, whatever you've specified.
 
 ## Quick Example
 
@@ -50,12 +50,7 @@ The score is calculated as: `instructions_followed / total_instructions`
 | **0.6** | Some instructions followed | 3/5 instructions met |
 | **0.0** | No instructions followed | 0/5 instructions met |
 
-### How Instructions Are Evaluated
-
-For each instruction, the LLM judge checks:
-1. Is the instruction clearly followed?
-2. Is there partial compliance?
-3. Is the instruction violated?
+For each instruction, the LLM judge checks whether it's clearly followed, partially complied with, or violated outright.
 
 ## Practical Examples
 
@@ -154,26 +149,11 @@ Evaluation Results:
 
 ## Choosing Your Threshold
 
-| Use Case | Suggested Threshold |
-|----------|---------------------|
-| Guidelines (soft requirements) | 0.6 - 0.7 |
-| Standard compliance | 0.75 - 0.85 |
-| Strict format requirements | 0.9 - 1.0 |
-| Critical compliance (legal, etc.) | 1.0 |
+Soft guidelines (nice-to-haves) work at 0.6-0.7. Standard compliance should sit at 0.75-0.85. Strict format requirements need 0.9-1.0. And for critical compliance — legal or regulatory — set it to 1.0. No exceptions.
 
 ## When to Use Instruction Following
 
-**Good for:**
-- Output format validation
-- Style guide compliance
-- Content policy enforcement
-- Template adherence
-- Multi-constraint prompts
-
-**Consider alternatives for:**
-- Content accuracy — use `@fe.correctness()`
-- Overall quality — use `@fe.coherence()` + `@fe.helpfulness()`
-- Single pattern match — use `@fe.regex()`
+This metric shines for output format validation, style guide compliance, content policy enforcement, template adherence, and multi-constraint prompts. If you're checking content accuracy, use `@fe.correctness()`. For overall quality, combine `@fe.coherence()` with `@fe.helpfulness()`. For single pattern matching, `@fe.regex()` is simpler and faster.
 
 ## Combining with Other Metrics
 
@@ -208,3 +188,5 @@ def test_support_response():
     response = my_llm("Customer complaint: My order hasn't arrived")
     fe.score(response)
 ```
+
+In practice, instruction following pairs well with almost any other metric. It handles the "how" (format, style, constraints) while other metrics handle the "what" (accuracy, safety, usefulness).

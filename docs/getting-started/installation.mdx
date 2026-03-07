@@ -21,11 +21,11 @@ sidebar:
 
 ![Provider Ecosystem](docs/assets/provider-ecosystem.svg)
 
-Getting started with fasteval takes just a few minutes. This guide walks you through installation and provider configuration.
+You can go from zero to running evals in about five minutes. Here's how.
 
 ## Quick Install
 
-Install fasteval using your preferred package manager:
+Pick your package manager and go:
 
 ```bash
 # Using pip
@@ -35,7 +35,7 @@ pip install fasteval-core
 uv add fasteval-core
 ```
 
-fasteval automatically installs its required dependencies, including pytest integration.
+That's it. fasteval pulls in everything it needs — pytest integration included.
 
 ### System Requirements
 
@@ -47,21 +47,18 @@ fasteval automatically installs its required dependencies, including pytest inte
 
 ## LLM Provider Setup
 
-fasteval uses LLM judges for semantic evaluation. Choose and configure your provider:
+fasteval uses LLM judges for semantic evaluation. Pick a provider and set your key.
 
 ### OpenAI (Recommended)
 
-Best balance of quality, speed, and cost. Start here.
+Best balance of quality, speed, and cost. We'd start here.
 
 ```bash
 pip install openai
 export OPENAI_API_KEY=sk-your-key-here
 ```
 
-| Model | Use Case | Speed | Cost |
-|-------|----------|-------|------|
-| `gpt-4o-mini` | Development, CI/CD | Fast | $ |
-| `gpt-4o` | Production quality gates | Medium | $$$ |
+`gpt-4o-mini` is your workhorse — fast, cheap, great for dev and CI/CD. When you need higher accuracy for production quality gates, step up to `gpt-4o`. It's slower and costs more, but the eval quality is noticeably better.
 
 > **Tip:** Use `gpt-4o-mini` during development—it's fast and cheap. Switch to `gpt-4o` for critical production evaluations.
 
@@ -74,15 +71,11 @@ pip install anthropic
 export ANTHROPIC_API_KEY=sk-ant-your-key-here
 ```
 
-| Model | Context | Best For |
-|-------|---------|----------|
-| `claude-3-haiku` | 200K | Fast, cost-effective |
-| `claude-3-sonnet` | 200K | Balanced quality/speed |
-| `claude-3-opus` | 200K | Highest accuracy |
+All three Claude 3 models share the same 200K context window. `claude-3-haiku` is the fast, cost-effective option — good for high-volume runs. `claude-3-sonnet` hits the sweet spot between quality and speed, and it's what we reach for most often. `claude-3-opus` delivers the highest accuracy when you really need it.
 
 ### Azure OpenAI
 
-For enterprise environments with compliance requirements:
+If you're on Azure — or need to be for compliance reasons:
 
 ```bash
 pip install openai
@@ -147,11 +140,11 @@ Run it:
 pytest test_smoke.py -v
 ```
 
-If you see `PASSED`, you're ready to go!
+If you see `PASSED`, you're good.
 
 ### Test LLM Connectivity
 
-Verify your provider is configured:
+Make sure your provider's actually wired up:
 
 ```python
 import fasteval as fe
@@ -165,11 +158,11 @@ def test_llm_connection():
     )
 ```
 
-A passing test confirms end-to-end functionality.
+If that passes, everything's working end to end.
 
 ## Multi-Modal Extras
 
-fasteval supports multi-modal evaluation for vision-language models, speech recognition, and image generation. Install only what you need:
+fasteval supports multi-modal evaluation — vision-language models, speech recognition, image generation. Install only what you need.
 
 ### Vision-Language (GPT-4V, Claude Vision, Gemini)
 
@@ -234,7 +227,7 @@ Installs vision and audio extras together.
 | `multimodal` | `pip install fasteval-core[multimodal]` | All multi-modal features |
 | `ocr` | `pip install fasteval-core[ocr]` | Advanced OCR with Tesseract |
 
-> **Tip:** Multi-modal features are optional - the core fasteval package works without them. Install extras only when needed to keep dependencies minimal.
+> **Tip:** Multi-modal features are optional — the core package works fine without them. Keep your dependencies lean and add extras as you actually need them.
 
 ## Optional Plugins
 

@@ -19,16 +19,13 @@ sidebar:
 
 # Examples
 
-This page provides complete, copy-paste ready examples for common evaluation workflows. Each example includes the full test code, expected output, and guidance on when to use that pattern.
+Copy-paste ready examples for common evaluation workflows. Each one includes full test code, expected output, and notes on when to use it.
 
-All examples assume you have:
-- Langfuse credentials configured (via environment variables or `configure_langfuse`)
-- Production traces or datasets already in your Langfuse project
-- fasteval and fasteval-langfuse installed (`pip install fasteval-core fasteval-langfuse`)
+All examples assume you've got Langfuse credentials configured, traces or datasets in your project, and both packages installed (`pip install fasteval-core fasteval-langfuse`).
 
 ## Production Monitoring
 
-Monitor production quality continuously with hourly evaluations:
+Run hourly quality checks on a random sample of production traces:
 
 ```python
 # test_production_monitoring.py
@@ -82,7 +79,7 @@ Scores pushed to 100 traces in Langfuse ✅
 
 ## Debug Failing Traces
 
-Focus evaluation budget on problematic interactions:
+Spend your evaluation budget on the traces that need it most:
 
 ```python
 # test_debug_failures.py
@@ -107,10 +104,10 @@ def test_low_rated_interactions(trace_id, input, output, context, metadata):
     # Context auto-extracted
     if not context:
         context = metadata.get("retrieved_docs")
-    
+
     expected = metadata.get("expected_answer")
     fe.score(output, expected, context=context, input=input)
-    
+
     # Debug logging
     user_rating = next(
         (s["value"] for s in metadata.get("scores", []) if s["name"] == "user_rating"),
@@ -119,20 +116,17 @@ def test_low_rated_interactions(trace_id, input, output, context, metadata):
     print(f"Trace {trace_id}: user_rating={user_rating}")
 ```
 
-**Analysis:**
+**Run it:**
 
 ```bash
 pytest test_debug_failures.py -v -s  # -s shows print output
 ```
 
-**Identifies issues:**
-- Low `contextual_precision` → Retrieval problem
-- Low `faithfulness` → Hallucination problem
-- Low `relevance` → Understanding problem
+What the metric scores tell you: low `contextual_precision` points to a retrieval problem, low `faithfulness` means hallucination, and low `relevance` suggests the model didn't understand the question.
 
 ## A/B Testing
 
-Compare prompt versions, models, or configurations:
+Compare prompt versions or models against the same dataset:
 
 ```python
 # test_ab_comparison.py
@@ -165,7 +159,7 @@ def agent_with_cot_prompt(query: str) -> str:
     cot_template = """
     Think step by step to answer this question:
     {query}
-    
+
     Let's approach this systematically:
     """
     return llm.invoke(cot_template.format(query=query))
@@ -176,13 +170,11 @@ def agent_with_direct_prompt(query: str) -> str:
     return llm.invoke(query)
 ```
 
-**Run comparison:**
-
 ```bash
 pytest test_ab_comparison.py -v --html=ab_results.html
 ```
 
-**Results analysis:**
+**Results:**
 
 | Test | Correctness | Relevance | Aggregate |
 |------|-------------|-----------|-----------|
@@ -193,7 +185,7 @@ pytest test_ab_comparison.py -v --html=ab_results.html
 
 ## RAG Pipeline Evaluation
 
-Comprehensive RAG evaluation with context:
+Evaluate retrieval and generation quality together:
 
 ```python
 # test_rag_pipeline.py
@@ -216,10 +208,10 @@ def test_rag_quality(trace_id, input, output, context, metadata):
     if not context:
         print(f"WARNING: No context for trace {trace_id}")
         return
-    
+
     # Get ground truth if available
     expected = metadata.get("expected_answer")
-    
+
     # Evaluate all RAG metrics
     fe.score(output, expected, context=context, input=input)
 ```
@@ -238,15 +230,13 @@ def test_rag_quality(trace_id, input, output, context, metadata):
 }
 ```
 
-**Run and analyze:**
-
 ```bash
 pytest test_rag_pipeline.py -v
 ```
 
 ## Cross-Segment Quality
 
-Ensure fair quality across user segments:
+Make sure quality doesn't vary unfairly across user segments:
 
 ```python
 # test_segment_quality.py
@@ -268,15 +258,15 @@ def test_quality_across_user_types(trace_id, input, output, context, metadata):
     """Ensure quality is fair across free/paid users."""
     user_type = metadata.get("user_type", "unknown")
     region = metadata.get("region", "unknown")
-    
+
     # Evaluate
     result = fe.score(output, input=input)
-    
+
     # Log for segment analysis
     print(f"user_type={user_type}, region={region}, score={result.aggregate_score:.2f}")
 ```
 
-**Analysis output:**
+**Sample output:**
 
 ```
 user_type=free, region=us-west, score=0.87
@@ -292,7 +282,7 @@ Average by segment:
 
 ## Regression Testing
 
-Test new agent version against production inputs:
+Re-run a new agent version against production inputs to catch regressions:
 
 ```python
 # test_regression.py
@@ -307,19 +297,19 @@ Test new agent version against production inputs:
 def test_new_agent_version(trace_id, input, output, context, metadata):
     """
     Re-run new agent on production inputs.
-    
+
     - 'output' is the OLD agent's response
     - We re-run with NEW agent and compare
     """
     # Re-run with new agent
     new_output = my_new_agent_v2(input, context=context)
-    
+
     # Get expected from metadata or use old output as baseline
     expected = metadata.get("expected_answer") or output
-    
+
     # Evaluate new version
     result = fe.score(new_output, expected, input=input, context=context)
-    
+
     # Compare with old output score (if available in metadata)
     old_score = metadata.get("baseline_score")
     if old_score and result.aggregate_score < old_score - 0.05:
@@ -332,12 +322,7 @@ def my_new_agent_v2(query: str, context: list = None) -> str:
     return llm_v2.invoke(query, context=context)
 ```
 
-**Workflow:**
-
-1. **Create regression test set** - Tag high-quality traces in Langfuse
-2. **Run baseline** - Capture old agent scores
-3. **Deploy new version** - Test with `test_new_agent_version()`
-4. **Compare** - Ensure no regression, identify improvements
+**Workflow:** Tag high-quality traces in Langfuse as your regression set, capture baseline scores, deploy the new version, run `test_new_agent_version`, and compare.
 
 ## Multi-Turn Conversation Testing
 
@@ -355,13 +340,13 @@ def test_conversation_quality(trace_id, input, output, context, metadata):
     """Evaluate conversation within a session."""
     # Get conversation history from metadata
     history = metadata.get("conversation_history", [])
-    
+
     fe.score(output, input=input, history=history)
 ```
 
 ## Custom Metric Testing
 
-Use custom metrics with production traces:
+Plug in custom metrics alongside production traces:
 
 ```python
 from fasteval import LLMMetric
@@ -369,25 +354,25 @@ from fasteval.core.models import EvalInput
 
 class CustomerSatisfactionMetric(LLMMetric):
     """Custom metric for customer satisfaction."""
-    
+
     def __init__(self, threshold: float = 0.8):
         super().__init__(
             name="customer_satisfaction",
             threshold=threshold
         )
-    
+
     def get_evaluation_prompt(self, eval_input: EvalInput) -> str:
         return f"""
         Evaluate customer satisfaction for this support response.
-        
+
         User Query: {eval_input.input}
         Agent Response: {eval_input.actual_output}
-        
+
         Score from 0 to 1 based on:
         - Helpfulness
         - Professionalism
         - Completeness
-        
+
         Respond with JSON: {{"score": <float>, "reasoning": "<explanation>"}}
         """
 
@@ -400,7 +385,7 @@ def test_custom_metric(trace_id, input, output, context, metadata):
 
 ## Cost Analysis
 
-Track evaluation costs across different strategies:
+Here's what different strategies cost for ~1,000 traces/hour at $0.002 per evaluation:
 
 ```python
 # test_cost_analysis.py
@@ -446,7 +431,7 @@ def test_score_based(trace_id, input, output, context, metadata):
 
 ## Complete Workflow Example
 
-End-to-end evaluation pipeline for a RAG-based customer support system:
+An end-to-end pipeline for a RAG-based customer support system, covering hourly monitoring, daily failure analysis, weekly fairness checks, and pre-deploy regression:
 
 ```python
 # test_customer_support_pipeline.py
@@ -493,10 +478,10 @@ def test_daily_failure_analysis(trace_id, input, output, context, metadata):
     """Focus on failures - identify patterns."""
     if not context:
         context = metadata.get("retrieved_docs")
-    
+
     expected = metadata.get("expected_answer")
     result = fe.score(output, expected, context=context, input=input)
-    
+
     # Additional logging for root cause
     if result.aggregate_score < 0.7:
         print(f"FAILURE TRACE: {trace_id}")
@@ -553,7 +538,7 @@ pytest test_customer_support_pipeline.py::test_pre_deploy_regression
 
 ## Parallel Execution
 
-Speed up evaluation with pytest-xdist:
+Speed things up with pytest-xdist:
 
 ```bash
 # Evaluate 1000 traces in parallel
@@ -566,13 +551,7 @@ pytest test_production.py -n auto
 pytest test_production.py -n 4 -v
 ```
 
-**Performance:**
-
-```
-Without parallelization: 1000 traces × 1.5s = 25 minutes
-With 4 workers: 1000 traces / 4 × 1.5s = 6.25 minutes
-Speedup: 4x
-```
+On 1000 traces at 1.5s each: serial takes ~25 minutes, 4 workers brings it down to ~6.25 minutes.
 
 ## Reporting
 
@@ -582,12 +561,7 @@ Speedup: 4x
 pytest test_production.py --html=report.html --self-contained-html
 ```
 
-**Report includes:**
-- Pass/fail status per test
-- Metric scores and thresholds
-- Aggregate scores
-- Execution time
-- Sampling statistics
+Includes pass/fail status, metric scores and thresholds, aggregate scores, execution time, and sampling stats.
 
 ### JSON Reports
 
@@ -595,10 +569,7 @@ pytest test_production.py --html=report.html --self-contained-html
 pytest test_production.py --json=report.json
 ```
 
-**Use for:**
-- Automated analysis
-- Dashboard integration
-- Trend tracking
+Good for automated analysis, dashboard integration, and trend tracking.
 
 ### Custom Reporting
 
@@ -609,7 +580,7 @@ import json
 @langfuse_traces(project="prod")
 def test_with_custom_reporting(trace_id, input, output, context, metadata):
     result = fe.score(output, input=input)
-    
+
     # Custom reporting
     with open("results.jsonl", "a") as f:
         f.write(json.dumps({
@@ -641,29 +612,29 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
-      
+
       - name: Install dependencies
         run: |
           pip install fasteval-core fasteval-langfuse
-      
+
       - name: Run evaluations
         env:
           LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
           LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
         run: |
           pytest test_production.py -v --html=report.html
-      
+
       - name: Upload report
         uses: actions/upload-artifact@v3
         with:
           name: evaluation-report
           path: report.html
-      
+
       - name: Alert on failure
         if: failure()
         uses: 8398a7/action-slack@v3
@@ -679,16 +650,16 @@ jobs:
 ```groovy
 pipeline {
     agent any
-    
+
     triggers {
         cron('0 */6 * * *')  // Every 6 hours
     }
-    
+
     environment {
         LANGFUSE_PUBLIC_KEY = credentials('langfuse-public-key')
         LANGFUSE_SECRET_KEY = credentials('langfuse-secret-key')
     }
-    
+
     stages {
         stage('Evaluate') {
             steps {
@@ -696,7 +667,7 @@ pipeline {
                 sh 'pytest test_production.py -v --html=report.html'
             }
         }
-        
+
         stage('Archive') {
             steps {
                 publishHTML(target: [
@@ -707,7 +678,7 @@ pipeline {
             }
         }
     }
-    
+
     post {
         failure {
             emailext body: 'Production evaluation failed',
@@ -720,10 +691,9 @@ pipeline {
 
 ## Best Practices
 
-### 1. Start Simple
+**Start simple.** One metric, broad filters, random sampling. Add complexity as you learn what matters.
 
 ```python
-# Begin with basic monitoring
 @fe.correctness(threshold=0.8)
 @langfuse_traces(
     project="prod",
@@ -734,51 +704,13 @@ def test_basic_monitoring(trace_id, input, output, context, metadata):
     fe.score(output, input=input)
 ```
 
-### 2. Add Metrics Gradually
+**Add metrics gradually.** Week 1: correctness. Week 2: add toxicity. Week 3: add faithfulness for RAG.
 
-```python
-# Week 1: Basic quality
-@fe.correctness(threshold=0.8)
+**Match sampling to purpose.** Random for monitoring, score-based for debugging, stratified for fairness checks.
 
-# Week 2: Add safety
-@fe.correctness(threshold=0.8)
-@fe.toxicity(threshold=0.95)
+**Track trends.** Don't just look at individual runs — watch scores over weeks and months. A slow decline is just as important as a sudden drop.
 
-# Week 3: Add RAG metrics
-@fe.correctness(threshold=0.8)
-@fe.toxicity(threshold=0.95)
-@fe.faithfulness(threshold=0.85)
-```
-
-### 3. Use Appropriate Sampling
-
-- **Monitoring**: RandomSamplingStrategy (1-5%)
-- **Debugging**: ScoreBasedSamplingStrategy (focus on failures)
-- **Fairness**: StratifiedSamplingStrategy (across segments)
-
-### 4. Monitor Trends
-
-Don't just look at individual test runs - track trends over time:
-
-```python
-# Store results in time-series database
-# Plot aggregate scores over weeks/months
-# Alert on downward trends
-```
-
-### 5. Combine with Datasets
-
-```python
-# Golden dataset for regression
-@langfuse_dataset(name="golden-set")
-def test_regression(input, expected_output):
-    ...
-
-# Production traces for monitoring
-@langfuse_traces(project="prod", sampling=...)
-def test_production(trace_id, input, output, context, metadata):
-    ...
-```
+**Combine traces and datasets.** Use golden datasets for regression gates, production traces for monitoring. They cover different angles.
 
 ## Next Steps
 

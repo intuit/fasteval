@@ -19,7 +19,9 @@ sidebar:
 
 ## What is fasteval?
 
-**fasteval** is a decorator-first LLM evaluation framework that brings systematic quality assurance to your AI applications. Instead of treating evaluation as an afterthought, fasteval makes it a seamless part of your development workflow—as natural as writing unit tests.
+**fasteval** is a decorator-first LLM evaluation framework for Python. You stack decorators on test functions, run `pytest`, and get scored results. That's it.
+
+Most teams treat eval as an afterthought -- something you bolt on once things start breaking in production. We built fasteval so evaluation fits directly into your dev loop, right next to your other tests.
 
 ```python
 import fasteval as fe
@@ -37,21 +39,19 @@ Run `pytest` and fasteval handles everything: calling an LLM judge to assess qua
 
 ![Feature Cards](docs/assets/feature-cards.svg)
 
-| Feature | Description |
-|---------|-------------|
-| **Decorator-First API** | Define evaluation criteria directly on test functions—no configuration files, no boilerplate |
-| **Pytest Native** | Works with the test runner you already know. Full IDE integration, parallel execution, CI/CD ready |
-| **LLM-as-Judge** | Semantic evaluation that understands meaning, not just text matching |
-| **20+ Built-in Metrics** | Correctness, toxicity, hallucination, faithfulness, and more |
-| **Production Monitoring** | Evaluate live systems with configurable sampling via `fasteval-observe` |
-| **Extensible** | Build custom metrics tailored to your domain |
+**Decorator-first API.** You define evaluation criteria directly on test functions. No config files, no boilerplate. Stack multiple decorators and you've got multi-metric evaluation out of the box.
 
-### Who Is This For?
+**Pytest native.** It works with the test runner you already use -- full IDE integration, parallel execution, and CI/CD ready. We didn't want to invent a new runner. Pytest's the standard, so we built on it.
 
-- **ML Engineers** building LLM-powered features who need automated quality gates
-- **Platform Teams** establishing evaluation standards across multiple AI applications
-- **Researchers** running systematic experiments on prompt variations or model comparisons
-- **QA Engineers** extending test coverage to non-deterministic AI outputs
+**LLM-as-Judge scoring.** Under the hood, fasteval uses an LLM judge for semantic evaluation. It understands *meaning*, not just string matching. In practice, this catches issues that regex-based checks miss entirely.
+
+**20+ built-in metrics** covering correctness, toxicity, hallucination, faithfulness, and more. And if the built-ins don't fit your use case, you can build custom metrics tailored to your domain.
+
+**Production monitoring.** The `fasteval-observe` plugin lets you evaluate live systems with configurable sampling -- so you're not just testing in CI, you're watching prod too.
+
+### Who's this for?
+
+If you're building anything with LLMs and need to know whether it's actually working, fasteval's probably useful. That could mean setting up automated quality gates for an LLM-powered feature, establishing eval standards across a platform with multiple AI apps, running structured experiments on prompt variations, or extending test coverage to non-deterministic outputs that traditional assertions can't handle.
 
 ## See It In Action
 
@@ -103,8 +103,6 @@ async def production_chatbot(query: str) -> str:
 ```
 
 ## Quick Navigation
-
-Ready to get started? Here's your path:
 
 | Step | Page | Time |
 |------|------|------|

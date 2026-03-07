@@ -19,11 +19,11 @@ sidebar:
 
 # Testing LangGraph Agents [Open in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/overview.ipynb)
 
-This cookbook shows how to evaluate LangGraph agents using `fasteval-langgraph` -- a test harness that wraps any compiled `StateGraph` and feeds results directly into fasteval decorators.
+`fasteval-langgraph` is a test harness that wraps any compiled `StateGraph` and feeds results directly into fasteval decorators. No more manually invoking your graph, extracting messages, and parsing tool calls.
 
 ## Overview
 
-Instead of manually invoking your graph, extracting messages, and parsing tool calls, the harness gives you a clean API:
+The harness gives you a clean API on top of your compiled graph:
 
 ```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/overview.ipynb#scrollTo=overview_example)
 from fasteval_langgraph import harness
@@ -39,7 +39,7 @@ fe.score(
 )
 ```
 
-The harness handles thread management, state filtering, trace capture, and auto-detection of `MessagesState` vs plain `TypedDict` graphs.
+It handles thread management, state filtering, trace capture, and auto-detection of `MessagesState` vs plain `TypedDict` graphs.
 
 ### Key Features
 
@@ -62,7 +62,7 @@ This installs `fasteval-core`, `langgraph`, and `langchain_core` as dependencies
 
 ## Sample LangGraph Agent
 
-Here's a multi-node support agent that classifies user intent and routes to different backends:
+Here's a multi-node support agent we'll use throughout these cookbooks. It classifies user intent and routes to different backends:
 
 ```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/overview.ipynb#scrollTo=sample_agent)
 from langgraph.graph import StateGraph, END, START
@@ -145,18 +145,11 @@ async def test_faq_response():
     )
 ```
 
-The `ChatResult` contains:
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `response` | `str` | Last AI message content |
-| `state` | `dict` | Filtered state snapshot (messages excluded by default) |
-| `trace` | `List[NodeStep]` | Per-node execution trace in order |
-| `nodes_ran` | `List[str]` | Node names in execution order |
+`ChatResult` contains `response` (the last AI message), `state` (filtered snapshot, messages excluded by default), `trace` (per-node execution trace in order), and `nodes_ran` (node names in execution order).
 
 ## Tool Trajectory Testing
 
-Use the harness to test that your agent follows the correct tool trajectory. The `ChatResult.trace` and `nodes_ran` fields make it easy to verify routing.
+The `ChatResult.trace` and `nodes_ran` fields make it straightforward to verify your agent follows the right path.
 
 ### Verifying Node Routes
 
@@ -256,7 +249,7 @@ async def test_multi_step_tool_order():
 
 ## Combining Tool and Output Metrics
 
-Stack multiple decorators to evaluate both tool usage AND response quality in a single test:
+Stack decorators to evaluate both tool usage and response quality in one test:
 
 ```python [Run this example in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langgraph-testing/overview.ipynb#scrollTo=combined_metrics)
 @fe.tool_call_accuracy(threshold=0.9)

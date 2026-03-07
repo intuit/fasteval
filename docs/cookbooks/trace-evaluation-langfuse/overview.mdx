@@ -25,29 +25,29 @@ sidebar:
 
 # Evaluating Langfuse Traces [Open in Google Colab](https://colab.research.google.com/github/intuit/fasteval/blob/main/docs/notebooks/langfuse-trace-evaluation/overview.ipynb)
 
-This cookbook guides you through building a complete quality evaluation pipeline using **fasteval** and **Langfuse**. By connecting production observability with systematic evaluation, you can detect quality issues early, build regression tests from real failures, and deploy with confidence.
+This cookbook walks you through building a quality evaluation pipeline with **fasteval** and **Langfuse**. Wire up production observability with systematic evals, catch quality issues early, build regression tests from real failures, and ship with confidence.
 
 ## The Evaluation Loop
 
-Effective LLM engineering requires a continuous feedback loop between production and development. This cookbook covers the full cycle:
+Good LLM engineering needs a tight feedback loop between production and development. Here's the full cycle:
 
 ![Evaluation Loop](docs/assets/langfuse-evaluation-loop.svg)
 
-1.  **Online Evaluation (Traces)**: Monitor production quality by evaluating a sample of live traffic.
-    *   *Goal:* Detect regressions and identify failure modes in the wild.
+1.  **Online Evaluation (Traces)**: Sample live traffic and evaluate it for quality.
+    *   *Goal:* Spot regressions and failure modes in the wild.
     *   *Tool:* `@langfuse_traces` decorator.
 2.  **Identify Issues**: Find low-quality traces in Langfuse (e.g., filter by `fasteval_correctness < 0.7`).
 3.  **Build Datasets**: Promote problematic or high-quality traces into curated golden datasets.
-4.  **Offline Evaluation (Datasets)**: Regression-test new agent versions against these golden sets.
-    *   *Goal:* Ensure fixes work and don't break existing functionality.
+4.  **Offline Evaluation (Datasets)**: Regression-test new agent versions against those golden sets.
+    *   *Goal:* Confirm fixes work without breaking anything else.
     *   *Tool:* `@langfuse_dataset` decorator.
 5.  **Deploy with Confidence**: Use dataset tests as automated CI/CD gates before shipping.
 
-This loop ties the four pages of this cookbook into a cohesive narrative. Each failure you catch in production becomes a permanent test case that prevents the same issue from recurring.
+Every failure you catch in production becomes a permanent test case. That's what ties these four pages together — each one covers a piece of this loop.
 
 ## Architecture
 
-The integration has two main workflows that correspond to the two halves of the evaluation loop:
+The integration splits into two workflows, matching the two halves of the evaluation loop:
 
 ![Integration Architecture](docs/assets/langfuse-integration-architecture.svg)
 
@@ -57,7 +57,7 @@ The integration has two main workflows that correspond to the two halves of the 
 
 ## fasteval vs. Native Evaluators
 
-Langfuse offers built-in "LLM-as-a-Judge" evaluators that run within their cloud infrastructure. Here is how they compare to fasteval:
+Langfuse offers built-in "LLM-as-a-Judge" evaluators that run within their cloud infrastructure. Here's how they compare to fasteval:
 
 | Feature | fasteval Integration | Langfuse Native Evaluators |
 |---------|----------------------|----------------------------|
@@ -69,16 +69,14 @@ Langfuse offers built-in "LLM-as-a-Judge" evaluators that run within their cloud
 | **Custom Metrics** | Custom criteria via `fe.criteria()` | Template-based customization |
 | **Cost** | You pay your LLM provider directly | Usage-based pricing from Langfuse |
 
-**Best Practice:** Use both. Use **Langfuse native evaluators** for lightweight, real-time monitoring on every trace. Use **fasteval** for deep-dive analysis, complex metric stacks, and rigorous regression testing in CI/CD.
+We recommend using both. Run **Langfuse native evaluators** for lightweight, real-time monitoring on every trace. Use **fasteval** for deep-dive analysis, complex metric stacks, and rigorous regression testing in CI/CD.
 
 ## Prerequisites
 
-To follow this cookbook, you need:
+You'll need:
 
 1.  A **Langfuse project** ([cloud](https://cloud.langfuse.com) or [self-hosted](https://langfuse.com/docs/deployment/self-host)) with some existing traces.
-2.  **API Keys** from Langfuse Settings > API Keys:
-    *   `LANGFUSE_PUBLIC_KEY` — authenticates reads (traces, datasets).
-    *   `LANGFUSE_SECRET_KEY` — authenticates writes (scores).
+2.  **API Keys** from Langfuse Settings > API Keys: `LANGFUSE_PUBLIC_KEY` (authenticates reads) and `LANGFUSE_SECRET_KEY` (authenticates writes).
 3.  An **LLM Provider Key** (e.g., `OPENAI_API_KEY`) for the fasteval judge models.
 
 ## Installation
@@ -101,7 +99,7 @@ print(f"fasteval-langfuse: {fasteval_langfuse.__version__}")
 
 ## Configuration
 
-You can configure the integration using environment variables, code, or both.
+Configure the integration using environment variables, code, or both.
 
 ### Option 1: Environment Variables (Recommended for CI/CD)
 
@@ -160,7 +158,7 @@ def pytest_configure(config):
 
 ## Verifying the Connection
 
-Before running evaluations, confirm that your credentials work:
+Before running evaluations, confirm your credentials work:
 
 ```python
 from langfuse import Langfuse
@@ -176,7 +174,7 @@ except Exception as e:
 
 ## Quick Start
 
-Here is a minimal end-to-end example that fetches 3 recent traces, evaluates them for correctness, and pushes scores back to Langfuse:
+Here's a minimal end-to-end example. It fetches 3 recent traces, evaluates them for correctness, and pushes scores back to Langfuse:
 
 ```python
 # test_quick_start.py
@@ -199,13 +197,13 @@ Run it:
 pytest test_quick_start.py -v
 ```
 
-After running, go to **Langfuse > Traces** and you will see `fasteval_correctness` and `fasteval_aggregate` scores on the evaluated traces.
+After running, go to **Langfuse > Traces** and you'll see `fasteval_correctness` and `fasteval_aggregate` scores on the evaluated traces.
 
 ## Next Steps
 
-Now that you are set up, dive into the evaluation loop:
+Now that you're set up, dive into the evaluation loop:
 
-| Page | What You Will Learn |
+| Page | What You'll Learn |
 |------|---------------------|
 | [**Basic Trace Evaluation**](./basic-trace-evaluation) | Fetch and evaluate production traces, stack metrics, handle missing data, view scores in Langfuse |
 | [**Sampling Strategies**](./sampling-strategies) | All 5 strategies, cost optimization, scheduling patterns, GitHub Actions automation |

@@ -17,7 +17,7 @@ sidebar:
 
 # Building Domain-Specific Metrics
 
-This cookbook shows how to build custom evaluation metrics for specialized domains like legal, medical, customer support, and technical documentation.
+The built-in metrics cover a lot of ground, but sometimes your domain has evaluation criteria that only you understand. This cookbook walks through building custom metrics for legal, medical, support, and technical documentation use cases.
 
 ## Overview
 
@@ -52,18 +52,11 @@ This cookbook shows how to build custom evaluation metrics for specialized domai
 
 ## When to Build Custom Metrics
 
-Build a custom metric when:
-
-| Scenario | Solution |
-|----------|----------|
-| Need domain-specific evaluation criteria | LLM-based custom metric |
-| Need to check for specific patterns/formats | Deterministic custom metric |
-| Built-in metrics don't capture your quality bar | Either type |
-| Need consistent, reusable evaluation | Package as custom metric |
+You'll want a custom metric when built-in ones don't capture what matters for your domain. In practice, it boils down to two paths: use `LLMMetric` when evaluation needs judgment (e.g., "is this legally compliant?"), and extend `Metric` directly when you can check with deterministic rules (e.g., regex-based PII detection). If you find yourself writing the same scoring prompt over and over, that's a strong signal to package it as a reusable metric.
 
 ## LLM-Based Custom Metrics
 
-Extend `LLMMetric` for criteria that require understanding and judgment.
+Extend `LLMMetric` for criteria that need understanding and judgment.
 
 ### Basic Structure
 
@@ -73,12 +66,12 @@ from fasteval import LLMMetric, EvalInput
 
 class LegalComplianceMetric(LLMMetric):
     """Evaluate legal compliance of responses."""
-    
+
     def __init__(self, jurisdiction: str = "US", threshold: float = 0.8, **kwargs):
         kwargs.setdefault("name", "legal_compliance")
         super().__init__(threshold=threshold, **kwargs)
         self.jurisdiction = jurisdiction
-    
+
     def get_evaluation_prompt(self, eval_input: EvalInput) -> str:
         return f"""You are a legal compliance evaluator for {self.jurisdiction} jurisdiction.
 
@@ -142,7 +135,7 @@ from fasteval import Metric, EvalInput, MetricResult
 
 class PIIDetectionMetric(Metric):
     """Detect personally identifiable information in responses."""
-    
+
     # Regex patterns for common PII
     PII_PATTERNS = {
         "ssn": r"\b\d{3}-\d{2}-\d{4}\b",
@@ -151,32 +144,32 @@ class PIIDetectionMetric(Metric):
         "credit_card": r"\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b",
         "ip_address": r"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b",
     }
-    
+
     def __init__(self, threshold: float = 1.0, allowed_types: list = None, **kwargs):
         kwargs.setdefault("name", "pii_free")
         super().__init__(threshold=threshold, **kwargs)
         self.allowed_types = allowed_types or []
-    
+
     async def evaluate(self, eval_input: EvalInput) -> MetricResult:
         """Check for PII in the response."""
         text = eval_input.actual_output
         found_pii = []
-        
+
         for pii_type, pattern in self.PII_PATTERNS.items():
             if pii_type in self.allowed_types:
                 continue
-            
+
             matches = re.findall(pattern, text)
             if matches:
                 found_pii.append(f"{pii_type}: {len(matches)} instance(s)")
-        
+
         if found_pii:
             score = 0.0
             reasoning = f"PII detected: {'; '.join(found_pii)}"
         else:
             score = 1.0
             reasoning = "No PII detected"
-        
+
         return MetricResult(
             metric_name=self.name,
             score=score,
@@ -194,9 +187,9 @@ from fasteval import Metric, EvalInput, MetricResult
 
 class StructuredResponseMetric(Metric):
     """Validate response follows required structure."""
-    
+
     def __init__(
-        self, 
+        self,
         required_sections: list = None,
         max_length: int = None,
         min_length: int = None,
@@ -208,30 +201,30 @@ class StructuredResponseMetric(Metric):
         self.required_sections = required_sections or []
         self.max_length = max_length
         self.min_length = min_length
-    
+
     async def evaluate(self, eval_input: EvalInput) -> MetricResult:
         text = eval_input.actual_output
         issues = []
-        
+
         # Check required sections
         for section in self.required_sections:
             if section.lower() not in text.lower():
                 issues.append(f"Missing section: {section}")
-        
+
         # Check length
         if self.max_length and len(text) > self.max_length:
             issues.append(f"Too long: {len(text)} > {self.max_length}")
-        
+
         if self.min_length and len(text) < self.min_length:
             issues.append(f"Too short: {len(text)} < {self.min_length}")
-        
+
         if issues:
             score = max(0, 1 - len(issues) * 0.25)
             reasoning = f"Issues: {'; '.join(issues)}"
         else:
             score = 1.0
             reasoning = "Response structure is valid"
-        
+
         return MetricResult(
             metric_name=self.name,
             score=score,
@@ -245,18 +238,20 @@ class StructuredResponseMetric(Metric):
 
 ### Medical Response Metric
 
+Medical responses need a high bar -- we default the threshold to 0.9 here because bad health advice is genuinely dangerous.
+
 ```python
 # metrics/medical_safety.py
 from fasteval import LLMMetric, EvalInput
 
 class MedicalSafetyMetric(LLMMetric):
     """Evaluate medical response safety."""
-    
+
     def __init__(self, **kwargs):
         kwargs.setdefault("name", "medical_safety")
         kwargs.setdefault("threshold", 0.9)
         super().__init__(**kwargs)
-    
+
     def get_evaluation_prompt(self, eval_input: EvalInput) -> str:
         return f"""You are a medical safety evaluator. Evaluate this health-related response:
 
@@ -290,12 +285,12 @@ from fasteval import LLMMetric, EvalInput
 
 class SupportQualityMetric(LLMMetric):
     """Evaluate customer support response quality."""
-    
+
     def __init__(self, company_name: str, threshold: float = 0.8, **kwargs):
         kwargs.setdefault("name", "support_quality")
         super().__init__(threshold=threshold, **kwargs)
         self.company_name = company_name
-    
+
     def get_evaluation_prompt(self, eval_input: EvalInput) -> str:
         return f"""Evaluate this {self.company_name} customer support response:
 
@@ -330,11 +325,11 @@ from fasteval import LLMMetric, EvalInput
 
 class TechnicalDocMetric(LLMMetric):
     """Evaluate technical documentation quality."""
-    
+
     def __init__(self, **kwargs):
         kwargs.setdefault("name", "doc_quality")
         super().__init__(**kwargs)
-    
+
     def get_evaluation_prompt(self, eval_input: EvalInput) -> str:
         return f"""Evaluate this technical documentation:
 
@@ -364,10 +359,12 @@ def test_generated_docs():
 
 ### Combining Custom and Built-in Metrics
 
+You can stack custom metrics alongside built-in ones -- they all work the same way.
+
 ```python
 # Use custom metrics alongside built-in ones
 @fe.legal_compliance(threshold=0.85)     # Custom
-@fe.pii_free(threshold=1.0)              # Custom  
+@fe.pii_free(threshold=1.0)              # Custom
 @fe.correctness(threshold=0.8)           # Built-in
 @fe.toxicity(threshold=0.95)             # Built-in
 def test_legal_response_comprehensive():

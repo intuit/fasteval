@@ -7,8 +7,8 @@ sidebar:
     anchor: the-evaluation-challenge
   - title: Traditional Approaches Fall Short
     anchor: traditional-approaches-fall-short
-  - title: The fasteval Solution
-    anchor: the-fasteval-solution
+  - title: How fasteval Works
+    anchor: how-fasteval-works
   - title: Research Foundation
     anchor: research-foundation
   - title: When to Use fasteval
@@ -21,13 +21,13 @@ sidebar:
 
 ## The Evaluation Challenge
 
-As Large Language Models become central to production applications—from customer support chatbots to code assistants to content generation—a critical question emerges:
+LLMs are everywhere now — customer support bots, code assistants, content generators. So how do you actually verify that your LLM's outputs are good?
 
 > **How do you systematically verify that your LLM produces reliable, high-quality outputs?**
 
-Traditional software testing relies on deterministic assertions: given input X, expect output Y. LLM outputs, by contrast, are inherently probabilistic. The same prompt can yield semantically equivalent but textually different responses across runs.
+Traditional software testing is deterministic: given input X, expect output Y. LLM outputs aren't like that. The same prompt can produce semantically identical but textually different responses across runs. "The answer is 42" and "42 is the answer" mean the same thing, but `assert` doesn't care.
 
-This fundamental difference has historically made LLM evaluation problematic, expensive, and inconsistent.
+That mismatch has made LLM evaluation painful, expensive, and wildly inconsistent.
 
 ## Traditional Approaches Fall Short
 
@@ -41,18 +41,18 @@ This fundamental difference has historically made LLM evaluation problematic, ex
 
 ### The Hidden Cost of Manual Evaluation
 
-Consider a typical AI application serving 10,000 requests/day:
+We've seen this play out over and over. Take a typical AI application serving 10,000 requests/day:
 
-- **Manual review of 1%** = 100 reviews/day × $0.50/review = **$1,500/month**
-- **Review latency**: 24-48 hours before issues are detected
-- **Coverage gap**: 99% of outputs go unexamined
-- **Inconsistency**: Different reviewers apply different standards
+- **Manual review of 1%** = 100 reviews/day x $0.50/review = **$1,500/month**
+- **Review latency**: 24-48 hours before you even know something's wrong
+- **Coverage gap**: 99% of outputs go completely unexamined
+- **Inconsistency**: Different reviewers, different standards — every time
 
-This approach cannot keep pace with the iteration speed required for modern AI development.
+In practice, this can't keep up with how fast you need to iterate.
 
-## The fasteval Solution
+## How fasteval Works
 
-fasteval adopts the **LLM-as-Judge** paradigm—using LLMs themselves to evaluate LLM outputs. This approach has been validated by research from Stanford, UC Berkeley, and leading AI labs as correlating highly with human judgment.
+fasteval uses the **LLM-as-Judge** paradigm — LLMs evaluating LLM outputs. Research from Stanford, UC Berkeley, and major AI labs shows this approach correlates highly with human judgment. And it's orders of magnitude cheaper.
 
 ### Before fasteval
 
@@ -60,10 +60,10 @@ fasteval adopts the **LLM-as-Judge** paradigm—using LLMs themselves to evaluat
 # Manual, ad-hoc evaluation
 def test_qa_bot():
     response = qa_bot("What is Python?")
-    
+
     # Brittle string matching
     assert "programming language" in response.lower()
-    
+
     # Or worse: no automated testing at all
     # "We'll manually check outputs in staging"
 ```
@@ -80,66 +80,48 @@ def test_qa_bot():
     fe.score(response, "Python is a programming language")
 ```
 
-### Key Advantages
+### What You Get
 
-| Benefit | Impact |
-|---------|--------|
-| **Semantic Understanding** | "Paris is the capital" ≈ "The capital city is Paris" — fasteval understands equivalence |
-| **Scalable** | Evaluate thousands of outputs automatically in CI/CD |
-| **Consistent** | Same evaluation criteria applied uniformly across all tests |
-| **Explainable** | LLM judge provides reasoning for every score |
-| **Cost-Effective** | $0.001-$0.01 per evaluation vs $0.10-$1.00 for human review |
-| **Fast Feedback** | Results in seconds, not days |
+**Semantic understanding** is the big one. "Paris is the capital" and "The capital city is Paris" — fasteval knows those are equivalent. You don't have to anticipate every phrasing.
+
+It's also **scalable** — thousands of evaluations running automatically in CI/CD, not a human squinting at logs. The evaluation criteria stay **consistent** across every test, every run, every team member. And when something scores low, the LLM judge gives you its **reasoning**, so you're not guessing why a test failed.
+
+The cost difference is stark: $0.001-$0.01 per evaluation versus $0.10-$1.00 for human review. Results come back in seconds, not days.
 
 ## Research Foundation
 
-The LLM-as-Judge paradigm is backed by significant academic research:
+The LLM-as-Judge approach isn't something we invented — it's grounded in real research.
 
 ### MT-Bench Study (2023)
 
-Researchers at UC Berkeley found that GPT-4 judgments align with human preferences **over 80% of the time**—comparable to agreement rates between human annotators.
+UC Berkeley researchers found that GPT-4 judgments align with human preferences **over 80% of the time** — roughly the same as agreement rates between human annotators themselves.
 
 > "Strong LLM judges like GPT-4 can match both controlled and crowdsourced human preferences well, achieving over 80% agreement." — [Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena](https://arxiv.org/abs/2306.05685)
 
 ### Stanford HELM Benchmark
 
-The Holistic Evaluation of Language Models (HELM) project established frameworks for systematic LLM evaluation across dozens of scenarios and metrics, demonstrating that automated evaluation can be comprehensive and reliable.
+The HELM project built frameworks for systematic LLM evaluation across dozens of scenarios and metrics. It showed that automated evaluation can be both thorough and reliable — you don't have to sacrifice one for the other.
 
-### Key Findings
+### What the Research Tells Us
 
-- **Correlation with humans**: LLM judges achieve 0.7-0.9 correlation with expert human judgments
-- **Position bias mitigation**: Techniques like answer shuffling reduce systematic biases
-- **Scalability**: Automated evaluation enables testing at scales impossible for human review
-- **Reproducibility**: Consistent evaluation criteria produce reproducible results
+- **Correlation with humans**: LLM judges hit 0.7-0.9 correlation with expert judgments
+- **Bias mitigation**: Techniques like answer shuffling reduce systematic biases
+- **Scale**: Automated evaluation makes it possible to test at volumes no human team could match
+- **Reproducibility**: Same criteria, same results — every time
 
 ## When to Use fasteval
 
-### fasteval Is Ideal For
+### Where fasteval Shines
 
-| Use Case | Example |
-|----------|---------|
-| **CI/CD Quality Gates** | Block deployments when correctness drops below threshold |
-| **Regression Testing** | Ensure prompt changes don't degrade output quality |
-| **A/B Testing** | Compare model versions or prompt strategies systematically |
-| **Production Monitoring** | Sample and evaluate live traffic for safety violations |
-| **Dataset Evaluation** | Grade model performance on curated test sets |
+fasteval is built for **CI/CD quality gates** — blocking deployments when correctness drops below your threshold. It's great for **regression testing** too, catching the cases where a prompt tweak quietly degrades output quality. If you're **A/B testing** model versions or prompt strategies, fasteval gives you structured comparisons instead of vibes. You can also use it for **production monitoring** (sampling live traffic for safety violations) and **dataset evaluation** (grading model performance on curated test sets).
 
-### Consider Alternatives When
+### When to Reach for Something Else
 
-| Scenario | Better Approach |
-|----------|-----------------|
-| **Binary format validation** | Use deterministic checks (`@fe.json_schema()`) |
-| **Exact string requirements** | Use `@fe.exact_match()` or `@fe.contains()` |
-| **Subjective creative quality** | Combine with human review for final judgment |
-| **Legal/compliance sign-off** | LLM evaluation informs, but humans approve |
+If you need **binary format validation** — like checking JSON schema compliance — use deterministic checks (`@fe.json_schema()`). For **exact string requirements**, `@fe.exact_match()` or `@fe.contains()` will do the job faster. **Subjective creative quality** is tricky; you'll probably want to combine fasteval with human review. And for **legal or compliance sign-off**, LLM evaluation can inform the decision, but a human still needs to approve it.
 
 ### The Sweet Spot
 
-fasteval excels when you need:
-- **Semantic evaluation** of natural language outputs
-- **Automated, scalable** testing in development and production
-- **Consistent quality standards** across teams and time
-- **Fast iteration cycles** with immediate feedback
+fasteval sits right at the intersection of semantic evaluation and automation. You've got natural language outputs that can't be checked with string matching, you need it to run at scale in dev and production, you want consistent standards across your team, and you don't want to wait days for feedback. That's where fasteval lives.
 
 ## Next Steps
 

@@ -64,6 +64,7 @@ from fasteval.core.decorators import (  # LLM Metrics; Quality Metrics; RAG Metr
     image_understanding,
     instruction_following,
     json,
+    judge,
     match_error_rate,
     metric,
     multimodal_faithfulness,
@@ -90,6 +91,7 @@ from fasteval.core.evaluator import Evaluator, create_evaluator
 from fasteval.core.scoring import score
 from fasteval.metrics import LLMMetric
 from fasteval.metrics.base import Metric
+from fasteval.metrics.code_judge import CodeJudgeMetric
 from fasteval.metrics.conversation import (
     ConsistencyMetric,
     ContextRetentionMetric,
@@ -206,6 +208,8 @@ __all__ = [
     "consistency",
     "topic_drift",
     "metric",
+    # Code-as-Judge
+    "judge",
     # Data Decorators
     "csv",
     "conversation",
@@ -256,6 +260,7 @@ __all__ = [
     "Metric",
     "BaseLLMMetric",
     "LLMMetric",
+    "CodeJudgeMetric",
     "CorrectnessMetric",
     "HallucinationMetric",
     "RelevanceMetric",
