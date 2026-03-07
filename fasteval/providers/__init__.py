@@ -1,7 +1,5 @@
 """fasteval LLM provider module."""
 
-from typing import TYPE_CHECKING
-
 from fasteval.providers.base import LLMClient
 from fasteval.providers.openai import OpenAIClient
 from fasteval.providers.anthropic import AnthropicClient
