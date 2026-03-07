@@ -2,20 +2,263 @@
 title: Consistency
 description: Evaluate response consistency across a conversation
 order: 2
+sidebar:
+  - title: Overview
+    anchor: overview
+  - title: How It Works
+    anchor: how-it-works
+  - title: Parameters
+    anchor: parameters
+  - title: Practical Examples
+    anchor: practical-examples
+  - title: Consistency vs Context Retention
+    anchor: consistency-vs-context-retention
+  - title: Best Practices
+    anchor: best-practices
 ---
 
 # Consistency Metric
 
 Does your model contradict itself mid-conversation? This metric catches that. It evaluates whether the model maintains consistent information and behavior across turns.
 
-## Usage
+## Overview
+
+Your bot tells a customer refunds take 3-5 days. Three turns later, same conversation, it says 2 weeks. The customer notices. You've lost them.
+
+Consistency failures are sneaky because each individual response can look perfectly fine on its own. The problem only shows up when you read the conversation as a whole. That's exactly what this metric does — it compares what the bot said across turns and flags when things don't line up.
+
+![Consistency Detection Flow](docs/assets/consistency-detection-flow.svg)
+
+### What Breaks Consistency
+
+| Type | What happens | Example |
+|------|-------------|---------|
+| **Factual contradiction** | Different numbers or facts for the same thing | "30-day returns" then "14-day returns" |
+| **Stance reversal** | Recommendation flips without new information | "Go with Plan A" then "Plan B is better" |
+| **Behavioral drift** | Tone or persona changes mid-conversation | Professional in turn 1, casual by turn 5 |
+| **Self-contradiction** | Conflicting claims within a single response | "This is free" and "costs $10/month" together |
+
+### Why It Matters
+
+People build trust incrementally across a conversation. One contradiction undoes all of it. In support, it means escalations and repeat contacts. In advisory roles — financial planning, healthcare, legal — inconsistent guidance is a liability issue, not just a UX problem.
+
+## How It Works
+
+The metric hands the full conversation to an LLM judge. The judge pulls out factual claims from each bot response, cross-references them against every other turn, and scores based on how well they hold up. A claim about pricing in turn 1 gets checked against anything pricing-related in turns 3, 5, or 7. Contradictions get penalized based on severity — mixing up a minor detail hurts less than flipping a core fact.
+
+### Score Interpretation
+
+![Consistency Scoring Scale](docs/assets/consistency-scoring-scale.svg)
+
+| Score | What it means | You'll see this when... |
+|-------|--------------|------------------------|
+| **0.9-1.0** | Rock solid | Facts, tone, and recommendations all align across turns |
+| **0.7-0.9** | Mostly stable | Same information, slightly different phrasing here and there |
+| **0.5-0.7** | Shaky | Small details start drifting — approximate numbers change, specifics get fuzzy |
+| **0.3-0.5** | Problematic | The bot flips its recommendation or gives conflicting answers to the same question |
+| **0.0-0.3** | Broken | Core facts directly contradict each other |
+
+### Semantic Comparison
+
+The metric understands meaning, not just strings. "30 days" and "about a month" won't get flagged. "30 days" and "two weeks" will. It also picks up on tone shifts — if your bot is supposed to maintain a professional voice but starts using slang halfway through, that counts.
+
+## Parameters
+
+```python
+@fe.consistency(
+    threshold=0.8,   # Minimum score to pass (higher = stricter)
+    model="gpt-4o",  # Override the default LLM model
+)
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `threshold` | float | 0.8 | Minimum score to pass (higher = stricter) |
+| `model` | str | None | Override the default LLM model for this metric |
+
+## Practical Examples
+
+### Basic Usage
 
 ```python
 import fasteval as fe
 
 @fe.consistency(threshold=0.8)
-@fe.conversation([...])
-def test_consistent_answers(query, expected, history):
+@fe.conversation([
+    {"query": "What's your return policy?", "expected": "You can return items within 30 days"},
+    {"query": "I bought something last week", "expected": "I can help with that"},
+    {"query": "How long do I have to return it?", "expected": "You have 30 days from purchase"},
+])
+def test_return_policy(query, expected, history):
     response = my_agent(query, history=history)
     fe.score(response, expected, input=query, history=history)
+```
+
+If the bot says "14 days" in turn 3 after saying "30 days" in turn 1, this fails.
+
+### Handling User Pushback
+
+Bots love to agree with people. That's a problem when the user pushes back on a correct answer — a weak bot just caves and changes its response:
+
+```python
+@fe.consistency(threshold=0.85)
+@fe.conversation([
+    {"query": "Is this product gluten-free?", "expected": "No, it contains wheat"},
+    {"query": "I thought it was gluten-free?", "expected": "It does contain wheat-based ingredients"},
+    {"query": "The website says gluten-free", "expected": "The product contains wheat, I'd recommend checking the ingredients label"},
+])
+def test_holds_ground(query, expected, history):
+    response = product_agent(query, history=history)
+    fe.score(response, expected, input=query, history=history)
+```
+
+### Recommendation Stability
+
+Sales and advisor bots shouldn't flip-flop. When a user asks the same question three different ways, the answer should hold:
+
+```python
+@fe.consistency(threshold=0.8)
+@fe.conversation([
+    {"query": "Which plan should I get?", "expected": "Based on your usage, Pro is the best fit"},
+    {"query": "Are you sure? Basic seems fine", "expected": "Pro is still my recommendation because of the API limits"},
+    {"query": "But Basic is cheaper", "expected": "It is, but Pro gives you better value per API call"},
+])
+def test_doesnt_flip(query, expected, history):
+    response = advisor_bot(query, history=history)
+    fe.score(response, expected, input=query, history=history)
+```
+
+### Long Conversations
+
+Consistency tends to break down the longer a conversation goes. Worth stress-testing:
+
+```python
+@fe.consistency(threshold=0.75)
+@fe.conversation([
+    {"query": "Tell me about the Premium plan", "expected": "Premium is $49/mo with unlimited users"},
+    {"query": "What about Enterprise?", "expected": "Enterprise is $199/mo with priority support"},
+    {"query": "Does Premium have an API?", "expected": "Yes, Premium includes API access"},
+    {"query": "How many API calls?", "expected": "10,000 API calls per month"},
+    {"query": "Remind me, what does Premium cost?", "expected": "$49 per month"},
+    {"query": "And the API limit again?", "expected": "10,000 calls per month on Premium"},
+])
+def test_long_conversation(query, expected, history):
+    response = sales_agent(query, history=history)
+    fe.score(response, expected, input=query, history=history)
+```
+
+### Stacking with Other Metrics
+
+Consistency alone tells you the bot isn't contradicting itself. Pair it with other metrics for a fuller picture:
+
+```python
+@fe.consistency(threshold=0.8)        # Not contradicting itself
+@fe.context_retention(threshold=0.7)  # Remembering earlier context
+@fe.correctness(threshold=0.8)        # Actually giving right answers
+@fe.conversation([
+    {"query": "My order #123 arrived damaged", "expected": "Sorry about order #123, let me help"},
+    {"query": "What are my options?", "expected": "We can send a replacement or process a refund"},
+    {"query": "How long for the replacement?", "expected": "Replacements ship within 2 business days"},
+    {"query": "And the refund?", "expected": "Refunds process in 3-5 business days"},
+])
+def test_support_quality(query, expected, history):
+    response = support_agent(query, history=history)
+    fe.score(response, expected, input=query, history=history)
+```
+
+### Data-Driven Testing
+
+```python
+@fe.consistency(threshold=0.8)
+@fe.conversations_csv("support_conversations.csv")
+def test_bulk_consistency(query, expected, history):
+    response = my_agent(query, history=history)
+    fe.score(response, expected, input=query, history=history)
+```
+
+## Consistency vs Context Retention
+
+These two get confused a lot. They both deal with multi-turn conversations, but they catch different problems.
+
+| | Consistency | Context Retention |
+|--|-----------|-------------------|
+| **Catches** | Bot contradicting itself | Bot forgetting things |
+| **Failure looks like** | "30 days" then "14 days" | "What was your name again?" |
+| **Root cause** | Generated conflicting information | Lost track of conversation history |
+| **Fix usually involves** | Better grounding or knowledge base | Longer context window or better memory |
+
+Use consistency when your bot gives answers that conflict with each other. Use context retention when your bot loses track of information the user already provided. For any production conversational agent, run both.
+
+```python
+@fe.consistency(threshold=0.8)
+@fe.context_retention(threshold=0.7)
+def test_conversation(query, expected, history):
+    response = my_agent(query, history=history)
+    fe.score(response, expected, input=query, history=history)
+```
+
+## Best Practices
+
+### Include Rephrased Questions in Test Cases
+
+Most consistency failures happen when users ask the same thing in different words. Your tests should mirror that:
+
+```python
+@fe.consistency(threshold=0.8)
+@fe.conversation([
+    {"query": "What's the delivery time?", "expected": "3-5 business days"},
+    # ... other turns ...
+    {"query": "How long until my package arrives?", "expected": "3-5 business days"},
+])
+def test_rephrased(query, expected, history):
+    response = my_agent(query, history=history)
+    fe.score(response, expected, input=query, history=history)
+```
+
+### Set Thresholds Based on Risk
+
+General chatbots can get away with 0.7 — nobody's making life decisions based on a casual conversation. Customer support needs 0.8 because conflicting information wastes everyone's time. Anything where users act on the bot's answers — financial advice, medical information, legal guidance — push it to 0.9 or higher.
+
+### Log Failures for Pattern Analysis
+
+Don't just check pass/fail. When consistency breaks, log what broke. You'll find the same categories keep coming up — pricing, dates, policy details. Fix those upstream in your prompt or knowledge base:
+
+```python
+@fe.consistency(threshold=0.8)
+def test_and_log(query, expected, history):
+    response = my_agent(query, history=history)
+    result = fe.score(response, expected, input=query, history=history)
+
+    if not result.passed:
+        log_consistency_failure(
+            turns=history,
+            response=response,
+            reasoning=result.metric_results[0].reasoning
+        )
+```
+
+## Example Output
+
+**Passing test:**
+
+```
+test_return_policy PASSED
+
+Evaluation Results:
+  consistency: 0.95 (threshold: 0.80)
+    Reasoning: The bot states a 30-day return window in turn 1
+    and reaffirms "30 days from purchase" in turn 3. No
+    contradictions found across the conversation.
+```
+
+**Failing test:**
+
+```
+test_return_policy FAILED
+
+Evaluation Results:
+  consistency: 0.35 (threshold: 0.80)
+    Reasoning: Contradiction detected — turn 1 states "30 days
+    from purchase" but turn 3 states "14 days from delivery."
+    Both the timeframe and the starting point conflict.
 ```
