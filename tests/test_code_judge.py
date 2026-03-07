@@ -104,7 +104,7 @@ class TestCodeJudgeMetricDirect:
         inp = EvalInput(actual_output="hello", expected_output="world")
         result = asyncio.run(metric.evaluate(inp))
         assert result.score == 0.3
-        assert "Mismatch" in result.reasoning
+        assert result.reasoning is not None and "Mismatch" in result.reasoning
 
     def test_dict_return(self):
         metric = CodeJudgeMetric(
