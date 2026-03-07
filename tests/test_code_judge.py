@@ -9,7 +9,6 @@ from fasteval.core.decorators import fasteval_METRICS_ATTR
 from fasteval.metrics.code_judge import CodeJudgeMetric
 from fasteval.models.evaluation import EvalInput, MetricResult
 
-
 # ---------------------------------------------------------------------------
 # Scoring functions used by tests
 # ---------------------------------------------------------------------------
@@ -62,11 +61,7 @@ def score_with_context(actual_output: str, expected_output: str, input: str) -> 
 
 def score_full_eval_input(eval_input: EvalInput) -> float:
     if eval_input.actual_output and eval_input.expected_output:
-        return (
-            1.0
-            if eval_input.expected_output in eval_input.actual_output
-            else 0.0
-        )
+        return 1.0 if eval_input.expected_output in eval_input.actual_output else 0.0
     return 0.0
 
 
@@ -98,18 +93,14 @@ class TestCodeJudgeMetricDirect:
         assert result.passed is False
 
     def test_tuple_return(self):
-        metric = CodeJudgeMetric(
-            func=score_with_reasoning, name="match", threshold=0.5
-        )
+        metric = CodeJudgeMetric(func=score_with_reasoning, name="match", threshold=0.5)
         inp = EvalInput(actual_output="hello", expected_output="hello")
         result = asyncio.run(metric.evaluate(inp))
         assert result.score == 1.0
         assert result.reasoning == "Exact match"
 
     def test_tuple_return_fail(self):
-        metric = CodeJudgeMetric(
-            func=score_with_reasoning, name="match", threshold=0.5
-        )
+        metric = CodeJudgeMetric(func=score_with_reasoning, name="match", threshold=0.5)
         inp = EvalInput(actual_output="hello", expected_output="world")
         result = asyncio.run(metric.evaluate(inp))
         assert result.score == 0.3
@@ -149,25 +140,19 @@ class TestCodeJudgeMetricDirect:
         assert result.score == 1.0
 
     def test_full_eval_input_param(self):
-        metric = CodeJudgeMetric(
-            func=score_full_eval_input, name="full", threshold=0.5
-        )
+        metric = CodeJudgeMetric(func=score_full_eval_input, name="full", threshold=0.5)
         inp = EvalInput(actual_output="Paris is great", expected_output="Paris")
         result = asyncio.run(metric.evaluate(inp))
         assert result.score == 1.0
 
     def test_kwargs_param(self):
-        metric = CodeJudgeMetric(
-            func=score_with_kwargs, name="kw", threshold=0.5
-        )
+        metric = CodeJudgeMetric(func=score_with_kwargs, name="kw", threshold=0.5)
         inp = EvalInput(actual_output="hello", expected_output="world")
         result = asyncio.run(metric.evaluate(inp))
         assert result.score == 1.0
 
     def test_multi_field_signature(self):
-        metric = CodeJudgeMetric(
-            func=score_with_context, name="ctx", threshold=0.5
-        )
+        metric = CodeJudgeMetric(func=score_with_context, name="ctx", threshold=0.5)
         inp = EvalInput(
             actual_output="Paris is the capital",
             expected_output="Paris",
