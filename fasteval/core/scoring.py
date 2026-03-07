@@ -347,9 +347,14 @@ def score(
     # Store result for conversation decorator to access (context-local)
     _last_score_result.set(result)
 
+    # Auto-collect result for reporting
+    from fasteval.collectors.collector import get_collector
+
+    test_name = _get_test_name_from_caller()
+    get_collector().collect(result, test_name=test_name)
+
     # If evaluation failed, raise an exception with the formatted report
     if not result.passed:
-        test_name = _get_test_name_from_caller()
         report = format_evaluation_report(test_name, [result], [eval_input])
         raise EvaluationFailedError(report, result)
 

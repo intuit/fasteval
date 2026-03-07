@@ -29,6 +29,13 @@ except PackageNotFoundError:
 # === Core API ===
 
 from fasteval.cache.memory import MemoryCache, clear_cache, get_cache
+from fasteval.collectors import (
+    EvalRunSummary,
+    OutputReporter,
+    ResultCollector,
+    get_collector,
+    reset_collector,
+)
 from fasteval.core.decorators import (  # LLM Metrics; Quality Metrics; RAG Metrics; Deterministic Metrics; Tool Trajectory; Conversation Metrics; Generic; Data Decorators; Human Review; Stack; Vision; Audio; Multi-Modal; Vision metrics; Audio metrics; Multi-modal metrics
     aesthetic_score,
     answer_correctness,
@@ -306,4 +313,10 @@ __all__ = [
     # Evaluator
     "Evaluator",
     "create_evaluator",
+    # Collectors
+    "ResultCollector",
+    "get_collector",
+    "reset_collector",
+    "EvalRunSummary",
+    "OutputReporter",
 ]
