@@ -1,0 +1,121 @@
+<svg viewBox="0 0 900 620" xmlns="http://www.w3.org/2000/svg" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-opacity="0.08"/>
+    </filter>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/>
+    </marker>
+    <marker id="arrowRed" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#ef4444"/>
+    </marker>
+  </defs>
+
+  <rect width="900" height="620" fill="#f8fafc"/>
+
+  <text x="450" y="45" text-anchor="middle" font-size="22" font-weight="700" fill="#1e293b">Consistency Detection Across Turns</text>
+  <text x="450" y="70" text-anchor="middle" font-size="14" fill="#64748b">How the metric identifies contradictions in multi-turn conversations</text>
+
+  <!-- Turn 1 -->
+  <g transform="translate(50, 100)">
+    <text x="0" y="0" font-size="13" font-weight="700" fill="#64748b">TURN 1</text>
+    <g transform="translate(0, 15)" filter="url(#shadow)">
+      <rect width="240" height="45" rx="8" fill="white" stroke="#c7d2fe" stroke-width="1.5"/>
+      <text x="12" y="18" font-size="11" font-weight="700" fill="#4f46e5">USER</text>
+      <text x="12" y="34" font-size="12" fill="#334155">"What's your return policy?"</text>
+    </g>
+    <g transform="translate(30, 70)" filter="url(#shadow)">
+      <rect width="260" height="55" rx="8" fill="white" stroke="#ddd6fe" stroke-width="1.5"/>
+      <text x="12" y="18" font-size="11" font-weight="700" fill="#7c3aed">BOT</text>
+      <text x="12" y="34" font-size="12" fill="#334155">"You can return items within</text>
+      <text x="12" y="50" font-size="12" font-weight="600" fill="#4f46e5">30 days of purchase."</text>
+    </g>
+    <!-- Claim extracted -->
+    <g transform="translate(-60, -40)">
+      <rect x="310" y="55" width="120" height="45" rx="6" fill="#eff6ff" stroke="#93c5fd" stroke-dasharray="4 2"/>
+      <text x="370" y="73" text-anchor="middle" font-size="10" font-weight="700" fill="#2563eb">CLAIM A</text>
+      <text x="370" y="88" text-anchor="middle" font-size="10" fill="#2563eb">return = 30 days</text>
+    </g>
+  </g>
+
+  <!-- Arrow -->
+  <line x1="450" y1="220" x2="450" y2="250" stroke="#cbd5e1" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+  <!-- Turn 2 -->
+  <g transform="translate(50, 260)">
+    <text x="0" y="0" font-size="13" font-weight="700" fill="#64748b">TURN 3</text>
+    <g transform="translate(0, 15)" filter="url(#shadow)">
+      <rect width="240" height="45" rx="8" fill="white" stroke="#c7d2fe" stroke-width="1.5"/>
+      <text x="12" y="18" font-size="11" font-weight="700" fill="#4f46e5">USER</text>
+      <text x="12" y="34" font-size="12" fill="#334155">"How long do I have to return?"</text>
+    </g>
+    <g transform="translate(30, 70)" filter="url(#shadow)">
+      <rect width="260" height="55" rx="8" fill="white" stroke="#fecaca" stroke-width="2"/>
+      <text x="12" y="18" font-size="11" font-weight="700" fill="#dc2626">BOT (CONTRADICTION)</text>
+      <text x="12" y="34" font-size="12" fill="#334155">"Our return window is</text>
+      <text x="12" y="50" font-size="12" font-weight="600" fill="#dc2626">14 days from delivery."</text>
+    </g>
+    <!-- Claim extracted -->
+    <g transform="translate(-60, -40)">
+      <rect x="310" y="55" width="120" height="45" rx="6" fill="#fef2f2" stroke="#fca5a5" stroke-dasharray="4 2"/>
+      <text x="370" y="73" text-anchor="middle" font-size="10" font-weight="700" fill="#dc2626">CLAIM B</text>
+      <text x="370" y="88" text-anchor="middle" font-size="10" fill="#dc2626">return = 14 days</text>
+    </g>
+  </g>
+
+  <!-- Contradiction connector -->
+  <g transform="translate(430, 115)">
+    <line x1="0" y1="0" x2="0" y2="240" stroke="#ef4444" stroke-width="2" stroke-dasharray="6 4"/>
+    <rect x="-55" y="105" width="110" height="30" rx="6" fill="#fef2f2" stroke="#ef4444" stroke-width="1.5"/>
+    <text x="0" y="124" text-anchor="middle" font-size="12" font-weight="700" fill="#dc2626">CONFLICT</text>
+  </g>
+
+  <!-- Evaluation box -->
+  <g transform="translate(500, 110)" filter="url(#shadow)">
+    <rect width="350" height="260" rx="12" fill="white" stroke="#fcd34d" stroke-width="1.5"/>
+    <rect width="350" height="35" rx="12" fill="#fffbeb"/>
+    <rect y="25" width="350" height="10" fill="#fffbeb"/>
+    <text x="175" y="22" text-anchor="middle" font-size="13" font-weight="700" fill="#92400e">CONSISTENCY METRIC</text>
+
+    <text x="20" y="55" font-size="11" font-weight="700" fill="#475569">Step 1: Extract Claims</text>
+    <text x="20" y="73" font-size="11" fill="#475569">Identify factual statements per turn</text>
+
+    <text x="20" y="100" font-size="11" font-weight="700" fill="#475569">Step 2: Cross-Reference</text>
+    <text x="20" y="118" font-size="11" fill="#475569">Compare claims across all turns</text>
+
+    <text x="20" y="145" font-size="11" font-weight="700" fill="#475569">Step 3: Detect Contradictions</text>
+    <text x="20" y="163" font-size="11" fill="#475569">Flag conflicting information</text>
+
+    <text x="20" y="190" font-size="11" font-weight="700" fill="#475569">Step 4: Score</text>
+    <text x="20" y="208" font-size="11" fill="#475569">Penalize based on severity &amp; count</text>
+
+    <rect x="230" y="220" width="100" height="30" rx="6" fill="#fef2f2" stroke="#ef4444"/>
+    <text x="280" y="240" text-anchor="middle" font-size="14" font-weight="800" fill="#dc2626">0.35 FAIL</text>
+  </g>
+
+  <!-- Types of inconsistency -->
+  <g transform="translate(50, 470)">
+    <rect width="800" height="100" rx="12" fill="white" stroke="#e2e8f0" stroke-width="1.5" filter="url(#shadow)"/>
+    <text x="400" y="22" text-anchor="middle" font-size="11" font-weight="700" fill="#94a3b8" letter-spacing="0.05em">TYPES OF INCONSISTENCY DETECTED</text>
+
+    <g transform="translate(20, 38)">
+      <rect width="175" height="48" rx="6" fill="#fef2f2"/>
+      <text x="88" y="18" text-anchor="middle" font-size="11" font-weight="600" fill="#dc2626">Factual Contradiction</text>
+      <text x="88" y="36" text-anchor="middle" font-size="10" fill="#64748b">Conflicting facts/numbers</text>
+
+      <rect x="190" width="175" height="48" rx="6" fill="#fffbeb"/>
+      <text x="278" y="18" text-anchor="middle" font-size="11" font-weight="600" fill="#b45309">Behavioral Drift</text>
+      <text x="278" y="36" text-anchor="middle" font-size="10" fill="#64748b">Changing tone/persona</text>
+
+      <rect x="380" width="175" height="48" rx="6" fill="#f5f3ff"/>
+      <text x="468" y="18" text-anchor="middle" font-size="11" font-weight="600" fill="#6d28d9">Stance Reversal</text>
+      <text x="468" y="36" text-anchor="middle" font-size="10" fill="#64748b">Flipping recommendations</text>
+
+      <rect x="570" width="190" height="48" rx="6" fill="#eff6ff"/>
+      <text x="665" y="18" text-anchor="middle" font-size="11" font-weight="600" fill="#1d4ed8">Self-Contradiction</text>
+      <text x="665" y="36" text-anchor="middle" font-size="10" fill="#64748b">Opposing claims in same turn</text>
+    </g>
+  </g>
+
+  <text x="450" y="608" text-anchor="middle" font-size="11" fill="#94a3b8">fasteval * consistency Metric * Architectural Standards 2026</text>
+</svg>
