@@ -1,6 +1,6 @@
 [project]
 name = "fasteval-langfuse"
-version = "1.0.0a1"
+version = "2.1.3"
 description = "Langfuse integration for fasteval - evaluate production traces with fasteval metrics"
 authors = [{name = "Intuit"}]
 license = {text = "Apache-2.0"}
