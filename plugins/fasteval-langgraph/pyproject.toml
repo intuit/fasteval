@@ -8,7 +8,7 @@ readme = "README.md"
 requires-python = ">=3.10,<4.0"
 
 dependencies = [
-    "fasteval-core>=1.0.3",
+    "fasteval-core>=1.2.0",
     "langgraph>=0.2.0",
     "pydantic>=2.0.0",
 ]
