@@ -1,6 +1,6 @@
 [project]
 name = "fasteval-langgraph"
-version = "1.0.0a1"
+version = "2.2.2"
 description = "LangGraph testing plugin for fasteval -- wrap any compiled StateGraph with a minimal harness for chat, session, mocking, and node-level testing"
 authors = [{name = "Intuit"}]
 license = {text = "Apache-2.0"}
