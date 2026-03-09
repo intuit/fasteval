@@ -1,0 +1,259 @@
+---
+title: Output Collectors
+description: Export evaluation results as JSON, HTML reports, or custom formats
+order: 5
+sidebar:
+  - title: Quick Start
+    anchor: quick-start
+  - title: Pytest Integration
+    anchor: pytest-integration
+  - title: Programmatic Usage
+    anchor: programmatic-usage
+  - title: Output Formats
+    anchor: output-formats
+  - title: Custom Reporters
+    anchor: custom-reporters
+  - title: Evaluation Summary
+    anchor: evaluation-summary
+---
+
+# Output Collectors
+
+fasteval automatically collects every evaluation result during a test run. You can export these results as JSON, HTML reports, or any custom format — via pytest flags or programmatically.
+
+## Quick Start
+
+Export results after a pytest run:
+
+```bash
+# JSON export
+pytest tests/ --fe-output json:eval_results.json
+
+# HTML report
+pytest tests/ --fe-output html:report.html
+
+# Both at once
+pytest tests/ --fe-output json:results.json --fe-output html:report.html
+```
+
+Print a summary table to the console:
+
+```bash
+pytest tests/ --fe-summary
+```
+
+```
+============================================================
+  FastEval Summary
+============================================================
+  Tests:  12 total, 10 passed, 2 failed
+  Pass Rate:  83%
+  Avg Score:  0.812
+  Time:       4230ms
+
+  Metric                     Pass Rate      Avg      Min      Max
+  ------------------------- ---------- -------- -------- --------
+  correctness                      90%    0.856    0.320    0.980
+  relevance                        83%    0.791    0.210    0.950
+  faithfulness                     75%    0.720    0.400    0.890
+============================================================
+```
+
+## Pytest Integration
+
+### `--fe-output`
+
+Exports results to a file. Format: `type:path`.
+
+```bash
+# JSON
+pytest tests/ --fe-output json:results.json
+
+# HTML
+pytest tests/ --fe-output html:report.html
+```
+
+You can specify `--fe-output` multiple times to export in several formats simultaneously:
+
+```bash
+pytest tests/ --fe-output json:results.json --fe-output html:report.html
+```
+
+If no path is given, the output is printed to stdout:
+
+```bash
+pytest tests/ --fe-output json
+```
+
+### `--fe-summary`
+
+Prints a compact summary table to the console after the test run completes. This shows pass/fail counts, per-metric breakdowns, and lists any failed tests.
+
+```bash
+pytest tests/ --fe-summary
+```
+
+### Default Behavior
+
+When neither `--fe-output` nor `--fe-summary` is provided, nothing changes. Results are collected silently with negligible overhead, but no reports are generated. Your existing pytest output is unaffected.
+
+## Programmatic Usage
+
+Use `get_collector()` to access results directly — useful in notebooks, scripts, or custom test runners.
+
+```python
+import fasteval as fe
+from fasteval import get_collector
+
+@fe.correctness(threshold=0.8)
+def evaluate_batch():
+    for item in dataset:
+        fe.score(item["output"], item["expected"], input=item["input"])
+
+evaluate_batch()
+
+# Access the collector
+collector = get_collector()
+
+# Get aggregate statistics
+summary = collector.summary()
+print(f"Pass rate: {summary.pass_rate:.1%}")
+print(f"Avg score: {summary.avg_aggregate_score:.2f}")
+print(f"Total time: {summary.total_execution_time_ms:.0f}ms")
+
+# Export to files
+collector.report("json", path="results.json")
+collector.report("html", path="report.html")
+
+# Or get the content as a string
+json_str = collector.report("json")
+```
+
+### Resetting the Collector
+
+The collector resets automatically at the start of each pytest session. For standalone usage, reset manually between runs:
+
+```python
+from fasteval import reset_collector
+
+reset_collector()
+# ... run next batch of evaluations ...
+```
+
+## Output Formats
+
+### JSON
+
+Full structured export with summary statistics and per-test results. Ideal for CI/CD pipelines, dashboards, or downstream analysis.
+
+```bash
+pytest tests/ --fe-output json:results.json
+```
+
+The JSON output contains two top-level keys:
+
+```json
+{
+  "summary": {
+    "total_tests": 12,
+    "passed_tests": 10,
+    "failed_tests": 2,
+    "pass_rate": 0.833,
+    "avg_aggregate_score": 0.812,
+    "total_execution_time_ms": 4230.5,
+    "metric_aggregates": [...],
+    "test_summaries": [...],
+    "timestamp": "2025-01-15T10:30:00Z"
+  },
+  "results": [
+    {
+      "test_name": "test_qa_agent",
+      "passed": true,
+      "aggregate_score": 0.85,
+      "metric_results": [...],
+      "eval_input": {...},
+      "execution_time_ms": 350.2
+    }
+  ]
+}
+```
+
+To exclude input data (smaller output):
+
+```python
+collector.report("json", path="results.json", include_inputs=False)
+```
+
+### HTML
+
+A self-contained HTML report with inline CSS. No external dependencies — just open the file in a browser.
+
+```bash
+pytest tests/ --fe-output html:report.html
+```
+
+The report includes:
+- **Summary cards** — total tests, pass/fail counts, pass rate, average score, total time
+- **Metric breakdown table** — per-metric pass rates, score distribution, visual bars
+- **Expandable test details** — click any test to see individual metric scores and reasoning
+
+## Custom Reporters
+
+Create a custom reporter by subclassing `OutputReporter`:
+
+```python
+from fasteval import OutputReporter, get_collector
+
+
+class SlackReporter(OutputReporter):
+    def generate(self, summary, results):
+        emoji = "✅" if summary.pass_rate >= 0.9 else "⚠️"
+        lines = [
+            f"{emoji} *Eval Results*",
+            f"Pass rate: {summary.pass_rate:.0%} ({summary.passed_tests}/{summary.total_tests})",
+            f"Avg score: {summary.avg_aggregate_score:.2f}",
+        ]
+        if summary.failed_tests > 0:
+            lines.append(f"Failed: {', '.join(t.test_name for t in summary.test_summaries if not t.passed)}")
+        return "\n".join(lines)
+
+
+# Register it
+collector = get_collector()
+collector.register_reporter("slack", SlackReporter)
+
+# Use it
+message = collector.report("slack")
+send_to_slack(message)
+```
+
+The `generate` method receives:
+- `summary` — an `EvalRunSummary` with aggregate statistics
+- `results` — the full list of `EvalResult` objects for detailed access
+
+## Evaluation Summary
+
+The `EvalRunSummary` model provides aggregate statistics:
+
+| Field | Type | Description |
+|---|---|---|
+| `total_tests` | `int` | Total number of evaluations |
+| `passed_tests` | `int` | Number of passing evaluations |
+| `failed_tests` | `int` | Number of failing evaluations |
+| `pass_rate` | `float` | 0.0 to 1.0 |
+| `avg_aggregate_score` | `float` | Weighted average across all tests |
+| `total_execution_time_ms` | `float` | Total evaluation time |
+| `metric_aggregates` | `List[MetricAggregate]` | Per-metric breakdowns |
+| `test_summaries` | `List[TestCaseSummary]` | Per-test summaries |
+
+Each `MetricAggregate` contains:
+
+| Field | Type | Description |
+|---|---|---|
+| `metric_name` | `str` | e.g., "correctness", "relevance" |
+| `count` | `int` | How many times this metric was evaluated |
+| `pass_rate` | `float` | Pass rate for this metric |
+| `avg_score` | `float` | Average score |
+| `min_score` | `float` | Lowest score |
+| `max_score` | `float` | Highest score |
+| `std_score` | `float` | Standard deviation |

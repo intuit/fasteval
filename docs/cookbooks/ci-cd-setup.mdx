@@ -11,6 +11,8 @@ sidebar:
     anchor: github-actions
   - title: GitLab CI
     anchor: gitlab-ci
+  - title: Exporting Results
+    anchor: exporting-results
   - title: Test Organization
     anchor: organizing-tests
   - title: Cost Optimization
@@ -205,14 +207,22 @@ jobs:
         env:
           OPENAI_API_KEY: \${{ secrets.OPENAI_API_KEY }}
           FASTEVAL_MODEL: gpt-4o  # Use best model for nightly
-        run: pytest tests/ -v --tb=long --junitxml=results.xml
+        run: >
+          pytest tests/ -v --tb=long
+          --junitxml=results.xml
+          --fe-output json:eval-results.json
+          --fe-output html:eval-report.html
+          --fe-summary
 
       - name: Upload results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: evaluation-results
-          path: results.xml
+          path: |
+            results.xml
+            eval-results.json
+            eval-report.html
 
       - name: Notify on failure
         if: failure()
@@ -280,6 +290,113 @@ nightly-full:
     FASTEVAL_MODEL: gpt-4o
   rules:
     - if: \$CI_PIPELINE_SOURCE == "schedule"
+```
+
+## Exporting Results
+
+Use `--fe-output` to export evaluation results as build artifacts. This gives you structured data for dashboards, trend tracking, and post-run analysis — without custom scripts.
+
+### JSON Artifacts
+
+```yaml
+# GitHub Actions
+- name: Run LLM tests
+  env:
+    OPENAI_API_KEY: \${{ secrets.OPENAI_API_KEY }}
+  run: pytest tests/ -m "slow" -v --fe-output json:eval-results.json --fe-summary
+
+- name: Upload evaluation results
+  if: always()
+  uses: actions/upload-artifact@v4
+  with:
+    name: eval-results
+    path: eval-results.json
+```
+
+```yaml
+# GitLab CI
+llm-tests:
+  extends: .python-setup
+  stage: eval-test
+  script:
+    - pytest tests/ -m "slow" -v --fe-output json:eval-results.json --fe-summary
+  artifacts:
+    paths:
+      - eval-results.json
+    when: always
+```
+
+### HTML Reports
+
+Generate a self-contained HTML report alongside JSON for human-readable results:
+
+```yaml
+- name: Run tests with reports
+  run: >
+    pytest tests/ -v
+    --fe-output json:eval-results.json
+    --fe-output html:eval-report.html
+    --fe-summary
+
+- name: Upload reports
+  if: always()
+  uses: actions/upload-artifact@v4
+  with:
+    name: eval-reports
+    path: |
+      eval-results.json
+      eval-report.html
+```
+
+### Score Trend Tracking with JSON Output
+
+The JSON export integrates directly with the score trend monitoring pattern. Instead of building custom result collection, use the structured output:
+
+```python
+# scripts/check_trends.py
+import json
+import sys
+
+def check_score_trends(results_file: str, baseline_file: str, threshold_drop: float = 0.1):
+    """Compare current eval results against a baseline."""
+    with open(results_file) as f:
+        current = json.load(f)
+
+    with open(baseline_file) as f:
+        baseline = json.load(f)
+
+    alerts = []
+    current_metrics = {m["metric_name"]: m for m in current["summary"]["metric_aggregates"]}
+    baseline_metrics = {m["metric_name"]: m for m in baseline["summary"]["metric_aggregates"]}
+
+    for name, current_m in current_metrics.items():
+        if name in baseline_metrics:
+            drop = baseline_metrics[name]["avg_score"] - current_m["avg_score"]
+            if drop > threshold_drop:
+                alerts.append(
+                    f"{name}: {baseline_metrics[name]['avg_score']:.3f} -> "
+                    f"{current_m['avg_score']:.3f} (dropped {drop:.3f})"
+                )
+
+    if alerts:
+        print("Score degradation detected:")
+        for alert in alerts:
+            print(f"  - {alert}")
+        sys.exit(1)
+
+    print(f"All scores within acceptable range (pass rate: {current['summary']['pass_rate']:.0%})")
+```
+
+```yaml
+- name: Run evaluations
+  run: pytest tests/ --fe-output json:eval-results.json
+
+- name: Check score trends
+  run: python scripts/check_trends.py eval-results.json baseline_scores.json
+
+- name: Update baseline (on main only)
+  if: github.ref == 'refs/heads/main'
+  run: cp eval-results.json baseline_scores.json
 ```
 
 ## Organizing Tests
@@ -434,47 +551,7 @@ jobs:
 
 ### Score Trend Monitoring
 
-Track scores over time to catch gradual degradation:
-
-```python
-# scripts/check_trends.py
-import json
-import sys
-
-def check_score_trends(current_results_file: str, threshold_drop: float = 0.1):
-    """Alert if scores dropped significantly from baseline."""
-    with open(current_results_file) as f:
-        current = json.load(f)
-
-    with open("baseline_scores.json") as f:
-        baseline = json.load(f)
-
-    alerts = []
-    for metric, current_score in current.items():
-        if metric in baseline:
-            baseline_score = baseline[metric]
-            if current_score < baseline_score - threshold_drop:
-                alerts.append(
-                    f"{metric}: {baseline_score:.2f} -> {current_score:.2f} "
-                    f"(dropped {baseline_score - current_score:.2f})"
-                )
-
-    if alerts:
-        print("Score degradation detected:")
-        for alert in alerts:
-            print(f"  - {alert}")
-        sys.exit(1)
-
-    print("All scores within acceptable range")
-
-if __name__ == "__main__":
-    check_score_trends(sys.argv[1])
-```
-
-```yaml
-- name: Check score trends
-  run: python scripts/check_trends.py test-results.json
-```
+Track scores over time to catch gradual degradation. Use `--fe-output json:results.json` to generate structured results, then compare against a baseline — see the [Exporting Results](#exporting-results) section for the full setup.
 
 ### Alerting on Failures
 

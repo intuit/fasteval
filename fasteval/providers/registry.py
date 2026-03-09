@@ -1,16 +1,13 @@
 """Provider registry for managing default LLM client."""
 
 import os
-from contextvars import ContextVar
 from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from fasteval.providers.base import LLMClient
 
-# Global default provider storage
-_default_provider: ContextVar[Optional["LLMClient"]] = ContextVar(
-    "fasteval_default_provider", default=None
-)
+# Global default provider storage (module-level to work across async contexts)
+_default_provider: Optional["LLMClient"] = None
 
 
 def set_default_provider(provider: "LLMClient") -> None:
@@ -25,7 +22,8 @@ def set_default_provider(provider: "LLMClient") -> None:
 
         set_default_provider(OpenAIClient(model="gpt-4o"))
     """
-    _default_provider.set(provider)
+    global _default_provider
+    _default_provider = provider
 
 
 def get_default_provider() -> "LLMClient":
@@ -42,11 +40,9 @@ def get_default_provider() -> "LLMClient":
     Raises:
         ValueError: If no provider configured and no env vars found
     """
-    provider = _default_provider.get()
-    if provider is not None:
-        return provider
+    if _default_provider is not None:
+        return _default_provider
 
-    # Auto-detect from environment
     return _create_provider_from_env()
 
 
@@ -76,7 +72,8 @@ def _create_provider_from_env() -> "LLMClient":
 
 def clear_default_provider() -> None:
     """Clear the default provider (mainly for testing)."""
-    _default_provider.set(None)
+    global _default_provider
+    _default_provider = None
 
 
 def create_provider_for_model(model_name: str) -> "LLMClient":
