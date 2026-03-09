@@ -91,18 +91,25 @@ jobs:
           sed -i "s/^version = .*/version = \"${{ steps.version.outputs.version }}\"/" \
             pyproject.toml
 
+      - name: Commit and push version bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git pull --rebase origin main
+          git add pyproject.toml
+          git commit -m "chore(release): bump core to ${{ steps.version.outputs.version }}"
+          git push origin HEAD:main
+
+      - name: Create and push tag
+        run: |
+          git tag "${{ steps.version.outputs.tag }}"
+          git push origin "${{ steps.version.outputs.tag }}"
+
       - name: Build package
         run: uv build
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
-
-      - name: Create and push tag
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag "${{ steps.version.outputs.tag }}"
-          git push origin "${{ steps.version.outputs.tag }}"
 
       - name: Purge shields.io badge cache
         run: |
@@ -137,6 +144,9 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Pull latest main
+        run: git pull --rebase origin main
+
       - name: Install uv
         uses: astral-sh/setup-uv@v4
 
@@ -156,6 +166,19 @@ jobs:
           sed -i "s/^version = .*/version = \"${{ steps.version.outputs.version }}\"/" \
             "${{ steps.version.outputs.pyproject_path }}"
 
+      - name: Commit and push version bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "${{ steps.version.outputs.pyproject_path }}"
+          git commit -m "chore(release): bump ${{ matrix.package }} to ${{ steps.version.outputs.version }}"
+          git push origin HEAD:main
+
+      - name: Create and push tag
+        run: |
+          git tag "${{ steps.version.outputs.tag }}"
+          git push origin "${{ steps.version.outputs.tag }}"
+
       - name: Build plugin
         working-directory: ${{ steps.version.outputs.build_dir }}
         run: uv build
@@ -164,13 +187,6 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: ${{ steps.version.outputs.build_dir }}/dist/
-
-      - name: Create and push tag
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag "${{ steps.version.outputs.tag }}"
-          git push origin "${{ steps.version.outputs.tag }}"
 
       - name: Purge shields.io badge cache
         run: |

@@ -1,0 +1,98 @@
+name: Release (Dry Run)
+
+on:
+  workflow_dispatch:
+    inputs:
+      package:
+        description: "Package to release"
+        required: true
+        type: choice
+        options:
+          - core
+          - langfuse
+          - observe
+          - langgraph
+      bump:
+        description: "Bump type"
+        required: true
+        type: choice
+        options:
+          - major
+          - minor
+          - patch
+          - alpha
+          - beta
+          - rc
+          - stable
+
+permissions:
+  contents: write
+
+jobs:
+  dry-run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Set up Python
+        run: uv python install 3.13
+
+      - name: Calculate next version
+        id: version
+        run: |
+          python scripts/bump_version.py \
+            --package "${{ inputs.package }}" \
+            --bump "${{ inputs.bump }}" \
+            >> "$GITHUB_OUTPUT"
+
+      - name: Show version info
+        run: |
+          echo "Package:         ${{ inputs.package }}"
+          echo "Current version: ${{ steps.version.outputs.current_version }}"
+          echo "Next version:    ${{ steps.version.outputs.version }}"
+          echo "Tag:             ${{ steps.version.outputs.tag }}"
+          echo "Pyproject path:  ${{ steps.version.outputs.pyproject_path }}"
+          echo "Build dir:       ${{ steps.version.outputs.build_dir }}"
+
+      - name: Update version in pyproject.toml
+        run: |
+          sed -i "s/^version = .*/version = \"${{ steps.version.outputs.version }}\"/" \
+            "${{ steps.version.outputs.pyproject_path }}"
+
+      - name: Show diff
+        run: git diff
+
+      - name: Commit to temporary branch
+        run: |
+          BRANCH="release-dry-run-${{ github.run_id }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add "${{ steps.version.outputs.pyproject_path }}"
+          git commit -m "chore(release): bump ${{ inputs.package }} to ${{ steps.version.outputs.version }} [dry run]"
+          git push origin "$BRANCH"
+          echo "BRANCH=$BRANCH" >> "$GITHUB_ENV"
+
+      - name: Build package
+        working-directory: ${{ steps.version.outputs.build_dir }}
+        run: uv build
+
+      - name: Verify build artifacts
+        run: |
+          echo "Build artifacts:"
+          ls -la "${{ steps.version.outputs.build_dir }}/dist/"
+
+      - name: DRY RUN - Skip PyPI publish
+        run: echo "DRY RUN: would publish to PyPI"
+
+      - name: DRY RUN - Skip tag push
+        run: echo "DRY RUN: would push tag ${{ steps.version.outputs.tag }}"
+
+      - name: Cleanup temporary branch
+        if: always()
+        run: git push origin --delete "$BRANCH" || true
