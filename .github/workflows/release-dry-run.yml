@@ -88,10 +88,12 @@ jobs:
           ls -la "${{ steps.version.outputs.build_dir }}/dist/"
 
       - name: DRY RUN - Skip PyPI publish
-        run: echo "DRY RUN: would publish to PyPI"
+        run: |
+          echo "DRY RUN: would publish to PyPI"
 
       - name: DRY RUN - Skip tag push
-        run: echo "DRY RUN: would push tag ${{ steps.version.outputs.tag }}"
+        run: |
+          echo "DRY RUN: would push tag ${{ steps.version.outputs.tag }}"
 
       - name: Cleanup temporary branch
         if: always()
