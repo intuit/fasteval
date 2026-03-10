@@ -441,6 +441,8 @@ def find_failures(results: List[EvalTask]) -> List[Dict]:
 
 ### Generating Reports
 
+> **Tip:** For pytest-based batch runs, you can use the built-in `--fe-output` flag to export results as JSON or HTML without writing custom reporting code. See [Output Collectors](/docs/advanced/output-collectors) for details.
+
 ```python
 # reporting.py
 import json
