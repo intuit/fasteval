@@ -9,6 +9,8 @@ sidebar:
     anchor: running-tests
   - title: Understanding Output
     anchor: understanding-output
+  - title: Exporting Results
+    anchor: exporting-results
   - title: Fixtures
     anchor: fixtures
   - title: CI/CD Integration
@@ -73,6 +75,23 @@ Evaluation Results:
     Reasoning: Response contains dismissive language that may
     be perceived as unhelpful or rude.
 ```
+
+### Exporting Results
+
+You can export evaluation results to JSON or HTML, or print a summary table to the console:
+
+```bash
+# Export as JSON
+pytest tests/ --fe-output json:results.json
+
+# Export as HTML report
+pytest tests/ --fe-output html:report.html
+
+# Print a summary table after the run
+pytest tests/ --fe-summary
+```
+
+For full details on output formats, custom reporters, and programmatic access, see [Output Collectors](/docs/advanced/output-collectors).
 
 ## Configuration
 
@@ -202,7 +221,14 @@ jobs:
       - name: Run evaluations
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        run: pytest tests/ -v --tb=short
+        run: pytest tests/ -v --tb=short --fe-output json:results.json --fe-summary
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: evaluation-results
+          path: results.json
 ```
 
 ### Separating Fast and Slow Tests
