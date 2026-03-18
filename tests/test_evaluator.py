@@ -1,10 +1,9 @@
 """Tests for fasteval.core.evaluator."""
 
 import json
+from typing import Any
 
 import pytest
-
-from typing import Any
 
 from fasteval.core.evaluator import (
     METRIC_REGISTRY,
