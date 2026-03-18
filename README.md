@@ -9,7 +9,7 @@
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Docs](https://img.shields.io/badge/docs-fasteval.io-blue)](https://fasteval.io)
 
-A **decorator-first LLM evaluation library** for testing AI agents and LLMs. Stack decorators to define evaluation criteria, run with pytest. [Read the docs](https://fasteval.io).
+A **decorator-first LLM evaluation library** for testing AI agents and LLMs. Stack decorators to define evaluation criteria, run with pytest. [Read the docs](https://fasteval.io/docs).
 
 <p align="center">
   <img src="hero-evaluation-journey.png" alt="The Evaluation Journey -- from non-deterministic LLM outputs to reliable engineering metrics" width="800">
