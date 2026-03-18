@@ -71,9 +71,9 @@
     <rect width="850" height="120" rx="12" fill="#0f172a" filter="url(#shadow)"/>
     <g transform="translate(30, 40)" font-family="monospace" font-size="12">
       <text y="0"><tspan fill="#94a3b8">import</tspan> <tspan fill="#f8fafc">fasteval</tspan> <tspan fill="#94a3b8">as</tspan> <tspan fill="#f8fafc">fe</tspan></text>
-      <text y="22"><tspan fill="#a78bfa">@fe.correctness</tspan><tspan fill="#fbbf24">(threshold=0.8)</tspan></text>
+      <text y="30"><tspan fill="#a78bfa">@fe.correctness</tspan><tspan fill="#fbbf24">(threshold=0.8)</tspan></text>
       <text y="44"><tspan fill="#60a5fa">def</tspan> <tspan fill="#f8fafc">test_my_agent():</tspan></text>
-      <text y="66"><tspan fill="#f8fafc">  fe.score(response, </tspan><tspan fill="#fbbf24">"Expected Output"</tspan><tspan fill="#f8fafc">)</tspan></text>
+      <text x="30" y="60"><tspan fill="#f8fafc">  fe.score(response, </tspan><tspan fill="#fbbf24">"Expected Output"</tspan><tspan fill="#f8fafc">)</tspan></text>
     </g>
 
     <rect x="620" y="25" width="200" height="32" rx="6" fill="#1e293b" stroke="#334155"/>

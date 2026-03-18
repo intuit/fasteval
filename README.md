@@ -7,19 +7,34 @@
 ![Python versions](https://img.shields.io/badge/python-3.10_|_3.11_|_3.12_|_3.13_|_3.14-blue?logo=python)
 [![CI](https://github.com/intuit/fasteval/actions/workflows/ci.yml/badge.svg)](https://github.com/intuit/fasteval/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Docs](https://img.shields.io/badge/docs-fasteval.io-blue)](https://fasteval.io)
 
-A **decorator-first LLM evaluation library** for testing AI agents and LLMs. Stack decorators to define evaluation criteria, run with pytest.
+A **decorator-first LLM evaluation library** for testing AI agents and LLMs. Stack decorators to define evaluation criteria, run with pytest. [Read the docs](https://fasteval.io).
+
+<p align="center">
+  <img src="hero-evaluation-journey.png" alt="The Evaluation Journey -- from non-deterministic LLM outputs to reliable engineering metrics" width="800">
+</p>
 
 ## Features
 
-- **Decorator-based metrics** -- stack `@fe.correctness`, `@fe.relevance`, `@fe.hallucination`, and 30+ more
+- **50+ built-in metrics** -- stack `@fe.correctness`, `@fe.relevance`, `@fe.hallucination`, and more
 - **pytest native** -- run evaluations with `pytest`, get familiar pass/fail output
 - **LLM-as-judge + deterministic** -- semantic LLM metrics alongside ROUGE, exact match, JSON schema, regex
+- **Custom criteria** -- `@fe.criteria("Is the response empathetic?")` for any evaluation you can describe in plain English
 - **Multi-modal** -- evaluate vision, audio, and image generation models
 - **Conversation metrics** -- context retention, topic drift, consistency for multi-turn agents
 - **RAG metrics** -- faithfulness, contextual precision, contextual recall, answer correctness
 - **Tool trajectory** -- verify agent tool calls, argument matching, call sequences
-- **Pluggable providers** -- OpenAI (default), Anthropic, Azure OpenAI, Ollama
+- **Reusable metric stacks** -- `@fe.stack()` to compose and reuse metric sets across tests
+- **Human-in-the-loop** -- `@fe.human_review()` for manual review alongside automated metrics
+- **Data-driven testing** -- `@fe.csv("test_data.csv")` to load test cases from CSV files
+- **Pluggable providers** -- OpenAI (default), Anthropic, or bring your own `LLMClient`
+
+## How It Works
+
+<p align="center">
+  <img src="fasteval-overview.png" alt="How fasteval works -- Decorate, Test, Score, Evaluate, Result" width="800">
+</p>
 
 ## Quick Start
 
@@ -96,6 +111,23 @@ def test_summary_quality():
     fe.score(actual_output=summary, expected_output=reference)
 ```
 
+### Custom Criteria
+
+```python
+@fe.criteria("Is the response empathetic and professional?")
+def test_tone():
+    response = agent("I'm frustrated with this product!")
+    fe.score(response)
+
+@fe.criteria(
+    "Does the response include a legal disclaimer?",
+    threshold=0.9,
+)
+def test_compliance():
+    response = agent("Can I break my lease?")
+    fe.score(response)
+```
+
 ### RAG Evaluation
 
 ```python
@@ -117,7 +149,8 @@ def test_rag_pipeline():
 def test_agent_tools():
     result = agent.run("Book a flight to Paris")
     fe.score(
-        actual_tools=result.tool_calls,
+        result.response,
+        tool_calls=result.tool_calls,
         expected_tools=[
             {"name": "search_flights", "args": {"destination": "Paris"}},
             {"name": "book_flight"},
@@ -125,24 +158,54 @@ def test_agent_tools():
     )
 ```
 
+### Multi-Turn Conversations
+
+```python
+@fe.context_retention(threshold=0.8)
+@fe.conversation([
+    {"query": "My name is Alice and I'm a vegetarian"},
+    {"query": "Suggest a restaurant for me"},
+    {"query": "What dietary restriction should they accommodate?"},
+])
+async def test_memory(query, expected, history):
+    response = await agent(query, history=history)
+    fe.score(response, input=query, history=history)
+```
+
 ### Metric Stacks
 
 ```python
+# Define a reusable metric stack
+@fe.stack()
 @fe.correctness(threshold=0.8, weight=2.0)
 @fe.relevance(threshold=0.7, weight=1.0)
 @fe.coherence(threshold=0.6, weight=1.0)
-def test_comprehensive():
+def quality_metrics():
+    pass
+
+# Apply to multiple tests
+@quality_metrics
+def test_chatbot():
     response = agent("Explain quantum computing")
     fe.score(response, expected_output=reference_answer, input="Explain quantum computing")
+
+@quality_metrics
+def test_summarizer():
+    summary = summarize(long_article)
+    fe.score(summary, expected_output=reference_summary)
 ```
 
 ## Plugins
 
 | Plugin | Description | Install |
 |--------|-------------|---------|
-| [fasteval-langfuse](./plugins/fasteval-langfuse/) | Evaluate Langfuse production traces with fasteval metrics | `pip install fasteval-langfuse` |
-| [fasteval-langgraph](./plugins/fasteval-langgraph/) | Test harness for LangGraph agents | `pip install fasteval-langgraph` |
-| [fasteval-observe](./plugins/fasteval-observe/) | Runtime monitoring with async sampling | `pip install fasteval-observe` |
+| [fasteval-langfuse](https://fasteval.io/docs/plugins/langfuse/overview) | Evaluate Langfuse production traces with fasteval metrics | `pip install fasteval-langfuse` |
+| [fasteval-langgraph](https://fasteval.io/docs/plugins/langgraph/overview) | Test harness for LangGraph agents | `pip install fasteval-langgraph` |
+| [fasteval-observe](https://fasteval.io/docs/plugins/observe/overview) | Runtime monitoring with async sampling | `pip install fasteval-observe` |
+
+<p align="center">
+  <img src="testing-pyramid-agents.png" alt="Testing Pyramid for Agents -- layered testing strategy with fasteval-langgraph" width="700">
+</p>
 
 ## Local Development
 
@@ -150,11 +213,14 @@ def test_comprehensive():
 # Install uv
 brew install uv
 
-# Create virtual environment and install dependencies
-uv sync --all-extras
+# Create virtual environment and install all dependencies
+uv sync --all-extras --group dev --group test
 
 # Run the test suite
 uv run tox
+
+# Run tests with coverage
+uv run pytest tests/ --cov=fasteval --cov-report=term -v
 
 # Format code
 uv run black .
@@ -166,17 +232,23 @@ uv run mypy .
 
 ## Documentation
 
-Full documentation is available in the [docs/](./docs/) directory, covering:
+Full documentation is available at **[fasteval.io](https://fasteval.io)**.
 
-- [Getting Started](./docs/getting-started/) -- installation, quickstart
-- [Core Concepts](./docs/core-concepts/) -- decorators, metrics, scoring, data sources
-- [LLM Metrics](./docs/llm-metrics/) -- correctness, relevance, hallucination, and more
-- [Deterministic Metrics](./docs/deterministic-metrics/) -- ROUGE, exact match, regex, JSON schema
-- [RAG Metrics](./docs/rag-metrics/) -- faithfulness, contextual precision/recall
-- [Conversation Metrics](./docs/conversation-metrics/) -- context retention, consistency
-- [Multi-Modal](./docs/multimodal/) -- vision, audio, image generation evaluation
-- [Plugins](./docs/plugins/) -- Langfuse, LangGraph, Observe
-- [API Reference](./docs/api-reference/) -- decorators, evaluator, models, score
+- [Getting Started](https://fasteval.io/docs/getting-started/quickstart) -- installation and quickstart guide
+- [Why FastEval](https://fasteval.io/docs/getting-started/introduction/why-fasteval) -- motivation and design philosophy
+- [Core Concepts](https://fasteval.io/docs/core-concepts/decorators) -- decorators, metrics, scoring, data sources
+- [Concepts](https://fasteval.io/docs/concepts/llm-as-judge) -- LLM-as-judge, scoring thresholds, evaluation strategies
+- [LLM Metrics](https://fasteval.io/docs/llm-metrics/correctness) -- correctness, relevance, hallucination, and more
+- [Deterministic Metrics](https://fasteval.io/docs/deterministic-metrics/exact-match) -- ROUGE, exact match, regex, JSON schema
+- [RAG Metrics](https://fasteval.io/docs/rag-metrics/faithfulness) -- faithfulness, contextual precision/recall
+- [Tool Trajectory](https://fasteval.io/docs/tool-tranjectory-metrics/tool-call-accuracy) -- tool call accuracy, sequence, argument matching
+- [Conversation Metrics](https://fasteval.io/docs/conversation-metrics/context-retention) -- context retention, consistency, topic drift
+- [Multi-Modal](https://fasteval.io/docs/multimodal/overview) -- vision, audio, image generation evaluation
+- [Human Review](https://fasteval.io/docs/human-review/overview) -- human-in-the-loop evaluation
+- [Cookbooks](https://fasteval.io/docs/cookbooks/rag-pipeline) -- RAG pipelines, CI/CD setup, prompt regression, production monitoring
+- [Plugins](https://fasteval.io/docs/plugins/langfuse/overview) -- Langfuse, LangGraph, Observe
+- [Advanced](https://fasteval.io/docs/advanced/custom-metrics) -- custom metrics, providers, output collectors, traces
+- [API Reference](https://fasteval.io/docs/api-reference/decorators) -- decorators, evaluator, models, score
 
 ## Contributing
 

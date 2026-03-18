@@ -30,10 +30,10 @@ Thank you for your interest in contributing to fasteval! Whether it's fixing a b
    cd fasteval
    ```
 
-2. Install dependencies:
+2. Install all dependencies (including dev and test groups):
 
    ```bash
-   uv sync --all-extras
+   uv sync --all-extras --group dev --group test
    ```
 
 3. Verify everything works:
@@ -97,8 +97,9 @@ uv run mypy .
 ## Testing
 
 - All new functionality must have corresponding tests
-- Maintain code coverage at or above 80%
+- Maintain code coverage at or above **85%**
 - Tests live in `tests/` for the core package and `plugins/*/tests/` for plugins
+- Coverage configuration is in `pyproject.toml` under `[tool.coverage.run]` and `[tool.coverage.report]` -- models, vision/audio/multimodal metrics, and other non-logic files are excluded from measurement
 
 Run tests:
 
@@ -106,17 +107,23 @@ Run tests:
 # Full test suite across Python versions
 uv run tox
 
-# Quick single-version test
-uv run pytest tests/ -v --cov=fasteval
+# Quick single-version test with coverage
+uv run --group test pytest tests/ --cov=fasteval --cov-report=term -v
 
 # Run a specific test
-uv run pytest tests/test_example.py::test_name -v
+uv run --group test pytest tests/test_example.py::test_name -v
+
+# Run plugin tests (from plugin directory)
+cd plugins/fasteval-langgraph
+uv run pytest tests/ -v
 ```
+
+> **Note**: The project includes a custom pytest plugin (`fasteval.testing.plugin`). When running tests with coverage, the plugin is automatically disabled via `addopts` in `pyproject.toml` (`-p no:fasteval`) to ensure accurate coverage tracking.
 
 ## Pull Request Process
 
 1. Ensure all tests pass and linting is clean.
-2. Update documentation if your change affects user-facing behavior (see `docs/`).
+2. Update documentation if your change affects user-facing behavior. Docs are published at [fasteval.io](https://fasteval.io) and source lives in `docs/`.
 3. Open a pull request against `main` with a clear description of your changes.
 4. A maintainer will review your PR, typically within a few business days.
 5. Once approved, a maintainer will merge your contribution.
@@ -129,6 +136,14 @@ uv run pytest tests/test_example.py::test_name -v
 - Adherence to the existing code style
 - Clear, focused commits (one logical change per commit)
 
+### Writing Custom Metrics
+
+If you're contributing a new metric, see the [Custom Metrics guide](https://fasteval.io/docs/advanced/custom-metrics) for the expected patterns. All metrics should:
+- Extend `Metric` (deterministic) or `BaseLLMMetric` (LLM-based)
+- Include a corresponding decorator in `fasteval/core/decorators.py`
+- Be registered in `METRIC_REGISTRY` in `fasteval/core/evaluator.py`
+- Have tests with >85% coverage
+
 ## Project Structure
 
 ```
@@ -137,16 +152,18 @@ fasteval/
 ├── metrics/        # Metric implementations (LLM, deterministic, conversation)
 ├── models/         # Pydantic models (EvalInput, EvalResult, MetricResult)
 ├── providers/      # LLM provider clients (OpenAI, Anthropic)
-├── cache/          # Caching utilities
+├── cache/          # In-memory LRU caching
+├── collectors/     # Result collection and reporting
+│   └── reporters/  # Output reporters (JSON, HTML)
 ├── utils/          # Helpers (formatting, JSON parsing, async)
-└── testing/        # pytest plugin
+└── testing/        # pytest plugin (--fe-output, --fe-summary, --no-interactive)
 
 plugins/
 ├── fasteval-langfuse/   # Langfuse production trace evaluation
 ├── fasteval-langgraph/  # LangGraph agent testing
 └── fasteval-observe/    # Runtime monitoring
 
-docs/                    # MDX documentation
+docs/                    # MDX documentation (published at fasteval.io)
 tests/                   # Core package tests
 ```
 

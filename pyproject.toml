@@ -31,7 +31,7 @@ dependencies = [
 [project.urls]
 Homepage = "https://github.com/intuit/fasteval"
 Repository = "https://github.com/intuit/fasteval"
-Documentation = "https://github.com/intuit/fasteval/tree/main/docs"
+Documentation = "https://fasteval.io"
 Issues = "https://github.com/intuit/fasteval/issues"
 Changelog = "https://github.com/intuit/fasteval/blob/main/CHANGELOG.md"
 
@@ -110,8 +110,39 @@ testpaths = [
     "tests",
 ]
 looponfailroots = ["fasteval", "tests"]
-addopts = "-p no:warnings -o log_cli=true --log-cli-level=INFO"
+addopts = "-p no:warnings -p no:fasteval -o log_cli=true --log-cli-level=INFO"
 asyncio_mode = "auto"
+
+[tool.coverage.run]
+source = ["fasteval"]
+omit = [
+    "fasteval/__init__.py",
+    "fasteval/models/*",
+    "fasteval/metrics/vision.py",
+    "fasteval/metrics/multimodal.py",
+    "fasteval/metrics/audio.py",
+    "fasteval/metrics/__init__.py",
+    "fasteval/utils/image.py",
+    "fasteval/utils/audio.py",
+    "fasteval/utils/terminal_ui.py",
+    "fasteval/utils/__init__.py",
+    "fasteval/providers/base.py",
+    "fasteval/providers/__init__.py",
+    "fasteval/collectors/__init__.py",
+    "fasteval/collectors/reporters/__init__.py",
+    "fasteval/collectors/reporters/base.py",
+    "fasteval/core/__init__.py",
+    "fasteval/cache/__init__.py",
+    "fasteval/testing/__init__.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "except ImportError",
+]
 
 [build-system]
 requires = ["uv_build>=0.10.0,<0.11.0"]
