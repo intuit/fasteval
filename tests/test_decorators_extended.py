@@ -280,7 +280,7 @@ class TestConversationDecorator:
             results.append({"query": query, "expected": expected, "history": history})
             return None
 
-        my_func()
+        my_func()  # type: ignore[call-arg]
         assert len(results) == 2
         assert results[0]["query"] == "Hello"
         assert results[0]["history"] == []
@@ -299,7 +299,7 @@ class TestConversationDecorator:
         async def my_func(query, expected, history):
             results.append({"query": query, "history": history})
 
-        await my_func()
+        await my_func()  # type: ignore[call-arg]
         assert len(results) == 2
 
     def test_conversation_preserves_metrics(self):

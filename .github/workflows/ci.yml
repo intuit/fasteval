@@ -54,13 +54,14 @@ jobs:
       - name: Install dependencies
         run: uv sync --all-extras --group test
 
-      - name: Run tests
+      - name: Run tests with coverage
         run: |
           uv run pytest tests/ \
             --color=yes \
             --cov=fasteval \
             --cov-report=term \
             --cov-report=xml:coverage.xml \
+            --cov-fail-under=85 \
             -v
 
       - name: Upload coverage
@@ -76,7 +77,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        plugin: [fasteval-langfuse, fasteval-langgraph, fasteval-observe]
+        include:
+          - plugin: fasteval-langfuse
+            module: fasteval_langfuse
+          - plugin: fasteval-langgraph
+            module: fasteval_langgraph
+          - plugin: fasteval-observe
+            module: fasteval_observe
     steps:
       - uses: actions/checkout@v4
 
@@ -93,6 +100,16 @@ jobs:
         working-directory: plugins/${{ matrix.plugin }}
         run: uv sync --all-extras --group dev
 
-      - name: Run plugin tests
+      - name: Install coverage tools
         working-directory: plugins/${{ matrix.plugin }}
-        run: uv run pytest tests/ -v --color=yes
+        run: uv pip install pytest-cov
+
+      - name: Run plugin tests with coverage
+        working-directory: plugins/${{ matrix.plugin }}
+        run: |
+          uv run pytest tests/ \
+            --color=yes \
+            --cov=${{ matrix.module }} \
+            --cov-report=term \
+            --cov-fail-under=85 \
+            -v

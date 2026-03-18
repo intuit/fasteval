@@ -50,4 +50,4 @@ class TestMetric:
 
     def test_abstract_cannot_instantiate(self):
         with pytest.raises(TypeError):
-            Metric(name="test")
+            Metric(name="test")  # type: ignore[abstract]

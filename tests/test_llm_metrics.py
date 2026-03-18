@@ -125,7 +125,7 @@ class TestBaseLLMMetric:
         )
         assert result.score == 0.0
         assert result.passed is False
-        assert "LLM error" in result.reasoning
+        assert result.reasoning is not None and "LLM error" in result.reasoning
 
     @pytest.mark.asyncio
     async def test_binary_scoring(self):

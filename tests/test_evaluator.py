@@ -4,6 +4,8 @@ import json
 
 import pytest
 
+from typing import Any
+
 from fasteval.core.evaluator import (
     METRIC_REGISTRY,
     Evaluator,
@@ -82,7 +84,7 @@ class TestEvaluatorCreateMetric:
             name="json_check",
             config={"pydantic_model": User},
         )
-        metric = evaluator._create_metric(config)
+        metric: Any = evaluator._create_metric(config)
         assert metric.model is User
 
     def test_criteria_metric(self):
@@ -93,7 +95,7 @@ class TestEvaluatorCreateMetric:
             config={"criteria": "Be formal"},
             llm_client=MockLLMClient(),
         )
-        metric = evaluator._create_metric(config)
+        metric: Any = evaluator._create_metric(config)
         assert metric.criteria == "Be formal"
 
     def test_criteria_with_evaluation_steps(self):
@@ -107,7 +109,7 @@ class TestEvaluatorCreateMetric:
             },
             llm_client=MockLLMClient(),
         )
-        metric = evaluator._create_metric(config)
+        metric: Any = evaluator._create_metric(config)
         assert metric.evaluation_steps == ["Step 1"]
 
     def test_instruction_following_metric(self):
@@ -118,7 +120,7 @@ class TestEvaluatorCreateMetric:
             config={"instructions": "Be concise"},
             llm_client=MockLLMClient(),
         )
-        metric = evaluator._create_metric(config)
+        metric: Any = evaluator._create_metric(config)
         assert metric.instructions == "Be concise"
 
     def test_with_llm_client(self):
@@ -129,7 +131,7 @@ class TestEvaluatorCreateMetric:
             name="corr",
             llm_client=client,
         )
-        metric = evaluator._create_metric(config)
+        metric: Any = evaluator._create_metric(config)
         assert metric._llm_client is client
 
     def test_with_llm_config_model(self):
@@ -139,7 +141,7 @@ class TestEvaluatorCreateMetric:
             name="corr",
             llm_config={"model": "gpt-4o"},
         )
-        metric = evaluator._create_metric(config)
+        metric: Any = evaluator._create_metric(config)
         assert metric._model_override == "gpt-4o"
 
 
@@ -254,7 +256,7 @@ class TestEvaluatorEvaluateMetric:
         )
         assert result.score == 0.0
         assert result.passed is False
-        assert "metric broke" in result.reasoning
+        assert result.reasoning is not None and "metric broke" in result.reasoning
 
 
 # ── Evaluator.evaluate_batch ─────────────────────────────────────────────────
