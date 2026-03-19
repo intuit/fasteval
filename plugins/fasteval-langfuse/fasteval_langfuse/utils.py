@@ -57,7 +57,7 @@ def parse_time_range(time_range: str) -> tuple[Optional[str], Optional[str]]:
     Returns:
         Tuple of (from_timestamp, to_timestamp) in ISO 8601 format
     """
-    from datetime import datetime, timedelta
+    from datetime import datetime, timedelta, timezone
 
     if not time_range:
         return None, None
@@ -78,8 +78,10 @@ def parse_time_range(time_range: str) -> tuple[Optional[str], Optional[str]]:
             else:
                 raise ValueError(f"Invalid time range format: {time_range}")
 
-            to_timestamp = datetime.utcnow().isoformat() + "Z"
-            from_timestamp = (datetime.utcnow() - delta).isoformat() + "Z"
+            to_timestamp = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+            from_timestamp = (
+                (datetime.now(timezone.utc) - delta).isoformat().replace("+00:00", "Z")
+            )
             return from_timestamp, to_timestamp
 
     # Handle "YYYY-MM-DD to YYYY-MM-DD" format

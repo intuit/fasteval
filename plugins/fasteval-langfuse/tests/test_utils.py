@@ -45,6 +45,43 @@ def test_parse_time_range_to_format():
     assert to_ts == "2026-02-05T00:00:00Z"
 
 
+def test_parse_time_range_empty():
+    """Test empty time range returns None."""
+    from_ts, to_ts = parse_time_range("")
+    assert from_ts is None
+    assert to_ts is None
+
+
+def test_parse_time_range_invalid():
+    """Test invalid time range format raises ValueError."""
+    import pytest
+
+    with pytest.raises(ValueError, match="Unsupported"):
+        parse_time_range("invalid_format")
+
+
+def test_parse_time_range_invalid_duration():
+    """Test invalid duration suffix raises ValueError."""
+    import pytest
+
+    with pytest.raises(ValueError, match="Invalid time range"):
+        parse_time_range("last_5m")
+
+
+def test_extract_context_non_list_value():
+    """Test context extraction with non-list, non-string value."""
+    trace = {"metadata": {"context": 42}}
+    context = extract_context_from_trace(trace)
+    assert context == ["42"]
+
+
+def test_extract_context_none_value():
+    """Test context extraction skips None values."""
+    trace = {"metadata": {"context": None, "retrieved_docs": ["doc1"]}}
+    context = extract_context_from_trace(trace)
+    assert context == ["doc1"]
+
+
 def test_format_sampling_stats():
     """Test sampling statistics formatting."""
     stats = format_sampling_stats(200, 1000, "RandomSamplingStrategy")
@@ -52,3 +89,9 @@ def test_format_sampling_stats():
     assert "1,000" in stats
     assert "20.0%" in stats
     assert "RandomSamplingStrategy" in stats
+
+
+def test_format_sampling_stats_zero_total():
+    """Test formatting with zero total traces."""
+    stats = format_sampling_stats(0, 0, "NoSamplingStrategy")
+    assert "0.0%" in stats
