@@ -135,7 +135,7 @@ name = "exceptiongroup"
 version = "1.3.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
+    { name = "typing-extensions", marker = "python_full_version < '3.11'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/50/79/66800aadf48771f6b62f7eb014e352e5d06856655206165d775e675a02c9/exceptiongroup-1.3.1.tar.gz", hash = "sha256:8b412432c6055b0b7d14c310000ae93352ed6754f70fa8f7c34141f91c4e3219", size = 30371, upload-time = "2025-11-21T23:01:54.787Z" }
 wheels = [
@@ -144,7 +144,7 @@ wheels = [
 
 [[package]]
 name = "fasteval-core"
-version = "1.0.0a1"
+version = "1.2.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "openai" },
@@ -152,14 +152,14 @@ dependencies = [
     { name = "pytest" },
     { name = "rouge-score" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/09/78/29c4e9b1a74b4cfdd07407d06dcf7d62037df39ac566a82a00ec91bfb6dd/fasteval_core-1.0.0a1.tar.gz", hash = "sha256:dd2f84ca3f3f2e1b39c109086dcb5b740ba3abee851bb4c9adca4a5b269230c0", size = 78220, upload-time = "2026-02-12T19:12:33.07Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/5d/04/3f64df9be862b505d25cbf412332038c97b40b19e9f895a9b4aa74ae46a2/fasteval_core-1.2.1.tar.gz", hash = "sha256:b9a1009fb31b06cddcf21730391212587910e033bfe500562306c8ee99f60ae7", size = 87681, upload-time = "2026-03-20T11:51:30.019Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/bf/25/06b36cebd8192a15385fac77a0b832dbb2a21ad0d92ccf4d1f5212f7df30/fasteval_core-1.0.0a1-py3-none-any.whl", hash = "sha256:8dc0c5901dc7a1df65ce4c7766c10e0de404bf53ce1100fb31c93bf5c9e0d98a", size = 95801, upload-time = "2026-02-12T19:12:30.106Z" },
+    { url = "https://files.pythonhosted.org/packages/43/70/2fcf5fb78551e707bc730f64c52d537501ca0b8c549e96ee52eb7a92b12d/fasteval_core-1.2.1-py3-none-any.whl", hash = "sha256:b832f6f83ce7b78711feb1626781d25e172c4f65adcf43e5c633862bf19d5549", size = 108703, upload-time = "2026-03-20T11:51:28.724Z" },
 ]
 
 [[package]]
 name = "fasteval-observe"
-version = "1.0.0a1"
+version = "2.1.2"
 source = { editable = "." }
 dependencies = [
     { name = "fasteval-core" },
@@ -177,7 +177,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "fasteval-core", specifier = ">=1.0.0a1" },
+    { name = "fasteval-core", specifier = ">=1.2.1" },
     { name = "pydantic", specifier = ">=2.0.0" },
 ]
 
