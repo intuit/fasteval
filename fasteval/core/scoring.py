@@ -252,6 +252,8 @@ def score(
     Raises:
         EvaluationFailedError: If any metric fails its threshold
     """
+    __tracebackhide__ = True
+
     # Convert tool_calls to ToolCall models if needed
     normalized_tool_calls: List[ToolCall] = []
     if tool_calls:
