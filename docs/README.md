@@ -221,7 +221,7 @@ node scripts/generate-manifest.js
     "core-concepts",
     "llm-metrics",
     "rag-metrics",
-    "tool-tranjectory-metrics",
+    "tool-trajectory-metrics",
     "deterministic-metrics",
     "conversation-metrics",
     "human-review",
