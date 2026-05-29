@@ -241,7 +241,7 @@ Full documentation is available at **[fasteval.io](https://fasteval.io)**.
 - [LLM Metrics](https://fasteval.io/docs/llm-metrics/correctness) -- correctness, relevance, hallucination, and more
 - [Deterministic Metrics](https://fasteval.io/docs/deterministic-metrics/exact-match) -- ROUGE, exact match, regex, JSON schema
 - [RAG Metrics](https://fasteval.io/docs/rag-metrics/faithfulness) -- faithfulness, contextual precision/recall
-- [Tool Trajectory](https://fasteval.io/docs/tool-tranjectory-metrics/tool-call-accuracy) -- tool call accuracy, sequence, argument matching
+- [Tool Trajectory](https://fasteval.io/docs/tool-trajectory-metrics/tool-call-accuracy) -- tool call accuracy, sequence, argument matching
 - [Conversation Metrics](https://fasteval.io/docs/conversation-metrics/context-retention) -- context retention, consistency, topic drift
 - [Multi-Modal](https://fasteval.io/docs/multimodal/overview) -- vision, audio, image generation evaluation
 - [Human Review](https://fasteval.io/docs/human-review/overview) -- human-in-the-loop evaluation
