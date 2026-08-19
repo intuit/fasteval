@@ -4,9 +4,11 @@ import json
 
 import pytest
 
+from fasteval import metric
 from fasteval.metrics.conversation import (
     ConsistencyMetric,
     ContextRetentionMetric,
+    SkillQualityMetric,
     TopicDriftMetric,
 )
 from fasteval.models.evaluation import EvalInput
@@ -103,3 +105,20 @@ class TestTopicDriftMetric:
         )
         assert result.score == 0.7
         assert result.passed is True
+
+
+class TestSkillQualityMetric:
+    def test_defaults(self):
+        metric = SkillQualityMetric(llm_client=MockLLMClient())
+        assert metric.threshold == 0.8
+        assert metric.name == "skill_quality"
+
+    def test_get_evaluation_prompt(self):
+        eval_input = EvalInput(
+            history=[
+                {"role": "user", "content": "Let's discuss cooking"},
+                {"role": "assistant", "content": "Sure, what dish?"},
+            ]
+        )
+        metric = SkillQualityMetric(llm_client=MockLLMClient())
+        metric.get_evaluation_prompt(eval_input)

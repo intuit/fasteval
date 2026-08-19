@@ -81,6 +81,7 @@ from fasteval.core.decorators import (  # LLM Metrics; Quality Metrics; RAG Metr
     relevance,
     rouge,
     safety_check,
+    skill_quality,
     speaker_diarization,
     stack,
     table_extraction,
@@ -214,7 +215,7 @@ __all__ = [
     "context_retention",
     "consistency",
     "topic_drift",
-    "metric",
+    "skill_quality" "metric",
     # Code-as-Judge
     "judge",
     # Data Decorators

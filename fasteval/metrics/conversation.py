@@ -324,3 +324,117 @@ Step 5: Assess if any topic shifts are appropriate or inappropriate
 ## OUTPUT FORMAT
 Respond with JSON only:
 {{"score": <0.0 to 1.0>, "reasoning": "<identify main topic, assess response alignment, note any drift or tangents>"}}"""
+
+
+class SkillQualityMetric(BaseLLMMetric):
+    def __init__(
+        self,
+        skill: str,
+        name: str = "skill_quality",
+        threshold: float = 0.8,
+        additional_skill_eval_criteria: str | None = None,
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(name=name, threshold=threshold, **kwargs)
+        self.skill = skill
+        self.additional_skill_eval_criteria = additional_skill_eval_criteria
+
+    def get_evaluation_prompt(self, eval_input: EvalInput) -> str:
+
+        history_str = ""
+        if eval_input.history:
+            history_str = "\n".join(
+                f"**{turn.get('role', 'unknown').title()}**: {turn.get('content', '')}"
+                for turn in eval_input.history
+            )
+            history_str = f"\n{history_str}\n"
+        expected_output = eval_input.expected_output or "N/A"
+        skill = self.skill
+        specialized_criteria = self.additional_skill_eval_criteria or "N/A"
+
+        return f"""
+<conversation_history>
+{history_str}
+</conversation_history>
+ 
+<expected_output>
+{expected_output}
+</expected_output>
+ 
+<skill>
+{skill}
+</skill>
+ 
+<specialized_criteria>
+{specialized_criteria}
+</specialized_criteria>
+ 
+You are a judge evaluating whether a SKILL (packaged metadata/instructions/resources) is
+well designed — not whether the agent using it is competent. Your job is to find defects
+in the SKILL for iterative improvement, not to grade the agent.
+ 
+## Root-cause rule (applies to every criterion below)
+When the agent's behavior falls short, decide WHY before scoring:
+- Traces back to something missing/ambiguous/wrong in the skill → skill defect → score 0.
+- Skill was clear and adequate, agent just ignored/misread/hallucinated anyway → agent
+  failure, not the skill's fault → score 1 (note it in reasoning so it isn't mistaken for
+  a needed skill fix).
+- If you cannot point to specific text in the skill that explains the failure, default to
+  1 and say so — do not assume a skill defect without textual evidence.
+ 
+## Skill loading model (judge accordingly)
+- Metadata (name + description): visible to the agent at ALL times, before
+  any decision to use the skill.
+- Instructions (full SKILL.md body): loaded only once the skill is activated.
+- Resources (files under scripts/, references/, assets/): loaded on demand, only if the
+  task needs that depth.
+Judge each criterion against the layer the agent actually had access to at that point.
+ 
+## Input format (data supplied above, inside tags)
+- <conversation_history>: conversation between user and agent.
+- <expected_output> (optional): reference conversation showing correct invocation and/or
+  correct final output.
+- <skill>: skill under test, parseable into metadata / instructions / resources.
+- <specialized_criteria> (optional): additional use-case-specific criteria, one per entry.
+ 
+Evaluate each criterion independently. Do NOT sum or average scores yourself — return a
+structured verdict per criterion; aggregation happens outside this prompt.
+ 
+## Criteria
+ 
+1. SKILL_MATCHING (always applicable) — judges the metadata layer only
+   Using ONLY name + description, was the skill discoverable for this user intent, and (if
+   relevant) activated without unnecessary delay?
+   - 1: description clearly matched intent and skill was activated promptly, OR skill was
+     irrelevant and correctly not activated, OR description was clear/adequate but the
+     agent still missed or delayed activation (agent-side miss, not a metadata defect).
+   - 0: description was vague, missing relevant keywords, misleading, or overly broad, and
+     THAT is what caused the wrong decision (missed, late, or false-positive activation).
+ 
+2. SKILL_FOLLOWING (applicable only if the skill was activated) — judges instructions +
+   resources
+   Did the agent's actions align with the skill's instructions, including resource-loading
+   discipline (loading a resource only when the task needed that depth; not skipping one
+   it was told to load; not hallucinating detail a resource would have supplied)?
+   - 1: agent followed instructions and handled resources correctly, OR agent deviated but
+     the instructions/resources were clear and adequate for the situation (agent's fault,
+     not the skill's).
+   - 0: instructions were silent, ambiguous, contradictory, or a needed resource was
+     missing for a situation that actually came up, and that gap caused the deviation.
+   - Not applicable if skill was never activated — mark applicable:false, do not score 0.
+ 
+3. EXPECTED_OUTPUT_MATCH (applicable only if expected_output is provided)
+   Does the actual conversation's outcome match the expected one in substance (key
+   facts/decisions/deliverable), not verbatim?
+   - 1: matches on key elements. 0: missing/contradicts key elements.
+ 
+4+. SPECIALIZED CRITERIA — evaluate exactly as described in the input, one per entry.
+ 
+## Output format — JSON only, no markdown fences:
+{{
+  "criteria": [
+    {{"name": "SKILL_MATCHING", "applicable": true, "score": 1, "reasoning": "..."}},
+    {{"name": "SKILL_FOLLOWING", "applicable": false, "score": null, "reasoning": "skill never activated"}}
+  ]
+}}
+"""
