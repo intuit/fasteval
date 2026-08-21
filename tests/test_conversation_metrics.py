@@ -109,7 +109,7 @@ class TestTopicDriftMetric:
 
 class TestSkillQualityMetric:
     def test_defaults(self):
-        metric = SkillQualityMetric(llm_client=MockLLMClient())
+        metric = SkillQualityMetric(skill="Sample skill", llm_client=MockLLMClient())
         assert metric.threshold == 0.8
         assert metric.name == "skill_quality"
 
@@ -120,5 +120,5 @@ class TestSkillQualityMetric:
                 {"role": "assistant", "content": "Sure, what dish?"},
             ]
         )
-        metric = SkillQualityMetric(llm_client=MockLLMClient())
+        metric = SkillQualityMetric(skill="Sample skill", llm_client=MockLLMClient())
         metric.get_evaluation_prompt(eval_input)
