@@ -215,7 +215,8 @@ __all__ = [
     "context_retention",
     "consistency",
     "topic_drift",
-    "skill_quality" "metric",
+    "skill_quality",
+    "metric",
     # Code-as-Judge
     "judge",
     # Data Decorators
