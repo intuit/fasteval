@@ -8,8 +8,11 @@ Based on multi-turn dialogue evaluation research including:
 
 from typing import Any, Optional
 
-from fasteval.metrics.llm import BaseLLMMetric
+from pydantic import BaseModel, Field
+
+from fasteval.metrics.llm import BaseLLMMetric, LLMEvalResponse
 from fasteval.models.evaluation import EvalInput
+from fasteval.utils.json_parsing import parse_json_response
 
 
 class ContextRetentionMetric(BaseLLMMetric):
@@ -326,6 +329,21 @@ Respond with JSON only:
 {{"score": <0.0 to 1.0>, "reasoning": "<identify main topic, assess response alignment, note any drift or tangents>"}}"""
 
 
+class SkillQualityCriteria(BaseModel):
+    """A single criterion in a skill-quality evaluation response."""
+
+    name: str
+    applicable: bool
+    score: float | None = Field(default=None, ge=0.0, le=1.0)
+    reasoning: str = ""
+
+
+class SkillQualityResponse(BaseModel):
+    """Structured response returned by the skill-quality evaluator."""
+
+    criteria: list[SkillQualityCriteria]
+
+
 class SkillQualityMetric(BaseLLMMetric):
     def __init__(
         self,
@@ -338,6 +356,31 @@ class SkillQualityMetric(BaseLLMMetric):
         super().__init__(name=name, threshold=threshold, **kwargs)
         self.skill = skill
         self.additional_skill_eval_criteria = additional_skill_eval_criteria
+
+    def _parse_response(self, response: str) -> LLMEvalResponse:
+        parsed = parse_json_response(response, SkillQualityResponse)
+        applicable_criteria = [
+            criterion for criterion in parsed.criteria if criterion.applicable
+        ]
+        if not applicable_criteria:
+            raise ValueError(
+                "Skill quality response must contain an applicable criterion"
+            )
+        if any(criterion.score is None for criterion in applicable_criteria):
+            raise ValueError("Applicable skill quality criteria must include a score")
+
+        scores = [
+            criterion.score
+            for criterion in applicable_criteria
+            if criterion.score is not None
+        ]
+        reasoning = "\n".join(
+            f"{criterion.name}: {criterion.reasoning}" for criterion in parsed.criteria
+        )
+        return LLMEvalResponse(
+            score=sum(scores) / len(scores),
+            reasoning=reasoning,
+        )
 
     def get_evaluation_prompt(self, eval_input: EvalInput) -> str:
 
