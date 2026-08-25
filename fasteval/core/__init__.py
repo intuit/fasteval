@@ -16,6 +16,7 @@ from fasteval.core.decorators import (
     metric,
     relevance,
     rouge,
+    skill_quality,
     topic_drift,
     toxicity,
     traces,
@@ -41,6 +42,7 @@ __all__ = [
     "context_retention",
     "consistency",
     "topic_drift",
+    "skill_quality",
     # Data Decorators
     "csv",
     "conversation",

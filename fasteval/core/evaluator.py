@@ -11,6 +11,7 @@ from fasteval.metrics.base import Metric
 from fasteval.metrics.conversation import (
     ConsistencyMetric,
     ContextRetentionMetric,
+    SkillQualityMetric,
     TopicDriftMetric,
 )
 from fasteval.metrics.deterministic import (  # Tool Trajectory Metrics
@@ -82,6 +83,7 @@ METRIC_REGISTRY: Dict[str, Type[Metric]] = {
     "context_retention": ContextRetentionMetric,
     "consistency": ConsistencyMetric,
     "topic_drift": TopicDriftMetric,
+    "skill_quality": SkillQualityMetric,
 }
 
 # Register vision metrics if available

@@ -3,6 +3,7 @@
 from fasteval.utils.async_helpers import run_async
 from fasteval.utils.formatting import format_evaluation_report
 from fasteval.utils.json_parsing import extract_json_from_text, parse_json_response
+from fasteval.utils.skill_parsing import flatten_skill_folder
 from fasteval.utils.terminal_ui import (
     HumanScore,
     is_interactive,
@@ -24,4 +25,5 @@ __all__ = [
     "prompt_human_review",
     "render_human_review",
     "render_conversation_history",
+    "flatten_skill_folder",
 ]

@@ -4,17 +4,19 @@ import json
 
 import pytest
 
+from fasteval import metric
 from fasteval.metrics.conversation import (
     ConsistencyMetric,
     ContextRetentionMetric,
+    SkillQualityMetric,
     TopicDriftMetric,
 )
 from fasteval.models.evaluation import EvalInput
 
 
 class MockLLMClient:
-    def __init__(self, score=0.85):
-        self.response = json.dumps(
+    def __init__(self, score=0.85, response=None):
+        self.response = response or json.dumps(
             {"score": score, "reasoning": "Mock conversation eval"}
         )
 
@@ -103,3 +105,79 @@ class TestTopicDriftMetric:
         )
         assert result.score == 0.7
         assert result.passed is True
+
+
+class TestSkillQualityMetric:
+    def test_defaults(self):
+        metric = SkillQualityMetric(skill="Sample skill", llm_client=MockLLMClient())
+        assert metric.threshold == 0.8
+        assert metric.name == "skill_quality"
+
+    def test_get_evaluation_prompt(self):
+        eval_input = EvalInput(
+            history=[
+                {"role": "user", "content": "Let's discuss cooking"},
+                {"role": "assistant", "content": "Sure, what dish?"},
+            ]
+        )
+        metric = SkillQualityMetric(skill="Sample skill", llm_client=MockLLMClient())
+        metric.get_evaluation_prompt(eval_input)
+
+    def test_parse_response_averages_applicable_criteria(self):
+        metric = SkillQualityMetric(skill="Sample skill", llm_client=MockLLMClient())
+        response = (
+            '{"criteria": ['
+            '{"name": "SKILL_MATCHING", "applicable": true, "score": 1, '
+            '"reasoning": "Metadata matched."},'
+            '{"name": "SKILL_FOLLOWING", "applicable": true, "score": 0, '
+            '"reasoning": "Instructions were ambiguous."},'
+            '{"name": "EXPECTED_OUTPUT_MATCH", "applicable": false, "score": null, '
+            '"reasoning": "No expected output."}'
+            "]}"
+        )
+
+        parsed = metric._parse_response(response)
+
+        assert parsed.score == 0.5
+        assert parsed.reasoning == (
+            "SKILL_MATCHING: Metadata matched.\n"
+            "SKILL_FOLLOWING: Instructions were ambiguous.\n"
+            "EXPECTED_OUTPUT_MATCH: No expected output."
+        )
+
+    @pytest.mark.asyncio
+    async def test_evaluate_method(self):
+        response = (
+            '{"criteria": [{"name": "SKILL_MATCHING", "applicable": true, '
+            '"score": 1, "reasoning": "Metadata matched."}]}'
+        )
+        metric = SkillQualityMetric(
+            skill="Sample skill",
+            llm_client=MockLLMClient(response=response),
+        )
+
+        result = await metric.evaluate(EvalInput(history=[]))
+
+        assert result.score == 1.0
+        assert result.passed is True
+
+    @pytest.mark.parametrize(
+        ("response", "message"),
+        [
+            (
+                '{"criteria": [{"name": "SKILL_MATCHING", "applicable": true, '
+                '"score": null, "reasoning": ""}]}',
+                "Applicable skill quality criteria must include a score",
+            ),
+            (
+                '{"criteria": [{"name": "SKILL_FOLLOWING", "applicable": false, '
+                '"score": null, "reasoning": ""}]}',
+                "Skill quality response must contain an applicable criterion",
+            ),
+        ],
+    )
+    def test_parse_response_rejects_invalid_criteria(self, response, message):
+        metric = SkillQualityMetric(skill="Sample skill", llm_client=MockLLMClient())
+
+        with pytest.raises(ValueError, match=message):
+            metric._parse_response(response)

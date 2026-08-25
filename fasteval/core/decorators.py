@@ -1006,6 +1006,31 @@ def topic_drift(
     )
 
 
+def skill_quality(
+    threshold: float = 0.7,
+    weight: float = 1.0,
+    name: Optional[str] = None,
+    skill: Optional[str] = None,
+    additional_skill_eval_criteria: Optional[str] = None,
+    llm_client: Optional[LLMClient] = None,
+    model: Optional[str] = None,
+    **config: Any,
+) -> Callable[[F], F]:
+
+    return _metric_decorator_factory(
+        "skill_quality", "skill_quality", default_threshold=0.7
+    )(
+        threshold=threshold,
+        weight=weight,
+        name=name,
+        llm_client=llm_client,
+        model=model,
+        skill=skill,
+        additional_skill_eval_criteria=additional_skill_eval_criteria,
+        **config,
+    )
+
+
 # === Vision Metric Decorators ===
 
 
