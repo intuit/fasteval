@@ -136,6 +136,21 @@ Score [1-5] or [p]ass/[f]ail/[s]kip:
 
 In automated pipelines, human review gets automatically skipped. You can also disable it explicitly.
 
+### Using the fasteval CLI
+
+`fasteval run` turns review prompts off when you pass `--ci`, when the `CI` environment variable is set to a true value (as on GitHub Actions), or when the [profile](/docs/cli/profiles) sets `review_prompts = false`:
+
+```bash
+fasteval run --ci
+```
+
+```toml
+[tool.fasteval.profiles.ci]
+review_prompts = false
+```
+
+Runs started from the [local UI](/docs/cli/local-ui) never prompt. Otherwise, `fasteval run` from a terminal asks for reviews in the terminal as usual, while the browser shows the run.
+
 ### Using pytest flag
 
 ```bash
@@ -158,6 +173,10 @@ if is_interactive():
 else:
     print("Running in CI/CD mode - human review skipped")
 ```
+
+### Finding Evals with Human Review
+
+`fasteval list` marks every eval that has `@fe.human_review`, and the UI shows the reviewer's score and input on the case's Overview tab, or "skipped" when the prompt didn't run.
 
 ## Accessing Human Review Results
 

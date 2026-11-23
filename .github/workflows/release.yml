@@ -79,6 +79,21 @@ jobs:
       - name: Set up Python
         run: uv python install 3.13
 
+      # Build the UI before bumping/tagging so a broken UI aborts the release
+      # before anything is pushed. The bundle is gitignored; only CI builds it.
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+
+      - name: Build UI bundle
+        working-directory: ui
+        run: |
+          npm ci
+          npm run build
+
       - name: Calculate next version
         id: version
         run: |
@@ -108,6 +123,9 @@ jobs:
 
       - name: Build package
         run: uv build
+
+      - name: Check wheel contains the UI bundle
+        run: uv run --no-project python scripts/check_wheel_ui.py dist/
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1

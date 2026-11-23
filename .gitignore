@@ -36,3 +36,7 @@ dist/
 
 # Project memory (local dev context)
 .memory/*
+
+# fasteval UI: built bundle is generated in CI (cd ui && npm ci && npm run build)
+fasteval/ui/static/dist/
+ui/node_modules/

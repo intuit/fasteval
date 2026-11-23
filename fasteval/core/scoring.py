@@ -1,6 +1,7 @@
 """Score and evaluate API for fasteval."""
 
 import inspect
+import os
 from contextvars import ContextVar
 from datetime import datetime
 from pathlib import Path
@@ -149,12 +150,27 @@ def _get_human_review_config_from_caller() -> Optional[Dict[str, Any]]:
 
 
 def _get_test_name_from_caller() -> str:
-    """Get the name of the calling test function."""
+    """
+    Get the name of the calling test function.
+
+    Under pytest, parametrized cases keep their id (``test_x[case-1]``) so
+    results for different cases can be told apart in summaries and reports.
+    """
     for frame_info in inspect.stack():
         func_name = frame_info.function
         if func_name.startswith("test_"):
-            return func_name
+            return _with_pytest_case_id(func_name)
     return "unknown_test"
+
+
+def _with_pytest_case_id(func_name: str) -> str:
+    """Add the parametrize id from PYTEST_CURRENT_TEST when it matches."""
+    current = os.environ.get("PYTEST_CURRENT_TEST", "")
+    # Format: "path/to/test_x.py::Class::test_name[id] (call)"
+    node_name = current.rsplit(" (", 1)[0].rsplit("::", 1)[-1]
+    if node_name.startswith(func_name + "["):
+        return node_name
+    return func_name
 
 
 def score(
@@ -425,3 +441,29 @@ def _run_human_review(
     )
 
     return updated_result
+
+
+def score_input(
+    eval_input: EvalInput,
+    metrics: List[MetricConfig],
+    *,
+    test_name: str,
+    human_review_config: Optional[Dict[str, Any]] = None,
+) -> EvalResult:
+    """
+    Evaluate an EvalInput against explicit metrics (no caller-frame lookup).
+
+    Same behavior as :func:`score`: the result is collected for reports,
+    and EvaluationFailedError is raised when it fails. Used by ``@fe.traces``.
+    """
+    result = run_async(_evaluator.evaluate(eval_input, metrics))
+    if human_review_config:
+        result = _run_human_review(result, eval_input, human_review_config)
+
+    from fasteval.collectors.collector import get_collector
+
+    get_collector().collect(result, test_name=test_name)
+    if not result.passed:
+        report = format_evaluation_report(test_name, [result], [eval_input])
+        raise EvaluationFailedError(report, result)
+    return result

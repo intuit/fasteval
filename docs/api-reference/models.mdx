@@ -54,7 +54,22 @@ metric_result.score  # float
 metric_result.passed  # bool
 metric_result.threshold  # float
 metric_result.reasoning  # str
+metric_result.details  # dict: metric-specific details
 ```
+
+For LLM-judged metrics, `details["judge_calls"]` lists every call made to the judge, one entry per attempt:
+
+```python
+{
+    "judge": {"provider": "OpenAIClient", "model": "gpt-4o-mini", "temperature": 0.0},
+    "messages": [{"role": "user", "content": "..."}],  # the prompt sent
+    "response": "{\"score\": 0.9, \"reasoning\": \"...\"}",  # raw response, if the call returned
+    "error": "TimeoutError: ...",  # only if the call raised
+    "latency_ms": 812.4,
+}
+```
+
+Long text is truncated to 20,000 characters and image or audio content is omitted. Metrics scored by a [prompt judge](/docs/cli/prompt-judges) (directly or through a `--judge` swap) also have `details["prompt_judge"]` with the judge's `name` and `based_on`.
 
 ## MetricConfig
 

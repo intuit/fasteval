@@ -5,6 +5,7 @@ import functools
 import inspect
 from pathlib import Path
 from typing import (
+    TYPE_CHECKING,
     Any,
     Callable,
     Dict,
@@ -21,6 +22,9 @@ from pydantic import BaseModel
 from fasteval.models.config import MetricConfig
 from fasteval.models.evaluation import EvalInput
 from fasteval.providers.base import LLMClient
+
+if TYPE_CHECKING:
+    from fasteval.core.datasets import Dataset
 
 F = TypeVar("F", bound=Callable[..., Any])
 
@@ -73,6 +77,12 @@ def _metric_decorator_factory(
             model: Model override
             **config: Additional metric config
         """
+        # `llm=` is accepted as an alias for `llm_client=` (older docs and
+        # examples use it; it used to crash at evaluation time).
+        if "llm" in config:
+            alias = config.pop("llm")
+            if llm_client is None:
+                llm_client = alias
         merged_config = {**default_config, **config}
         if model:
             merged_config["model"] = model
@@ -1734,11 +1744,13 @@ def judge(
 def csv(
     path: Union[str, Path],
     encoding: str = "utf-8",
-) -> Callable[[F], F]:
+    id_field: Optional[str] = None,
+) -> "Dataset":
     """
-    Load test cases from CSV file.
+    Load test cases from a CSV file; each row becomes its own test case.
 
-    CSV columns become keyword arguments to the test function.
+    Columns are passed to the test function's parameters of the same name
+    (or the whole row to a parameter named ``case``/``row``).
 
     Example:
         # test_data.csv:
@@ -1747,36 +1759,49 @@ def csv(
         # "What is 3+3?","6"
 
         @fe.correctness()
-        @fe.csv("test_data.csv")
-        async def test_qa(query, expected):
-            response = await agent(query)
+        @fe.csv("test_data.csv", id_field="query")
+        def test_qa(query, expected):
+            response = agent(query)
             fe.score(response, expected, input=query)
+
+    A relative path is looked up next to the test file first, then in the
+    current working directory.
     """
+    from fasteval.core.datasets import csv_dataset
 
-    def decorator(func: F) -> F:
-        filepath = Path(path)
+    return csv_dataset(
+        path, encoding=encoding, id_field=id_field, base_dir=_caller_dir()
+    )
 
-        @functools.wraps(func)
-        async def wrapper(*args: Any, **kwargs: Any) -> None:
-            with open(filepath, "r", encoding=encoding) as f:
-                reader = csv_module.DictReader(f)
-                for row in reader:
-                    # Call the test function with row data as kwargs
-                    if inspect.iscoroutinefunction(func):
-                        await func(**{**kwargs, **row})
-                    else:
-                        func(**{**kwargs, **row})
 
-        # Mark as data-decorated and preserve metrics
-        if hasattr(func, fasteval_METRICS_ATTR):
-            setattr(
-                wrapper, fasteval_METRICS_ATTR, getattr(func, fasteval_METRICS_ATTR)
-            )
+def jsonl(
+    path: Union[str, Path],
+    encoding: str = "utf-8",
+    id_field: Optional[str] = None,
+) -> "Dataset":
+    """
+    Load test cases from a JSON Lines file (one JSON object per line).
 
-        setattr(wrapper, fasteval_DATA_ATTR, {"type": "csv", "path": str(filepath)})
-        return wrapper  # type: ignore
+    Example:
+        @fe.correctness()
+        @fe.jsonl("golden.jsonl", id_field="id")
+        def test_qa(question, expected):
+            fe.score(agent(question), expected, input=question)
+    """
+    from fasteval.core.datasets import jsonl_dataset
 
-    return decorator
+    return jsonl_dataset(
+        path, encoding=encoding, id_field=id_field, base_dir=_caller_dir()
+    )
+
+
+def _caller_dir() -> Optional[Path]:
+    """Directory of the module that called the data decorator."""
+    import sys
+
+    frame = sys._getframe(2)
+    module_file = frame.f_globals.get("__file__")
+    return Path(module_file).resolve().parent if module_file else None
 
 
 def conversation(
@@ -1923,6 +1948,105 @@ def traces() -> Callable[[F], F]:
 
         setattr(wrapper, fasteval_TRACES_ATTR, True)
         return wrapper  # type: ignore
+
+    return decorator
+
+
+def prompt_judge(
+    judge: str,
+    threshold: Optional[float] = None,
+    weight: float = 1.0,
+    name: Optional[str] = None,
+) -> Callable[[F], F]:
+    """
+    Use a saved prompt judge (``judges/<judge>.toml``) as a metric.
+
+    Judges are created and tuned in the fasteval UI playground, or written
+    by hand. See :mod:`fasteval.judges` for the file format.
+
+    Example:
+        @fe.prompt_judge("refund_correctness")
+        def test_refund_answer():
+            fe.score(agent("Can I get a refund?"), "Within 30 days")
+
+    Args:
+        judge: Judge name (file stem in the judges directory)
+        threshold: Override the judge's own threshold
+        weight: Weight in the aggregate score
+        name: Metric name (defaults to the judge name)
+    """
+    config = MetricConfig(
+        metric_type="prompt_judge",
+        name=name or judge,
+        threshold=threshold if threshold is not None else 0.5,
+        weight=weight,
+        config={"judge": judge, "threshold_override": threshold},
+    )
+
+    def decorator(func: F) -> F:
+        return _attach_metric(func, config)
+
+    return decorator
+
+
+# === Tags ===
+
+fasteval_TAGS_ATTR = "_fasteval_tags"
+
+# Names that already mean something to pytest or to -m expressions.
+_RESERVED_TAGS = {
+    "and",
+    "or",
+    "not",
+    "fasteval",
+    "parametrize",
+    "skip",
+    "skipif",
+    "xfail",
+    "usefixtures",
+    "filterwarnings",
+}
+
+
+def tag(*names: str) -> Callable[[F], F]:
+    """
+    Tag an eval so it can be selected by name.
+
+    Tags are pytest markers: ``@fe.tag("smoke")`` is equivalent to
+    ``@pytest.mark.smoke``, so selection works everywhere markers do::
+
+        fasteval run -t smoke            # CLI
+        fasteval run -t "rag and not slow"
+        pytest -m smoke                  # plain pytest
+
+    Unlike a bare ``pytest.mark``, tags are registered automatically (no
+    PytestUnknownMarkWarning, works with ``--strict-markers``). Describe
+    them in ``[tool.fasteval.tags]`` to document them in ``fasteval list``.
+
+    Example:
+        @fe.tag("smoke", "rag")
+        @fe.correctness(threshold=0.8)
+        def test_refund_answer():
+            fe.score(agent("Can I get a refund?"), "Within 30 days")
+
+    Can be stacked, and applied to a test class to tag all its tests.
+    """
+    if not names:
+        raise ValueError("fe.tag() needs at least one tag name")
+    for name in names:
+        if not isinstance(name, str) or not name.isidentifier():
+            raise ValueError(
+                f"Invalid tag {name!r}: tags must be identifiers "
+                "(letters, digits, underscores; not starting with a digit)"
+            )
+        if name in _RESERVED_TAGS:
+            raise ValueError(f"Invalid tag {name!r}: reserved by pytest/fasteval")
+
+    def decorator(func: F) -> F:
+        existing = tuple(getattr(func, fasteval_TAGS_ATTR, ()))
+        merged = existing + tuple(n for n in names if n not in existing)
+        setattr(func, fasteval_TAGS_ATTR, merged)
+        return func
 
     return decorator
 

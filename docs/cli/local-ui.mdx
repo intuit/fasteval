@@ -1,0 +1,122 @@
+---
+title: Local UI
+description: Watch runs live, inspect every case and judge call, re-run and compare, export static reports
+order: 5
+sidebar:
+  - title: Opening the UI
+    anchor: opening-the-ui
+  - title: Runs
+    anchor: runs
+  - title: The Run View
+    anchor: the-run-view
+  - title: Inspecting a Case
+    anchor: inspecting-a-case
+  - title: Re-runs and Comparisons
+    anchor: re-runs-and-comparisons
+  - title: Evals Catalog
+    anchor: evals-catalog
+  - title: Static HTML Reports
+    anchor: static-html-reports
+  - title: Local Only
+    anchor: local-only
+---
+
+# Local UI
+
+The fasteval UI is a local web app for your eval runs. It shows a run as it happens, lets you open any case to see exactly what was scored and why, and keeps a history you can re-run and compare. It runs on your machine, against your project, with nothing to deploy.
+
+## Opening the UI
+
+The UI opens by itself when you run evals from a terminal:
+
+```bash
+fasteval run
+```
+
+fasteval starts the server, opens your browser on the live run and keeps serving after the run ends, until you press Ctrl+C. To browse history, start runs or work on judges without running anything first, open the UI on its own:
+
+```bash
+fasteval ui                 # http://localhost:8484/
+fasteval ui --port 9000
+fasteval ui --no-open       # print the URL, don't open a browser
+```
+
+If the port is taken, fasteval picks a free one and prints the URL. The top bar has four pages: **Runs**, **Evals**, **Judges** and **Playground**, plus a **New run** button.
+
+## Runs
+
+The Runs page lists recorded runs, newest first, whether they were started from the CLI or from the UI. Each row shows the status, run id and origin, profile, selection (paths, tags, `-k`, judge swaps), passed/total, pass rate, average score and duration. Buttons on each row start a new run:
+
+- **Re-run** repeats the run with the same profile, tags, paths and flags.
+- **Failed** (shown when the run had failures) re-runs only the cases that failed or errored in that run.
+
+**New run** opens a form with the same options as `fasteval run`: profile, tags (narrowing the profile), name filter (`-k`), paths or node ids, judge swaps (`metric=judge`), workers, stop on first failure, last failed only, and include plain tests. One run started from the UI can be in progress at a time.
+
+## The Run View
+
+A run's page updates live while it runs:
+
+- **Header**: status, profile, origin, elapsed time, and the `fasteval run ...` command that reproduces the run, with a copy button; the underlying pytest command is shown beneath it.
+- **Progress bar** with counts of passed, failed, errored, skipped, running and queued cases.
+- **Stats**: eval pass rate, average score, failed cases, number of judge calls and their average latency, duration and worker count.
+- **Quality gates**: each `min_pass_rate` / `min_score` gate as passed or failed.
+- **Metric chips**: the average score and pass rate of each metric. Click one to show only the cases where that metric failed.
+- **Actions**: **Export HTML**, **Re-run**, **Re-run failed**, **Console** (the pytest output of runs started from the UI) and **Stop** for UI-started runs that are still going.
+
+The case list on the left groups cases by file and shows each case's score and duration. Parametrized and dataset cases show their id, like `test_faq[refund]`. Filter it with:
+
+- the search box (matches case ids and tags)
+- the status switch: all, failed, passed, running
+- a chip per tag used in the run
+
+## Inspecting a Case
+
+Click a case to open it. The detail panel has three tabs.
+
+**Overview** shows the case's **Input**, **Expected** and **Actual** output side by side, plus any context, retrieval context, conversation history, tool calls, expected tools and metadata it was scored with. Below that, a card per metric shows the score, the threshold, a pass/fail badge, the judge's reasoning and which model judged it. If the eval called `fe.score()` more than once, each call gets its own section. Human review results appear here too.
+
+**Judges** lists every LLM judge call each metric made: the model, provider, temperature and latency, the full prompt messages, and the raw response. If the judge had to retry (for example, after a response it couldn't parse or a failed API call), every attempt is listed, with the error when the call itself failed. Deterministic metrics like `exact_match` or `rouge` make no judge calls. The same data is in the results JSON under each metric's `details["judge_calls"]`; see [Prompt Judges](/docs/cli/prompt-judges#seeing-every-judge-call).
+
+**Output** shows the failure traceback, if any, and the captured stdout and stderr.
+
+**Tune judge**, on any LLM-judged metric, opens the case in the [judge playground](/docs/cli/prompt-judges#the-playground) with the judge's real prompt ready to edit.
+
+## Re-runs and Comparisons
+
+A run started with **Re-run**, **Re-run failed** or the playground's **Run evals with this judge** remembers the run it came from, and its page compares the two:
+
+- a banner with the base run's pass rate and average score next to the new ones
+- a score change next to every case in the list, so you can see which cases moved
+
+This is the quickest way to check a prompt change, a model change or a [judge swap](/docs/cli/running-evals#swapping-judges): re-run, then read the deltas.
+
+## Evals Catalog
+
+The **Evals** page lists every eval in a profile without running anything: file, eval name, number of cases, tags, metrics with thresholds, data source and whether it has human review. Filter by profile, tag expression and name, then start a run from the results: **Run all shown**, **Run file**, or **Run** on a single eval. It's `fasteval list` with buttons.
+
+## Judges and Playground
+
+The **Judges** page lists the [prompt judges](/docs/cli/prompt-judges) saved in your project. **Run evals with it** asks which metric the judge should replace and either a recorded run to re-run (and compare against) or a new run with the default profile. The **Playground** is where you write or tune one: edit the prompt, test it against real cases from your runs, compare it with the original judge, save it and run your evals with it. Both are covered in [Prompt Judges](/docs/cli/prompt-judges).
+
+## Static HTML Reports
+
+Any run can be exported as a single, self-contained HTML file: the same run view, read-only, with the CSS, JavaScript and the run's full event log inlined. It opens from disk or a CI artifact viewer, offline. There are three ways to get one:
+
+```bash
+fasteval run --headless                # writes .fasteval/report.html after the run
+fasteval report --html report.html     # export a recorded run (the latest by default)
+```
+
+or **Export HTML** on a run's page. A static report has no Re-run or Tune judge buttons; open the project with `fasteval ui` for those.
+
+## Local Only
+
+The UI is a development tool for your own machine:
+
+- it binds to `127.0.0.1` by default and rejects requests that aren't addressed to `localhost`, which blocks DNS-rebinding tricks
+- every request that changes something or calls an LLM (starting or stopping a run, testing or saving a judge) needs a per-session token that the UI page fetches from the server; other websites open in your browser can't read it
+- `fasteval ui --host` changes the bind address. For anything other than a local address, fasteval prints a warning, because anyone who can reach that address can view your runs and judge prompts; leave it at the default unless that's what you want
+
+Runs started from the UI never stop for human review prompts.
+
+> **Note:** From a source checkout, the UI bundle has to be built first (`cd ui && npm ci && npm run build`). Until it is, `fasteval ui` and the UI server show a message saying so, and `fasteval run` falls back to headless mode without the HTML report. Released `fasteval-core` packages include the bundle. See [CONTRIBUTING.md](https://github.com/intuit/fasteval/blob/main/CONTRIBUTING.md).

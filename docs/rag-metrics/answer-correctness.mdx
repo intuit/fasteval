@@ -66,7 +66,7 @@ Test your RAG against a curated set of correct answers:
 
 ```python
 @fe.answer_correctness(threshold=0.8)
-@fe.csv("golden_qa_dataset.csv")
+@fe.csv("golden_qa_dataset.csv", id_field="query")  # one test case per row
 def test_against_golden_set(query, correct_answer):
     docs = retriever.search(query)
     response = rag_agent(query, context=docs)
@@ -76,23 +76,27 @@ def test_against_golden_set(query, correct_answer):
 
 ### Comparing RAG Configurations
 
+Parametrize over the configurations; combined with `@fe.csv`, every query runs against every configuration as its own test case:
+
 ```python
-def test_rag_config(config_name, config):
-    @fe.answer_correctness(threshold=0.75)
-    @fe.csv("test_queries.csv")
-    def inner_test(query, expected):
-        rag = build_rag(config)
-        response = rag.answer(query)
-        fe.score(response, expected)
-        print(f"{config_name}: {result.score}")
+import pytest
 
-    return inner_test()
+CONFIGS = {
+    "baseline": baseline_config,
+    "reranking": reranking_config,
+    "hybrid_search": hybrid_config,
+}
 
-# Compare different configurations
-test_rag_config("baseline", baseline_config)
-test_rag_config("reranking", reranking_config)
-test_rag_config("hybrid_search", hybrid_config)
+@pytest.mark.parametrize("config_name", list(CONFIGS))
+@fe.answer_correctness(threshold=0.75)
+@fe.csv("test_queries.csv", id_field="query")  # columns: query, expected
+def test_rag_config(config_name, query, expected):
+    rag = build_rag(CONFIGS[config_name])
+    response = rag.answer(query)
+    fe.score(response, expected, input=query)
 ```
+
+Cases are named `test_rag_config[<query>-baseline]`, `test_rag_config[<query>-reranking]` and so on. Run one configuration with `fasteval run -k baseline`, or compare all three in the summary and the [local UI](/docs/cli/local-ui).
 
 ### Detecting Contradictions
 

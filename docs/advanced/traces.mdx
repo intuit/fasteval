@@ -51,8 +51,10 @@ def evaluate_production_traces():
 Run it:
 
 ```bash
-pytest test_traces.py -v
+fasteval run test_traces.py      # or: pytest test_traces.py -v
 ```
+
+Put the generator in a collected test module (for example `test_traces.py`); the function doesn't need a `test_` prefix. At collection time it's called once and **each yielded `EvalInput` becomes its own test case**, named from `reference_id` when set (`evaluate_production_traces[trace-123]`), otherwise by position (`[trace-0]`, `[trace-1]`, ...). The stacked metrics are evaluated for every case, so failures, `--lf`, re-runs and parallel workers (`-n`) work per trace, and tags (`@fe.tag`) apply to all of its cases. A generator with no metric decorators is reported as a usage error.
 
 ## The EvalInput Object
 

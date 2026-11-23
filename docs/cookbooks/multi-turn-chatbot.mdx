@@ -341,7 +341,13 @@ pytest test_chatbot_*.py -v
 
 # Run with specific scenario
 pytest test_chatbot_context.py::test_pronoun_resolution -v
+
+# Or with the fasteval CLI: live UI, run history, re-run failures
+fasteval run test_chatbot_context.py
+fasteval run test_chatbot_context.py --lf
 ```
+
+In the [local UI](/docs/cli/local-ui), each case's Overview tab shows the conversation history it was scored with, turn by turn, next to the metric reasoning.
 
 ### Expected Output
 

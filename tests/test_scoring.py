@@ -121,6 +121,17 @@ class TestGetTestName:
         name = self._helper_non_test()
         assert name.startswith("test_")
 
+    def test_keeps_parametrize_id(self, monkeypatch):
+        monkeypatch.setenv(
+            "PYTEST_CURRENT_TEST",
+            "tests/test_scoring.py::TestGetTestName::test_keeps_parametrize_id[a-1] (call)",
+        )
+        assert _get_test_name_from_caller() == "test_keeps_parametrize_id[a-1]"
+
+    def test_ignores_unrelated_current_test(self, monkeypatch):
+        monkeypatch.setenv("PYTEST_CURRENT_TEST", "tests/x.py::test_other[a] (call)")
+        assert _get_test_name_from_caller() == "test_ignores_unrelated_current_test"
+
 
 # ── score() function ─────────────────────────────────────────────────────────
 

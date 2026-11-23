@@ -47,6 +47,11 @@ class ResultCollector:
         """All collected results (read-only copy)."""
         return list(self._results)
 
+    @property
+    def test_names(self) -> List[str]:
+        """Test names, aligned index-for-index with ``results``."""
+        return list(self._test_names)
+
     def summary(self) -> EvalRunSummary:
         """Compute aggregate statistics from collected results."""
         return EvalRunSummary.from_results(self._results, self._test_names)

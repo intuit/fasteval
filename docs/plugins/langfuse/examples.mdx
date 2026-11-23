@@ -8,7 +8,7 @@ sidebar:
   - title: Debug Failing Traces
     anchor: debug-failing-traces
   - title: A/B Testing
-    anchor: ab-testing
+    anchor: a-b-testing
   - title: RAG Pipeline Evaluation
     anchor: rag-pipeline-evaluation
   - title: Cross-Segment Quality
@@ -350,7 +350,7 @@ Plug in custom metrics alongside production traces:
 
 ```python
 from fasteval import LLMMetric
-from fasteval.core.models import EvalInput
+from fasteval import EvalInput
 
 class CustomerSatisfactionMetric(LLMMetric):
     """Custom metric for customer satisfaction."""
@@ -538,10 +538,10 @@ pytest test_customer_support_pipeline.py::test_pre_deploy_regression
 
 ## Parallel Execution
 
-Speed things up with pytest-xdist:
+Speed things up with pytest-xdist. xdist spreads **test functions** across workers: a single `@langfuse_traces` test evaluates all of its traces in one worker, so split large evaluations into several tests (for example by tag, time window or sampling) to use more workers.
 
 ```bash
-# Evaluate 1000 traces in parallel
+# Run the trace-evaluation tests on 4 workers
 pytest test_production.py -n 4  # 4 workers
 
 # Auto-detect worker count
@@ -554,6 +554,10 @@ pytest test_production.py -n 4 -v
 On 1000 traces at 1.5s each: serial takes ~25 minutes, 4 workers brings it down to ~6.25 minutes.
 
 ## Reporting
+
+fasteval's own reports work without extra plugins: `--fe-output json:results.json` and `--fe-output html:report.html` with pytest, or the self-contained report from a headless `fasteval run` (`.fasteval/report.html`) and `fasteval report --html` for any recorded run. They include results from every pytest-xdist worker. See [Output Collectors](/docs/advanced/output-collectors) and [Local UI](/docs/cli/local-ui#static-html-reports).
+
+The examples below use third-party pytest plugins (pytest-html and a JSON report plugin) instead.
 
 ### HTML Reports
 

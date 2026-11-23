@@ -1,10 +1,18 @@
 ---
 title: Data Sources
-description: Loading test data from various sources
+description: Loading test data from datasets, CSV and JSON Lines files, conversations and traces
 order: 3
 sidebar:
+  - title: Datasets
+    anchor: datasets
   - title: CSV Files
     anchor: csv-files
+  - title: JSON Lines Files
+    anchor: json-lines-files
+  - title: How Values Reach Your Test
+    anchor: how-values-reach-your-test
+  - title: Case IDs
+    anchor: case-ids
   - title: Conversations
     anchor: conversations
   - title: Production Traces
@@ -15,23 +23,91 @@ sidebar:
 
 # Data Sources
 
-One-off test cases only get you so far. Eventually you'll need to throw hundreds of examples at your LLM and see what sticks. fasteval gives you three ways to do that.
+One-off test cases only get you so far. Eventually you'll need to throw hundreds of examples at your LLM and see what sticks. fasteval gives you several ways to do that.
+
+Datasets, CSV files and JSON Lines files all work the same way: **every item becomes its own pytest test case**. fasteval expands them when pytest collects tests, so each case passes or fails on its own, gets a readable id like `test_faq[refund]`, and can be selected, re-run (`fasteval run --lf`), filtered by tag and run in parallel (`-n auto`) individually.
+
+```
+evals/test_faq.py::test_faq[refund]        PASSED
+evals/test_faq.py::test_faq[password]      PASSED
+evals/test_faq.py::test_faq[hours]         FAILED
+```
+
+## Datasets
+
+`@fe.dataset` turns a generator function, a function that returns a list, or any iterable into a test decorator:
+
+```python
+import fasteval as fe
+
+@fe.dataset
+def support_questions():
+    yield {"id": "refund", "question": "How long do I have to ask for a refund?",
+           "expected": "You can request a refund within 30 days of purchase."}
+    yield {"id": "password", "question": "How do I reset my password?",
+           "expected": "Go to Settings, then Security, then Reset password."}
+    yield fe.case(id="hours", tags=["slow"], question="When is support open?",
+                  expected="Monday to Friday, 9am to 6pm PT.")
+
+@support_questions
+@fe.correctness(threshold=0.7)
+def test_support_answers(question, expected):
+    fe.score(agent(question), expected, input=question)
+```
+
+This collects three test cases: `test_support_answers[refund]`, `[password]` and `[hours]`. Because the dataset is plain Python, it can load cases from anywhere: a database, an API, a fixture file, production logs.
+
+The forms you can use:
+
+```python
+@fe.dataset                                   # generator or function
+def golden(): ...
+
+@fe.dataset(name="golden_v2", id_field="question")   # with options
+def golden_v2(): ...
+
+smoke_cases = fe.dataset([                    # from a list
+    {"question": "Hi", "expected": "Hello"},
+    {"question": "Bye", "expected": "Goodbye"},
+], name="smoke_cases")
+```
+
+| Option | Description |
+|--------|-------------|
+| `name` | Dataset name, used in default case ids and shown by `fasteval list`. Default: the function name |
+| `id_field` | Key whose value becomes the case id when a case has no explicit id |
+
+Each item can be:
+
+- **a dict.** An `id` key sets the case id and a `tags` list sets [per-case tags](/docs/cli/tags#tagging-dataset-cases); both are removed before the values reach your test.
+- **`fe.case(id=..., tags=[...], **values)`**, the explicit form of the same thing.
+- **an `EvalInput`**, passed to the test's `eval_input` parameter. Its `reference_id` becomes the case id.
+
+A dataset is loaded once per pytest process, at collection time, and cached. `@fe.dataset`, `fe.csv()` and `fe.jsonl()` all return a `fe.Dataset`, which you can also use outside tests, in a script or a notebook:
+
+```python
+faq = fe.csv("evals/data/faq.csv", id_field="question")
+
+len(faq)                 # number of cases
+for values in faq:       # each case's values as a dict
+    print(values["question"])
+for case in faq.load():  # fe.Case objects with their final id and tags
+    print(case.id, case.tags)
+```
 
 ## CSV Files
 
-Run the same test across hundreds of examples from a CSV file.
-
-### Basic Usage
+`@fe.csv` loads one case per row; columns become values.
 
 ```python
 @fe.correctness(threshold=0.7)
-@fe.csv("test_cases.csv")
+@fe.csv("evals/data/test_cases.csv", id_field="input")
 def test_from_csv(input, expected_output):
     response = my_llm(input)
     fe.score(response, expected_output, input=input)
 ```
 
-Your `test_cases.csv`:
+Your `evals/data/test_cases.csv`:
 
 ```csv
 input,expected_output
@@ -40,11 +116,19 @@ input,expected_output
 "Who wrote Romeo and Juliet?","Shakespeare"
 ```
 
-fasteval runs the test **once per row**, reporting individual results.
+fasteval runs the test **once per row** as separate test cases: `test_from_csv[What is 2+2?]`, `test_from_csv[Capital of France?]` and so on.
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `path` | required | CSV file. Relative paths are looked up next to the test file first, then in the current working directory |
+| `encoding` | `"utf-8"` | File encoding |
+| `id_field` | none | Column whose value becomes the case id |
+
+An `id` column, if present, sets the case id and isn't passed to the test. All CSV values are strings.
 
 ### CSV Column Mapping
 
-Column names become function parameters. Use whatever columns you need:
+Column names are matched to the test's parameters. Use whatever columns you need; columns without a matching parameter are ignored:
 
 ```csv
 input,expected_output,context,difficulty
@@ -54,10 +138,10 @@ input,expected_output,context,difficulty
 
 ```python
 @fe.correctness(threshold=0.7)
-@fe.csv("test_cases.csv")
-def test_with_context(input, expected_output, context, difficulty):
+@fe.csv("evals/data/test_cases.csv")
+def test_with_context(input, expected_output, context):
     response = my_rag_agent(input, context=context)
-    fe.score(response, expected_output, input=input, context=context)
+    fe.score(response, expected_output, input=input, context=[context])
 ```
 
 ### Best Practices for CSV Testing
@@ -66,6 +150,95 @@ def test_with_context(input, expected_output, context, difficulty):
 - **Cover edge cases:** Include tricky inputs that have caused issues
 - **Version control:** Keep CSV files in git alongside your code
 - **Separate concerns:** Use different CSVs for different test categories
+- **Pick an id column:** `id_field` (or an `id` column) gives every case a stable, readable name in reports and the UI
+
+## JSON Lines Files
+
+`@fe.jsonl` reads one JSON object per line. Unlike CSV, values keep their JSON types, so lists, numbers and nested objects work:
+
+```python
+@fe.faithfulness(threshold=0.8)
+@fe.jsonl("evals/data/rag_golden.jsonl", id_field="id")
+def test_rag_golden(question, expected, documents):
+    response = rag_agent(question, context=documents)
+    fe.score(response, expected, input=question, context=documents)
+```
+
+```json
+{"id": "refund-window", "question": "How long do refunds take?", "expected": "Within 30 days", "documents": ["Refunds are accepted within 30 days of purchase."]}
+{"id": "intl-shipping", "question": "Do you ship abroad?", "expected": "Yes, to 40 countries", "tags": ["shipping"], "documents": ["We ship to over 40 countries."]}
+```
+
+Blank lines are skipped, and a line that isn't valid JSON fails collection with its line number. `id` and `tags` keys work as in [datasets](#datasets). `@fe.jsonl` takes the same `path`, `encoding` and `id_field` parameters as `@fe.csv`.
+
+## How Values Reach Your Test
+
+The same rules apply to datasets, CSV and JSON Lines:
+
+1. **A parameter named `case` or `row` receives the whole case as a dict.**
+
+   ```python
+   @fe.csv("evals/data/faq.csv")
+   @fe.contains()
+   def test_faq(case):
+       fe.score(agent(case["question"]), case["expected"], input=case["question"])
+   ```
+
+2. **Otherwise, keys are matched to parameter names.** Keys without a matching parameter are ignored. A key that some cases have and others don't is an error that names the case.
+3. **An `EvalInput` item goes to the `eval_input` parameter.**
+
+   ```python
+   from fasteval import EvalInput
+
+   @fe.dataset
+   def logged_answers():
+       for row in load_logged_answers():
+           yield EvalInput(
+               input=row.question,
+               actual_output=row.answer,
+               expected_output=row.reference,
+               reference_id=row.id,
+           )
+
+   @logged_answers
+   @fe.correctness(threshold=0.8)
+   def test_logged_answers(eval_input):
+       fe.score(eval_input.actual_output, eval_input.expected_output, input=eval_input.input)
+   ```
+
+If no key matches any parameter, collection stops with an error that lists the dataset's keys and the function's parameters.
+
+Other parameters are left to pytest, so datasets combine with fixtures and with `@pytest.mark.parametrize`. Parametrizing a dataset eval runs every case for every parameter value:
+
+```python
+import pytest
+
+CONFIGS = {"baseline": baseline_config, "reranking": reranking_config}
+
+@pytest.mark.parametrize("config_name", list(CONFIGS))
+@fe.answer_correctness(threshold=0.75)
+@fe.csv("evals/data/test_queries.csv", id_field="query")
+def test_rag_config(config_name, query, expected):
+    rag = build_rag(CONFIGS[config_name])
+    fe.score(rag.answer(query), expected, input=query)
+```
+
+Decorator order doesn't matter: data decorators can go above or below metric decorators and `@fe.tag`.
+
+## Case IDs
+
+Every case gets an id, which pytest shows in brackets after the test name (`test_faq[refund]`). Result names in summaries, JSON reports and the UI keep it too. The id is, in order of preference:
+
+1. the case's explicit id: `fe.case(id=...)`, an `id` key, or an `EvalInput`'s `reference_id`
+2. the value of the `id_field` key
+3. `<dataset name>-<index>`, for example `faq-0`, `faq-1` (for files, the dataset name is the file name without its extension)
+
+Whitespace is collapsed, ids are cut to 60 characters, and duplicates get a numeric suffix (`refund`, `refund-1`), so every case stays addressable:
+
+```bash
+fasteval run "evals/test_faq.py::test_faq[refund]"
+pytest "evals/test_faq.py::test_faq[refund]"
+```
 
 ## Conversations
 
@@ -201,7 +374,7 @@ def get_langfuse_traces():
 
 ![Data Sources Comparison](docs/assets/data-sources-comparison.svg)
 
-If you've got a known set of test cases you want to track over time, CSV's your best bet — curate the examples and check them into git. For multi-turn testing where conversation history matters, use the conversation decorator. When you're ready to evaluate against real traffic, pull traces from your observability platform. In practice, we've found that regression testing works well with a CSV you update every time a bug surfaces. And for CI/CD, keep a small CSV so you get fast feedback on every push.
+If you've got a known set of test cases you want to track over time, CSV's your best bet — curate the examples and check them into git. Reach for JSON Lines when cases need lists or nested values (retrieved documents, tool calls), and for `@fe.dataset` when cases come from code, a database or an API. For multi-turn testing where conversation history matters, use the conversation decorator. When you're ready to evaluate against real traffic, pull traces from your observability platform. In practice, we've found that regression testing works well with a CSV you update every time a bug surfaces. And for CI/CD, keep a small CSV so you get fast feedback on every push.
 
 ## Combining Sources
 
@@ -209,8 +382,9 @@ Use different sources for different purposes:
 
 ```python
 # test_curated.py - Fast, reliable, runs in CI
+@fe.tag("smoke")
 @fe.correctness(threshold=0.8)
-@fe.csv("golden_test_cases.csv")
+@fe.csv("evals/data/golden_test_cases.csv", id_field="input")
 def test_golden_set(input, expected_output):
     ...
 
@@ -226,3 +400,5 @@ def test_support_flow(query, expected, history):
 def get_production_traces():
     ...
 ```
+
+Tag each source by purpose (see [Tags](/docs/cli/tags)) and a [profile](/docs/cli/profiles) per trigger picks the right mix: `fasteval run -t smoke` on every push, the full suite nightly.

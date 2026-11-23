@@ -7,6 +7,8 @@ sidebar:
     anchor: overview
   - title: Design Principles
     anchor: design-principles
+  - title: With the fasteval CLI
+    anchor: with-the-fasteval-cli
   - title: GitHub Actions
     anchor: github-actions
   - title: GitLab CI
@@ -24,6 +26,8 @@ sidebar:
 # CI/CD Integration
 
 Running fasteval in CI/CD keeps your LLM quality from silently regressing between deploys. This cookbook covers practical setups for GitHub Actions and GitLab CI, with strategies for keeping costs down and dealing with the inherent flakiness of LLM-based tests.
+
+The quickest setup uses the [`fasteval` CLI](/docs/cli/overview) with a CI [profile](/docs/cli/profiles): one command that runs only your evals, enforces quality gates and writes a self-contained HTML report. Every example with plain `pytest` below works too; pick whichever fits your pipeline.
 
 ## Overview
 
@@ -74,6 +78,100 @@ def test_comprehensive_quality():
     response = my_agent(complex_query)
     fe.score(response, expected_answer, input=complex_query)
 ```
+
+With [tags](/docs/cli/tags), the same tiers need no marker registration in `conftest.py`: `@fe.tag("slow")` and `@fe.tag("expensive")` are pytest markers that fasteval registers for you, so `pytest -m "not slow"` and `fasteval run -t "not slow"` both work, even with `--strict-markers`.
+
+## With the fasteval CLI
+
+Describe each tier as a profile, once, in `pyproject.toml`:
+
+```toml
+[tool.fasteval]
+default_profile = "dev"
+
+[tool.fasteval.tags]
+slow = "Requires an LLM judge"
+expensive = "Full-suite evals for nightly runs"
+
+[tool.fasteval.profiles.dev]
+paths = ["tests"]
+tags = "not expensive"
+
+[tool.fasteval.profiles.ci]
+description = "PR gate: core LLM evals, headless, quality gates"
+extends = "dev"
+review_prompts = false
+headless = true
+workers = 4
+outputs = ["json:eval-results.json"]
+min_pass_rate = 0.9
+min_score = 0.75
+
+[tool.fasteval.profiles.nightly]
+description = "Full suite with the best judge model"
+extends = "ci"
+tags = ""
+env = { FASTEVAL_MODEL = "gpt-4o" }
+```
+
+Then CI runs one command:
+
+```yaml
+# .github/workflows/evals.yml
+name: Evals
+
+on: [push, pull_request]
+
+jobs:
+  evals:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -e ".[test]" pytest-xdist
+
+      - name: Run evals
+        env:
+          OPENAI_API_KEY: \${{ secrets.OPENAI_API_KEY }}
+        run: fasteval run -p ci
+
+      - name: Upload eval report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-report
+          path: |
+            .fasteval/report.html
+            eval-results.json
+```
+
+Here's what that gets you:
+
+- **Evals only.** Plain unit tests aren't run (`--fe-only`); add `--all` if you want both in one job.
+- **Headless, no prompts.** GitHub Actions sets `CI=true`, so `fasteval run` runs without the UI server and skips [human review](/docs/human-review/overview) prompts. The profile's `headless = true` and `review_prompts = false` make that explicit for runners that don't set `CI`.
+- **Quality gates.** The job fails if fewer than 90% of eval results pass or the average score drops below 0.75, even if each eval cleared its own threshold. The log shows `FastEval gate failed: ...`.
+- **A report anyone can open.** `.fasteval/report.html` is the [local UI](/docs/cli/local-ui) as a single static file: every case with its input, outputs, scores, reasoning and judge prompts. Download the artifact and open it in a browser; no server needed.
+- **The pytest command in the log.** fasteval prints the exact pytest command before running it, so a failure is easy to reproduce locally: copy the command, or run `fasteval run -p ci --ui` on your machine.
+
+Use other profiles for other triggers:
+
+```yaml
+      # PRs: skip the slow tier
+      - run: fasteval run -p ci -t "not slow"
+
+      # Nightly: everything, with the best judge model
+      - run: fasteval run -p nightly
+```
+
+`-t` narrows the profile's selection, and any pytest flag passes straight through: `fasteval run -p ci --reruns 2 --junitxml=results.xml` (with pytest-rerunfailures installed for `--reruns`).
+
+> **Tip:** Before pushing, `fasteval profiles ci` prints exactly what the CI profile will run, including the pytest command.
 
 ## GitHub Actions
 
@@ -293,6 +391,8 @@ nightly-full:
 ```
 
 ## Exporting Results
+
+With the CLI, a headless `fasteval run` already writes `.fasteval/report.html` (change it with `--html PATH`), and `--json PATH` or a profile's `outputs` adds JSON. With plain pytest, use `--fe-output`.
 
 Use `--fe-output` to export evaluation results as build artifacts. This gives you structured data for dashboards, trend tracking, and post-run analysis — without custom scripts.
 
@@ -548,6 +648,10 @@ jobs:
         continue-on-error: true  # Allow failure without blocking
         run: pytest tests/experimental/ -v
 ```
+
+### Quality Gates
+
+On top of each eval's own thresholds, gate on the run as a whole: `--fe-min-pass-rate 0.9` with pytest, or `--min-pass-rate 0.9` (or `min_pass_rate` in a profile) with the CLI. `--fe-min-score` / `--min-score` does the same for the average score. See [Quality Gates](/docs/cli/running-evals#quality-gates).
 
 ### Score Trend Monitoring
 

@@ -104,7 +104,7 @@ import fasteval as fe
 
 @fe.correctness(model="gpt-4o")       # Use GPT-4o
 @fe.relevance()                        # Uses default
-@fe.toxicity(llm=my_custom_client)    # Use custom client
+@fe.toxicity(llm_client=my_custom_client)    # Use custom client
 def test_qa():
     response = my_agent(query)
     fe.score(response, expected)
@@ -114,13 +114,14 @@ def test_qa():
 
 fasteval resolves the provider in this order (highest to lowest):
 
-1. Per-metric `llm=` parameter
+1. Per-metric `llm_client=` parameter
 2. Per-metric `model=` parameter
-3. Global `set_default_provider()`
+3. Global `set_default_provider()`, or `judge_client` in `[tool.fasteval]` when code doesn't set one
 4. Environment variable auto-detection
 
 ## Learn More
 
 - [Complete LLM Setup Guide](/docs/core-concepts/llm-setup) - Detailed setup instructions
 - [Custom Metrics](/docs/advanced/custom-metrics) - Build metrics with custom LLM logic
+- [Prompt Judges](/docs/cli/prompt-judges) - Judge files can set their own `model`; `judge_client` in `[tool.fasteval]` sets the project's default judge
 - [Configuration](/docs/advanced/configuration) - Caching and performance tuning

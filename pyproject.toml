@@ -26,6 +26,7 @@ dependencies = [
     "pydantic>=2.0",
     "rouge-score>=0.1",
     "pytest>=8.0",
+    "tomli>=1.1; python_version < '3.11'",
 ]
 
 [project.urls]
@@ -69,6 +70,9 @@ multimodal = [
 ocr = [
     "pytesseract>=0.3",  # Tesseract OCR binding
 ]
+
+[project.scripts]
+fasteval = "fasteval.cli:main"
 
 [project.entry-points.pytest11]
 fasteval = "fasteval.testing.plugin"

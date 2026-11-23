@@ -285,4 +285,8 @@ pytest test_harness.py -v
 
 # Skip human review in CI
 pytest test_harness.py --no-interactive
+
+# With the fasteval CLI (add --all to include tests without fasteval metrics)
+fasteval run test_harness.py
+fasteval run test_harness.py --ci
 ```

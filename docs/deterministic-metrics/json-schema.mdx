@@ -1,29 +1,63 @@
 ---
 title: JSON Schema
-description: Validate JSON output against a schema
+description: Validate JSON output against a Pydantic model
 order: 4
 ---
 
 # JSON Schema Metric
 
-Validates that JSON output conforms to a given schema. You don't need an expected value here — the schema itself defines what's correct.
+`@fe.json(model=...)` checks that the output is valid JSON **and** matches a [Pydantic](https://docs.pydantic.dev) model. You don't need an expected value: the model defines what's correct. The score is 1.0 when the output parses and validates, 0.0 otherwise, and the reasoning names the first problem (for example `age - Field required`).
 
 ## Usage
 
 ```python
 import fasteval as fe
+from pydantic import BaseModel
 
-schema = {
-    "type": "object",
-    "properties": {
-        "name": {"type": "string"},
-        "age": {"type": "integer"}
-    },
-    "required": ["name"]
-}
+class Person(BaseModel):
+    name: str
+    age: int
 
-@fe.json_schema(schema=schema)
+@fe.json(model=Person)
 def test_json_output():
     response = my_llm("Generate a person object")
-    fe.score(response, None)  # expected not needed for schema validation
+    fe.score(response)  # expected not needed for schema validation
 ```
+
+## Optional and Nested Fields
+
+Use normal Pydantic typing for optional, nested or constrained fields:
+
+```python
+from typing import List, Optional
+from pydantic import BaseModel, Field
+
+class Address(BaseModel):
+    city: str
+    country: str
+
+class Customer(BaseModel):
+    name: str
+    email: Optional[str] = None
+    tags: List[str] = []
+    address: Address
+    score: float = Field(ge=0, le=1)
+
+@fe.json(model=Customer)
+def test_customer_record():
+    fe.score(my_llm("Extract the customer as JSON"))
+```
+
+## Combining With Other Metrics
+
+Structure checks are fast and deterministic, so pair them with an LLM metric for the content:
+
+```python
+@fe.json(model=Customer)          # Deterministic: valid structure?
+@fe.correctness(threshold=0.8)    # LLM: right values?
+def test_extraction():
+    response = extractor(document)
+    fe.score(response, expected=expected_json)
+```
+
+Outside pytest, use `fe.evaluate` with the metric's config, or keep a decorated helper. To validate against a raw JSON Schema dict instead of a Pydantic model, write a [code judge](/docs/concepts/code-as-judge) that calls the `jsonschema` package.

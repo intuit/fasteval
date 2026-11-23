@@ -23,11 +23,18 @@ class TestPytestAddoption:
     def test_adds_options(self):
         mock_parser = MagicMock()
         pytest_addoption(mock_parser)
-        assert mock_parser.addoption.call_count == 3
         option_names = [call[0][0] for call in mock_parser.addoption.call_args_list]
-        assert "--no-interactive" in option_names
-        assert "--fe-output" in option_names
-        assert "--fe-summary" in option_names
+        assert set(option_names) == {
+            "--no-interactive",
+            "--fe-output",
+            "--fe-summary",
+            "--fe-only",
+            "--fe-min-score",
+            "--fe-min-pass-rate",
+            "--fe-inventory",
+            "--fe-events",
+            "--fe-judge",
+        }
 
 
 # ── pytest_configure ─────────────────────────────────────────────────────────

@@ -788,7 +788,9 @@ or
 {{"match": false, "confidence": 0.1, "reasoning": "brief explanation"}}"""
 
         try:
-            client = self._get_llm_client()
+            from fasteval.utils.judge_trace import traced
+
+            client = traced(self._get_llm_client())
             # Use invoke() with message format per LLMClient protocol
             messages = [{"role": "user", "content": prompt}]
             response = await client.invoke(messages)

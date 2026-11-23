@@ -104,6 +104,8 @@ traced_client = LangfuseTracedClient(model="gpt-4o-mini")
 set_default_provider(traced_client)
 ```
 
+> **Note:** You don't need a wrapper just to see what the judge did. fasteval records every judge call (model, prompt messages, raw response, latency, error) on the metric result as `details["judge_calls"]`, includes it in JSON reports, and shows it on each case's **Judges** tab in the [local UI](/docs/cli/local-ui). Wrap the client when you want those calls in your observability platform as well.
+
 ### Tracing Evaluation Runs
 
 Wrap your test functions with Langfuse traces to get full visibility:

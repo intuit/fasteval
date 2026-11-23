@@ -282,12 +282,12 @@ async def chat_endpoint(message: str, user_id: str):
 ### Health Check Integration
 
 ```python
-from fasteval_observe import get_observation_queue
+from fasteval_observe.async_handler import ObservationQueue
 
 @app.get("/health")
 async def health_check():
     """Health check with queue monitoring."""
-    queue = get_observation_queue()
+    queue = ObservationQueue()  # process-wide singleton
     queue_size = queue._queue.qsize() if queue._queue else 0
 
     return {

@@ -99,3 +99,12 @@ pytest tests/ -v
 ```
 
 fasteval-langgraph is fully pytest-compatible. No custom test runners needed.
+
+The [fasteval CLI](/docs/cli/overview) runs the same tests with a live UI, run history and quality gates:
+
+```bash
+fasteval run tests/
+fasteval run tests/ --all    # also run tests that have no fasteval metric
+```
+
+By default `fasteval run` runs only evals (tests with a fasteval decorator). A harness test that only uses `assert`, with no fasteval metric or data decorator (tags alone don't count), needs `--all`.

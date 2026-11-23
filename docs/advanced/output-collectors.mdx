@@ -7,6 +7,8 @@ sidebar:
     anchor: quick-start
   - title: Pytest Integration
     anchor: pytest-integration
+  - title: With the fasteval CLI
+    anchor: with-the-fasteval-cli
   - title: Programmatic Usage
     anchor: programmatic-usage
   - title: Output Formats
@@ -97,6 +99,33 @@ pytest tests/ --fe-summary
 
 When neither `--fe-output` nor `--fe-summary` is provided, nothing changes. Results are collected silently with negligible overhead, but no reports are generated. Your existing pytest output is unaffected.
 
+### Quality Gates
+
+The collected results can also fail the run. `--fe-min-pass-rate` and `--fe-min-score` check the pass rate and average aggregate score of all results after the run, print `FastEval gate failed: ...` for each gate that isn't met, and set the exit status to 1:
+
+```bash
+pytest tests/ --fe-output json:results.json --fe-min-pass-rate 0.9 --fe-min-score 0.75
+```
+
+### Parallel Runs and Case Names
+
+Under pytest-xdist (`-n auto`), each worker sends its results back to the main process, so the summary, every `--fe-output` report and the gates cover the whole run. Results from parametrized and [data-driven](/docs/core-concepts/data-sources) tests keep their case id in `test_name` (for example `test_faq[refund]`), so every case is reported separately.
+
+## With the fasteval CLI
+
+`fasteval run` uses the same collector and adds a few outputs of its own:
+
+| Output | How |
+|--------|-----|
+| Summary table | Printed by default (`--no-summary` turns it off) |
+| JSON results | `--json PATH`, or `"json:path"` in a profile's `outputs` |
+| Classic HTML report | `"html:path"` in a profile's `outputs` (this page's HTML format) |
+| Self-contained UI report | Written by every headless run to `.fasteval/report.html` (`--html PATH` to change it), or later with `fasteval report --html` |
+| Latest results | Always written to `.fasteval/last-run.json` |
+| Run history | Every run under `.fasteval/runs/<id>/`, browsable with `fasteval ui` |
+
+The UI report is the [local UI](/docs/cli/local-ui) frozen into one HTML file: the full case list with filters, every case's inputs and outputs, metric reasoning, and the judge prompts and raw responses. The classic HTML report below is a lighter summary. See [Running Evals](/docs/cli/running-evals#reports).
+
 ## Programmatic Usage
 
 Use `get_collector()` to access results directly — useful in notebooks, scripts, or custom test runners.
@@ -177,6 +206,8 @@ The JSON output contains two top-level keys:
   ]
 }
 ```
+
+Each entry in `metric_results` has a `details` dict. For LLM-judged metrics it includes `judge_calls`: one record per call to the judge, with the judge's provider and model, the prompt messages, the raw response, latency and any error. See [Seeing Every Judge Call](/docs/cli/prompt-judges#seeing-every-judge-call).
 
 To exclude input data (smaller output):
 

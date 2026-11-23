@@ -4,6 +4,7 @@ from fasteval.models.config import MetricConfig
 from fasteval.models.evaluation import (
     EvalInput,
     EvalResult,
+    EvaluationFailedError,
     ExpectedTool,
     HumanReviewResult,
     MetricResult,
@@ -19,6 +20,7 @@ from fasteval.models.multimodal import (
 __all__ = [
     "EvalInput",
     "EvalResult",
+    "EvaluationFailedError",
     "ExpectedTool",
     "HumanReviewResult",
     "MetricResult",

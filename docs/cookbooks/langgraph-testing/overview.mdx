@@ -289,7 +289,13 @@ pytest tests/test_agent.py --no-interactive
 
 # Run with specific markers
 pytest -m "agent" -v
+
+# Or with the fasteval CLI (live UI in a terminal, headless in CI)
+fasteval run tests/test_agent.py
+fasteval run tests/test_agent.py --ci
 ```
+
+`fasteval run` runs only evals: tests with a fasteval decorator such as `@fe.correctness()`. Graph tests that use plain `assert` statements and no fasteval metric or data decorator (a `@fe.tag` alone doesn't count) are skipped unless you add `--all`. See [Running Evals](/docs/cli/running-evals).
 
 ### Expected Output
 

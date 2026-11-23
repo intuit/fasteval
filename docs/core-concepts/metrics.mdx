@@ -72,6 +72,8 @@ LLM-based metrics construct evaluation prompts that ask the judge model to:
 3. Account for input context (if provided)
 4. Return a score (0.0-1.0) with detailed reasoning
 
+Every call to the judge is recorded on the metric result (`details["judge_calls"]`: model, prompt, raw response, latency), so you can always see what the judge was asked and what it answered, in JSON reports or on the **Judges** tab of the [local UI](/docs/cli/local-ui). When a built-in prompt doesn't fit your domain, [`@fe.prompt_judge`](/docs/cli/prompt-judges) uses one you own.
+
 ### Example
 
 ```python
@@ -151,10 +153,14 @@ def test_includes_disclaimer():
     response = legal_bot("What are your terms?")
     fe.score(response, "not legal advice")  # Must contain this phrase
 
-@fe.json_schema(schema={"type": "object", "required": ["id", "status"]})
+class Status(BaseModel):  # from pydantic import BaseModel
+    id: str
+    status: str
+
+@fe.json(model=Status)
 def test_api_format():
     response = my_api("get status")
-    fe.score(response, None)  # Schema validation only
+    fe.score(response)  # Schema validation only
 ```
 
 ## Conversation Metrics
@@ -224,7 +230,7 @@ Use deterministic metrics to avoid API latency:
 ```python
 @fe.contains()                         # Required content
 @fe.exact_match()                      # Specific format
-@fe.json_schema(schema=my_schema)      # Valid structure
+@fe.json(model=MyModel)                # Valid structure (Pydantic model)
 ```
 
 ### Combining Metrics for Full Evaluation
@@ -235,7 +241,7 @@ Production evaluation usually means mixing metric types:
 @fe.correctness(threshold=0.8)     # LLM: semantic accuracy
 @fe.faithfulness(threshold=0.8)    # RAG: grounded in context
 @fe.contains()                      # Fast: required phrase
-@fe.json_schema(schema=my_schema)  # Fast: valid structure
+@fe.json(model=MyModel)            # Fast: valid structure
 def test_comprehensive():
     ...
 ```

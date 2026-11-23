@@ -10,6 +10,7 @@ from fasteval.models.evaluation import EvalInput, MetricResult
 from fasteval.providers.base import LLMClient
 from fasteval.providers.registry import get_default_provider
 from fasteval.utils.json_parsing import parse_json_response
+from fasteval.utils.judge_trace import traced
 
 logger = logging.getLogger(__name__)
 
@@ -114,7 +115,7 @@ class BaseLLMMetric(Metric):
     async def evaluate(self, eval_input: EvalInput) -> MetricResult:
         """Evaluate using LLM."""
         prompt = self.get_evaluation_prompt(eval_input)
-        client = self._get_client()
+        client = traced(self._get_client())
 
         messages = [{"role": "user", "content": prompt}]
 

@@ -1,0 +1,205 @@
+---
+title: CLI and pytest Options
+description: Reference for the fasteval command, its configuration keys, and the pytest plugin flags
+order: 5
+---
+
+# CLI and pytest Options
+
+Reference for the `fasteval` command line, `[tool.fasteval]` configuration and the pytest plugin options. For a guided tour, start with [The fasteval CLI](/docs/cli/overview).
+
+`fasteval` and `python -m fasteval` are the same command. `fasteval --version` prints the installed version.
+
+## fasteval
+
+```bash
+fasteval
+```
+
+With no command, prints the project status: version, project root, where configuration was loaded from, the profiles (the default one marked with `*`) and the result of the last run.
+
+## fasteval run
+
+```bash
+fasteval run [PATHS ...] [OPTIONS] [-- PYTEST_ARGS ...]
+```
+
+Runs evals through pytest. Flags `fasteval run` doesn't recognize, and everything after `--`, are passed to pytest unchanged.
+
+### Selection
+
+| Option | Description |
+|--------|-------------|
+| `PATHS` | Files, directories or node ids. Default: the profile's `paths`, else pytest's `testpaths` |
+| `-p`, `--profile NAME` | Profile to use. Default: `default_profile` |
+| `-t`, `--tag EXPR` | Tag (pytest marker) expression. Repeat to OR values; the result is ANDed with the profile's `tags` |
+| `-k EXPR` | Test name expression, ANDed with the profile's `keyword` |
+| `--all` | Include plain tests, not only fasteval evals |
+
+### Execution
+
+| Option | Description |
+|--------|-------------|
+| `-n`, `--workers N` | Parallel workers via pytest-xdist: an integer or `auto`. Overrides the profile's `workers` |
+| `--lf`, `--last-failed` | Re-run only the tests that failed in the previous pytest run |
+| `-x`, `--exitfirst` | Stop at the first failure |
+| `-v`, `--verbose` | More pytest output (repeatable) |
+| `-q`, `--quiet` | Less pytest output |
+| `--no-summary` | Skip the fasteval summary table |
+| `--dry-run` | Print the pytest command and exit |
+
+### Mode
+
+| Option | Description |
+|--------|-------------|
+| `--headless` | No UI server: run, write the static HTML report, exit |
+| `--ui` | Force UI mode even without a terminal |
+| `--ci` | Headless, and no human-review prompts |
+| `--no-open` | In UI mode, don't open a browser |
+| `--port PORT` | UI server port. Default `8484`; a free port is used if it's taken |
+
+Without `--headless` or `--ui`, fasteval runs headless when the `CI` environment variable is `true`, `1`, `yes` or `on`, when the profile sets `headless = true`, or when stdin or stdout isn't a terminal. Otherwise it runs in UI mode. `--headless` and `--ui` can't be combined.
+
+### Results
+
+| Option | Description |
+|--------|-------------|
+| `--html PATH` | Write the static HTML report to `PATH`, in UI mode too. Headless runs write it to `.fasteval/report.html` by default |
+| `--json PATH` | Also write fasteval's JSON results to `PATH` |
+| `--min-score X` | Fail the run if the average aggregate score is below `X` (0 to 1) |
+| `--min-pass-rate X` | Fail the run if the fraction of passing eval results is below `X` (0 to 1) |
+| `--judge METRIC=JUDGE` | Judge metric `METRIC` with the prompt of judge `JUDGE` (`judges/JUDGE.toml`). The metric keeps its threshold and judge model unless the judge file sets them. Repeatable |
+
+### Exit Status
+
+pytest's exit status: 0 when everything passed; 1 when a test failed or a quality gate failed; 5 when no tests were selected. Configuration errors, an unknown profile, or `-n` without pytest-xdist installed exit with 2 before pytest starts.
+
+## fasteval list
+
+```bash
+fasteval list [PATHS ...] [-p NAME] [-t EXPR] [-k EXPR] [--all] [--tags] [--json]
+```
+
+Alias: `fasteval ls`. Collects evals without running them and prints them grouped by file, with case counts, tags, metrics with thresholds, and data source. Takes the same selection options as `run`.
+
+| Option | Description |
+|--------|-------------|
+| `--tags` | Print each tag with its eval count and its description from `[tool.fasteval.tags]` |
+| `--json` | Print the inventory as JSON, one entry per collected case |
+
+## fasteval profiles
+
+```bash
+fasteval profiles [NAME]
+```
+
+Without `NAME`, lists profiles with their descriptions and `extends`. With `NAME`, resolves inheritance and prints what `fasteval run -p NAME` would do, including the pytest command.
+
+## fasteval report
+
+```bash
+fasteval report [RUN_ID] [--html [PATH]] [--open] [--list]
+```
+
+Summarizes a recorded run: counts, pass rate, average score, per-metric scores and failed evals.
+
+| Option | Description |
+|--------|-------------|
+| `RUN_ID` | Run to report on, from `.fasteval/runs/`. Default: the latest |
+| `--html [PATH]` | Write the self-contained HTML report. Default path `.fasteval/report.html` |
+| `--open` | Write the HTML report (if `--html` isn't given, to the default path) and open it in a browser |
+| `--list` | List up to 20 recent runs with status, pass rate and profile |
+
+## fasteval ui
+
+```bash
+fasteval ui [--port PORT] [--host HOST] [--no-open]
+```
+
+Starts the [local UI](/docs/cli/local-ui) and serves it until Ctrl+C.
+
+| Option | Description |
+|--------|-------------|
+| `--port PORT` | Port. Default `8484`; a free port is used if it's taken |
+| `--host HOST` | Bind address. Default `127.0.0.1`. A non-local address prints a warning: anyone who can reach it can view your runs and judge prompts |
+| `--no-open` | Don't open a browser |
+
+## fasteval init
+
+```bash
+fasteval init
+```
+
+Adds a starter configuration with a tag registry and `dev` and `ci` profiles. It's appended to `pyproject.toml` when there is one, and written to a new `fasteval.toml` otherwise. Does nothing if the project is already configured.
+
+## Configuration Keys
+
+In `[tool.fasteval]` of `pyproject.toml`, or at the top level of `fasteval.toml`. Unknown keys are errors. Details in [Profiles](/docs/cli/profiles).
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `default_profile` | string | Profile used without `-p` |
+| `tags` | table | Tag registry, `name = "description"` |
+| `profiles.<name>` | table | A profile (keys below) |
+| `judges_dir` | string | Prompt judge directory. Default `judges` |
+| `judge_client` | string | Default LLM judge, `"module:attribute"`: set as the default provider in pytest runs (unless code sets one) and used by the UI playground |
+
+| Profile key | Type | `fasteval run` flag |
+|-------------|------|---------------------|
+| `description` | string | |
+| `paths` | list of strings | `PATHS` |
+| `tags` | string | `-t` (narrows) |
+| `keyword` | string | `-k` (narrows) |
+| `workers` | int ≥ 0, `"auto"` or `"logical"` | `-n` |
+| `outputs` | list of `"json:path"` / `"html:path"` | `--json` (adds) |
+| `review_prompts` | bool | `--ci` |
+| `headless` | bool | `--headless` / `--ui` |
+| `min_score` | number, 0 to 1 | `--min-score` |
+| `min_pass_rate` | number, 0 to 1 | `--min-pass-rate` |
+| `env` | table of strings | |
+| `pytest_args` | list of strings | arguments after `--` |
+| `extends` | string | |
+
+## pytest Plugin Options
+
+The pytest plugin is installed with `fasteval-core` and registers itself. These options work with plain `pytest`, without the CLI:
+
+| Option | Description |
+|--------|-------------|
+| `--fe-only` | Run only fasteval evals (tests with a metric, data source or `@fe.human_review`); deselect other tests, including tests that only have `@fe.tag` |
+| `--fe-output TYPE:PATH` | Export results: `json:results.json` or `html:report.html`. Repeatable. Without a path, prints to stdout |
+| `--fe-summary` | Print the fasteval summary table after the run |
+| `--fe-min-score X` | Fail the run if the average aggregate score is below `X` |
+| `--fe-min-pass-rate X` | Fail the run if the eval pass rate is below `X` |
+| `--fe-judge METRIC=JUDGE` | Swap metric `METRIC` for prompt judge `JUDGE`. Repeatable |
+| `--fe-inventory PATH` | Write a JSON inventory of the collected evals (used by `fasteval list`) |
+| `--fe-events DIR` | Write a live JSONL event log of the run to `DIR` (used by the UI) |
+| `--no-interactive` | Skip human-review prompts |
+
+The plugin also:
+
+- adds a `fasteval` marker to every eval, so `pytest -m fasteval` selects them
+- registers the tags in `[tool.fasteval.tags]` and every `@fe.tag` name, so they work with `--strict-markers`
+- expands `@fe.dataset`, `@fe.csv` and `@fe.jsonl` into one test case per item at collection time
+- merges results from pytest-xdist workers, so summaries, reports and gates cover the whole run
+- loads `judge_client` from `[tool.fasteval]` as the default LLM judge, unless code already called `fe.set_default_provider()`
+
+## Environment Variables
+
+| Variable | Read or set by | Meaning |
+|----------|----------------|---------|
+| `CI` | `fasteval run` | A true value (`true`, `1`, `yes`, `on`) makes runs headless and turns off review prompts |
+| `FASTEVAL_NO_INTERACTIVE` | human review | `1` skips human-review prompts (set by `--no-interactive`) |
+| `FASTEVAL_PROFILE` | set by `fasteval run` | Name of the active profile |
+| `FASTEVAL_RUN_ID` | set by `fasteval run` | Id of the recorded run |
+| `NO_COLOR` / `FORCE_COLOR` | `fasteval` | Turn terminal colors off or on |
+
+## Files
+
+| Path | Contents |
+|------|----------|
+| `.fasteval/runs/<id>/` | One directory per recorded run: `meta.json`, `events*.jsonl`, `result.json`, `output.log` |
+| `.fasteval/last-run.json` | JSON results of the latest `fasteval run` |
+| `.fasteval/report.html` | Default static HTML report |
+| `.fasteval/.gitignore` | Created by fasteval; ignores the whole directory |
+| `judges/<name>.toml` | [Prompt judges](/docs/cli/prompt-judges) |

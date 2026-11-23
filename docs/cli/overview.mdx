@@ -1,0 +1,163 @@
+---
+title: The fasteval CLI
+description: Run, browse and report on evals with one command, with plain pytest underneath
+order: 1
+sidebar:
+  - title: Install
+    anchor: install
+  - title: Quick Tour
+    anchor: quick-tour
+  - title: UI Mode and Headless Mode
+    anchor: ui-mode-and-headless-mode
+  - title: Still Just pytest
+    anchor: still-just-pytest
+  - title: Run History
+    anchor: run-history
+  - title: Next Steps
+    anchor: next-steps
+---
+
+# The fasteval CLI
+
+fasteval evals are pytest tests, and pytest still runs them. The `fasteval` command is a front door on top of pytest: it knows which tests are evals, remembers named run configurations ([profiles](/docs/cli/profiles)), shows each run live in your browser, and records every run so you can re-run, compare and export it later.
+
+```bash
+fasteval run
+```
+
+That one command runs every eval in your project (and skips plain unit tests), opens the run in your browser as it happens, and records it under `.fasteval/runs/`. In CI it switches to headless mode by itself and writes a self-contained HTML report you can upload as an artifact.
+
+## Install
+
+The CLI ships with `fasteval-core`. There's nothing extra to install:
+
+```bash
+pip install fasteval-core
+fasteval --version
+```
+
+If the `fasteval` script isn't on your `PATH`, `python -m fasteval` is the same command.
+
+Parallel runs (`fasteval run -n auto`) use pytest-xdist, which isn't installed by default:
+
+```bash
+pip install pytest-xdist
+```
+
+## Quick Tour
+
+| Command | What it does |
+|---------|--------------|
+| `fasteval` | Project status: config file, profiles, last run |
+| `fasteval run [PATHS]` | Run evals. Live UI on a terminal, headless in CI |
+| `fasteval list [PATHS]` | Inventory of evals with their tags, metrics and data source (alias: `ls`) |
+| `fasteval profiles [NAME]` | List profiles, or show exactly what one runs |
+| `fasteval report [RUN_ID]` | Summarize a recorded run, or export it as a single HTML file |
+| `fasteval ui` | Open the local UI: run history, eval catalog, judges, playground |
+| `fasteval init` | Add a starter `[tool.fasteval]` config to your project |
+
+A typical loop looks like this:
+
+```bash
+fasteval list -t smoke          # what would run?
+fasteval run -t smoke           # run it and watch it live
+fasteval run --lf               # re-run only what failed last time
+fasteval report --html --open   # share the latest run as one HTML file
+```
+
+`fasteval list` groups data-driven cases under their eval, so you can see the shape of your suite at a glance:
+
+```
+fasteval · list · dev (pyproject.toml)
+
+evals/test_answers.py
+  test_refund_policy       rag smoke  contains≥1
+  test_faq_answers ×3      rag        rouge≥0.6  csv evals/data/faq.csv
+  test_support_answers ×4  llm rag    correctness≥0.6  dataset support_questions
+
+evals/test_routing.py
+  test_intent_routing ×5   routing smoke  exact_match≥1
+
+4 evals (13 cases) in 2 files · rag(3) smoke(2) llm(1) routing(1)
+```
+
+The full list of commands and flags is in the [CLI Reference](/docs/api-reference/cli).
+
+## UI Mode and Headless Mode
+
+`fasteval run` works in one of two modes.
+
+**UI mode** is the default when you run it from a terminal. fasteval starts a local server (port 8484, or any free port if that one is taken), opens your default browser on the live run, and prints the URL. You watch cases complete, open any case to see its input, expected and actual output, every metric's score and reasoning, and the exact prompts the LLM judge saw. When the run finishes, the server keeps going so you can re-run failures or [tune a judge](/docs/cli/prompt-judges); press Ctrl+C to exit. Use `--no-open` to skip opening the browser and `--port` to pick a port.
+
+**Headless mode** runs without a server. fasteval writes a self-contained, static HTML report to `.fasteval/report.html` (or the path you give `--html`) and exits with pytest's exit code. fasteval goes headless when:
+
+- you pass `--headless` or `--ci`
+- the profile sets `headless = true`
+- the `CI` environment variable is set to a true value (`true`, `1`, `yes` or `on`), as it is on GitHub Actions and most CI services
+- stdin or stdout isn't a terminal
+
+`--ui` forces UI mode even without a terminal. `--ci` also turns off [human review](/docs/human-review/overview) prompts, and so does a `CI` variable.
+
+The static report is the same UI, read-only, with all of the run's data inlined in one file. It opens from a CI artifact or straight from disk, with no server and no network. See [Local UI](/docs/cli/local-ui) for a tour of both.
+
+## Still Just pytest
+
+Every `fasteval run` translates into one plain `pytest` command and prints it before it starts. `--dry-run` prints the command without running anything. Here the default profile runs `evals/` and excludes slow evals, and `-t` narrows that further:
+
+```bash
+$ fasteval run -t smoke -t rag --dry-run
+.venv/bin/python -m pytest evals --fe-only -m '(not slow) and ((smoke) or (rag))' --fe-summary --fe-output=json:.fasteval/last-run.json
+```
+
+The work is done by fasteval's pytest plugin, so everything the CLI does for a single run has a pytest flag:
+
+| `fasteval run` | Plain pytest |
+|----------------|--------------|
+| runs evals only (default) | `--fe-only` |
+| `--all` (include plain tests) | leave out `--fe-only` |
+| `-t smoke` | `-m smoke` |
+| `-n auto` | `-n auto` (pytest-xdist) |
+| `--min-score 0.8` | `--fe-min-score 0.8` |
+| `--min-pass-rate 0.9` | `--fe-min-pass-rate 0.9` |
+| `--judge correctness=strict_correctness` | `--fe-judge correctness=strict_correctness` |
+| `--json results.json` | `--fe-output json:results.json` |
+| `--ci` | `--no-interactive` (plus headless mode) |
+| prints a summary (default) | `--fe-summary` |
+
+Running `pytest` directly stays fully supported: your IDE's test runner, existing CI scripts and `pytest -k ...` all keep working. What the CLI adds on top is profiles, run history, the live UI and the static UI report. See [Pytest Integration](/docs/core-concepts/pytest) for the plugin flags.
+
+Flags the CLI doesn't recognize are passed to pytest unchanged, and so is everything after `--`:
+
+```bash
+fasteval run --tb=short -W error
+fasteval run -t smoke -- -p no:randomly
+```
+
+## Run History
+
+Every `fasteval run` is recorded in a `.fasteval/` directory at your project root (the directory that holds your `pyproject.toml` or `fasteval.toml`):
+
+```
+.fasteval/
+├── .gitignore            # contains "*", so git ignores the whole directory
+├── runs/
+│   └── 20261123-142501-a3f9/
+│       ├── meta.json     # what ran: profile, selection, pytest command, origin (cli or ui)
+│       ├── events*.jsonl # live event log (one extra file per xdist worker)
+│       ├── result.json   # final summary, quality gates, exit status
+│       └── output.log    # pytest console output (runs started from the UI)
+├── last-run.json         # JSON results of the latest run
+├── last-run.meta.json
+└── report.html           # static report from the latest headless run
+```
+
+fasteval creates the `.gitignore` itself, so run data never ends up in a commit. It keeps the 50 most recent runs and removes older ones. Because each run stores what was requested, any run can be re-run with the same settings, or with only the cases that failed, from `fasteval ui`.
+
+## Next Steps
+
+- [**Running Evals**](/docs/cli/running-evals) — selection, parallel runs, reports and quality gates
+- [**Profiles**](/docs/cli/profiles) — named run configurations in `pyproject.toml`
+- [**Tags**](/docs/cli/tags) — label evals and select them with `-t`
+- [**Local UI**](/docs/cli/local-ui) — live runs, history, comparisons and static reports
+- [**Prompt Judges**](/docs/cli/prompt-judges) — edit an LLM judge's prompt, test it on real cases, and swap it in
+- [**CI/CD Integration**](/docs/cookbooks/ci-cd-setup) — headless runs, gates and report artifacts

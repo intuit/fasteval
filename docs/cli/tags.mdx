@@ -1,0 +1,137 @@
+---
+title: Tags
+description: Label evals with @fe.tag and select them with fasteval run -t or pytest -m
+order: 4
+sidebar:
+  - title: Tagging an Eval
+    anchor: tagging-an-eval
+  - title: Selecting by Tag
+    anchor: selecting-by-tag
+  - title: Tagging Dataset Cases
+    anchor: tagging-dataset-cases
+  - title: Registering Tags
+    anchor: registering-tags
+  - title: Tag Names
+    anchor: tag-names
+---
+
+# Tags
+
+Tags group evals by purpose: `smoke` for the fast checks you run on every change, `rag` for retrieval quality, `slow` for the expensive ones you save for nightly runs. Select them on the command line, in a [profile](/docs/cli/profiles), or in the UI's filters.
+
+## Tagging an Eval
+
+```python
+import fasteval as fe
+
+@fe.tag("smoke", "rag")
+@fe.correctness(threshold=0.8)
+def test_refund_answer():
+    fe.score(agent("Can I get a refund?"), "Within 30 days", input="Can I get a refund?")
+```
+
+`@fe.tag` takes one or more names, can be stacked, and works on a test class to tag every test in it:
+
+```python
+@fe.tag("routing")
+class TestIntentRouting:
+    @fe.tag("smoke")
+    @fe.exact_match()
+    def test_billing(self):
+        fe.score(route("Where is my refund?"), "billing")
+```
+
+Here `test_billing` has both `routing` and `smoke`.
+
+A tag labels a test; it doesn't make it an eval. A test with `@fe.tag` but no metric or data decorator is skipped by `fasteval run` (which runs evals only), and still runs with `pytest -m <tag>`.
+
+Tags are real pytest markers: `@fe.tag("smoke")` is the same marker as `@pytest.mark.smoke`. The difference is that fasteval registers `@fe.tag` names for you, so there's no `PytestUnknownMarkWarning` and they work with `--strict-markers`. Markers you add with `@pytest.mark.<name>` count as tags too, in selection and in `fasteval list`; register those in `[tool.fasteval.tags]` (below) or pytest will warn about them.
+
+## Selecting by Tag
+
+With the CLI, `-t` takes a marker expression. Repeat it to OR values together:
+
+```bash
+fasteval run -t smoke
+fasteval run -t "rag and not slow"
+fasteval run -t smoke -t routing        # smoke OR routing
+fasteval list -t rag                    # see what would run
+```
+
+`-t` narrows the profile's own `tags` (it's ANDed with them), as described in [Running Evals](/docs/cli/running-evals#tags).
+
+With plain pytest, use `-m`:
+
+```bash
+pytest -m smoke
+pytest -m "rag and not slow"
+```
+
+Every eval also carries an automatic `fasteval` marker, so `pytest -m fasteval` selects all evals and `pytest -m "not fasteval"` selects everything else.
+
+In the UI, every tag in a run appears as a filter chip above the case list, and the **Evals** and **New run** screens take the same tag expressions.
+
+## Tagging Dataset Cases
+
+Individual cases of a [dataset](/docs/core-concepts/data-sources#datasets) can carry their own tags, on top of the eval's tags. Use `fe.case(tags=[...])`, or a `tags` list in a dict case:
+
+```python
+@fe.dataset
+def support_questions():
+    yield {"id": "refund", "question": "How long do refunds take?", "expected": "30 days"}
+    yield fe.case(id="hours", tags=["slow"], question="When is support open?", expected="9am to 6pm PT")
+    yield {"id": "intl", "tags": ["shipping"], "question": "Do you ship abroad?", "expected": "Yes"}
+
+@support_questions
+@fe.tag("rag")
+@fe.correctness(threshold=0.7)
+def test_support_answers(question, expected):
+    fe.score(agent(question), expected, input=question)
+```
+
+`fasteval run -t "not slow"` runs the `refund` and `intl` cases and skips `hours`. Case tags are registered automatically, like `@fe.tag` names.
+
+## Registering Tags
+
+Describe your tags in `[tool.fasteval.tags]`:
+
+```toml
+[tool.fasteval.tags]
+smoke = "Fast sanity evals, run on every change"
+rag = "Retrieval quality"
+slow = "Long-running or expensive evals"
+```
+
+fasteval registers these with pytest (plain `pytest` runs included), and `fasteval list --tags` shows each tag's eval count next to its description. Tags that are used but not described are flagged, which helps keep the registry honest:
+
+```
+$ fasteval list --tags
+  billing     1  (not registered)
+  rag         3  Retrieval quality
+  slow        1  Long-running or expensive evals
+  smoke       2  Fast sanity evals, run on every change
+```
+
+Registering is optional for `@fe.tag` names; it's how you document them, and it's what makes plain `@pytest.mark` tags warning-free.
+
+## Tag Names
+
+Tag names must be Python identifiers: letters, digits and underscores, not starting with a digit. A few names are reserved because they already mean something to pytest or to marker expressions, and `@fe.tag` rejects them with an error:
+
+`and`, `or`, `not`, `fasteval`, `parametrize`, `skip`, `skipif`, `xfail`, `usefixtures`, `filterwarnings`
+
+## Tags in Profiles
+
+A profile's `tags` key is a tag expression, so profiles are the natural place for standing selections:
+
+```toml
+[tool.fasteval.profiles.dev]
+paths = ["evals"]
+tags = "not slow"
+
+[tool.fasteval.profiles.smoke]
+extends = "dev"
+tags = "smoke"
+```
+
+A child profile's `tags` replaces the parent's; set `tags = ""` to clear it. See [Profiles](/docs/cli/profiles).

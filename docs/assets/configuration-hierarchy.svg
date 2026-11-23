@@ -33,7 +33,7 @@
     <g transform="translate(0, 70)" filter="url(#shadow)">
       <path d="M -100 0 L 100 0 L 130 60 L -130 60 Z" fill="white" stroke="#3b82f6" stroke-width="1.5"/>
       <text y="28" text-anchor="middle" font-size="13" font-weight="700" fill="#1d4ed8">2. Programmatic</text>
-      <text y="46" text-anchor="middle" font-size="11" fill="#2563eb">fe.configure()</text>
+      <text y="46" text-anchor="middle" font-size="11" fill="#2563eb">fe.set_default_provider()</text>
     </g>
 
     <g transform="translate(0, 140)" filter="url(#shadow)">
@@ -64,14 +64,14 @@
 
     <g transform="translate(0, 70)" filter="url(#shadow)">
       <rect width="260" height="60" rx="8" fill="#0f172a"/>
-      <text x="15" y="25" font-family="monospace" font-size="12" fill="#60a5fa">fe.configure(</text>
-      <text x="15" y="43" font-family="monospace" font-size="12" fill="#60a5fa">  model=<tspan fill="#fbbf24">"gpt-4o-mini"</tspan>)</text>
+      <text x="15" y="25" font-family="monospace" font-size="12" fill="#60a5fa">fe.set_default_provider(</text>
+      <text x="15" y="43" font-family="monospace" font-size="12" fill="#60a5fa">  OpenAIClient(<tspan fill="#fbbf24">"gpt-4o-mini"</tspan>))</text>
     </g>
 
     <g transform="translate(0, 140)" filter="url(#shadow)">
       <rect width="260" height="60" rx="8" fill="#0f172a"/>
       <text x="15" y="25" font-family="monospace" font-size="12" fill="#f8fafc">[tool.fasteval]</text>
-      <text x="15" y="43" font-family="monospace" font-size="12" fill="#10b981">default_model = <tspan fill="#fbbf24">"..."</tspan></text>
+      <text x="15" y="43" font-family="monospace" font-size="12" fill="#10b981">judge_client = <tspan fill="#fbbf24">"app.llm:judge"</tspan></text>
     </g>
 
     <g transform="translate(0, 210)" filter="url(#shadow)">

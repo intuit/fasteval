@@ -93,6 +93,27 @@ def load_golden_dataset(path: str = "golden_test_cases.csv"):
 GOLDEN_TEST_CASES = load_golden_dataset()
 ```
 
+### One Test Case per Golden Example
+
+To get a pass/fail result per golden example, wrap the list in a [dataset](/docs/core-concepts/data-sources#datasets). Each case's `id` becomes its test id and its `tags` list becomes per-case [tags](/docs/cli/tags):
+
+```python
+# test_golden.py
+import fasteval as fe
+from golden_dataset import GOLDEN_TEST_CASES
+from prompts import PROMPTS
+
+golden = fe.dataset(GOLDEN_TEST_CASES, name="golden")
+
+@golden
+@fe.correctness(threshold=0.7)
+def test_golden(input, expected, category):
+    llm = get_llm_with_prompt(PROMPTS["v2"])
+    fe.score(llm.invoke(input), expected, input=input)
+```
+
+`fasteval run test_golden.py` reports `test_golden[<id>]` for every example, and `fasteval run --lf` re-runs only the ones that failed.
+
 ## Comparing Prompt Versions
 
 ### Define Prompt Versions
@@ -300,6 +321,18 @@ def test_no_category_regression(category, baseline_scores):
     )
 ```
 
+### Comparing Runs in the Local UI
+
+For a quick, visual before/after, let the [local UI](/docs/cli/local-ui) do the bookkeeping:
+
+1. Run the golden evals on the current prompt: `fasteval run test_golden.py`.
+2. Change the prompt.
+3. On that run's page (or in the Runs list), click **Re-run**. The new run uses the same selection and settings against your current code.
+
+The re-run's page compares itself with the original run: pass rate and average score before and after, plus a score change next to every case, so you can see exactly which examples got better or worse. **Re-run failed** does the same for only the cases that failed.
+
+The same works when it's the judge rather than the prompt you're changing: `fasteval run --judge correctness=<judge>` swaps in a [prompt judge](/docs/cli/prompt-judges), and the playground's **Run evals with this judge** produces a compared re-run directly.
+
 ### Baseline Management
 
 ![Baseline Management Workflow](docs/assets/baseline-management.svg)
@@ -398,6 +431,8 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: pytest tests/test_prompt_regression.py -v
+        # or: fasteval run tests/test_prompt_regression.py --all --min-pass-rate 0.95
+        #     (--all keeps test_no_regression_vs_baseline, which has no fasteval decorator)
 
       - name: Generate comparison report
         if: always()

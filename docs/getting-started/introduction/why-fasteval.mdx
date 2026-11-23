@@ -84,7 +84,7 @@ def test_qa_bot():
 
 **Semantic understanding** is the big one. "Paris is the capital" and "The capital city is Paris" — fasteval knows those are equivalent. You don't have to anticipate every phrasing.
 
-It's also **scalable** — thousands of evaluations running automatically in CI/CD, not a human squinting at logs. The evaluation criteria stay **consistent** across every test, every run, every team member. And when something scores low, the LLM judge gives you its **reasoning**, so you're not guessing why a test failed.
+It's also **scalable** — thousands of evaluations running automatically in CI/CD, not a human squinting at logs. The evaluation criteria stay **consistent** across every test, every run, every team member. And when something scores low, the LLM judge gives you its **reasoning**, so you're not guessing why a test failed. Every judge prompt and raw response is recorded too, and the [local UI](/docs/cli/local-ui) lets you read them case by case and [tune the judge](/docs/cli/prompt-judges) when you disagree with it.
 
 The cost difference is stark: $0.001-$0.01 per evaluation versus $0.10-$1.00 for human review. Results come back in seconds, not days.
 
@@ -117,7 +117,7 @@ fasteval is built for **CI/CD quality gates** — blocking deployments when corr
 
 ### When to Reach for Something Else
 
-If you need **binary format validation** — like checking JSON schema compliance — use deterministic checks (`@fe.json_schema()`). For **exact string requirements**, `@fe.exact_match()` or `@fe.contains()` will do the job faster. **Subjective creative quality** is tricky; you'll probably want to combine fasteval with human review. And for **legal or compliance sign-off**, LLM evaluation can inform the decision, but a human still needs to approve it.
+If you need **binary format validation** — like checking JSON schema compliance — use deterministic checks (`@fe.json(model=...)`). For **exact string requirements**, `@fe.exact_match()` or `@fe.contains()` will do the job faster. **Subjective creative quality** is tricky; you'll probably want to combine fasteval with human review. And for **legal or compliance sign-off**, LLM evaluation can inform the decision, but a human still needs to approve it.
 
 ### The Sweet Spot
 

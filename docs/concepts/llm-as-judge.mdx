@@ -78,7 +78,7 @@ fasteval builds evaluation prompts following a few key principles. The judge get
 
 LLM-as-Judge shines when you need semantic understanding. It handles **semantic correctness** well because it gets paraphrasing, synonyms, and equivalent expressions. It's great at judging **relevance to a question** — understanding context and intent, not just keyword overlap. **Tone and style** assessments come naturally to it. And it can evaluate **safety and toxicity** since these models are trained to spot harmful content. It's also solid at **factual grounding** when you provide reference context to check against.
 
-But don't use it for everything. If you need exact string matching, use `@fe.exact_match()`. JSON schema validation? That's `@fe.json_schema()`. Keyword presence is just `@fe.contains()`. Numerical calculations and format compliance belong to deterministic checks — regex, schema validators, plain old assertions. Cheaper, faster, and more reliable for those jobs.
+But don't use it for everything. If you need exact string matching, use `@fe.exact_match()`. JSON schema validation? That's `@fe.json(model=...)`. Keyword presence is just `@fe.contains()`. Numerical calculations and format compliance belong to deterministic checks — regex, schema validators, plain old assertions. Cheaper, faster, and more reliable for those jobs.
 
 ## Strengths
 
@@ -128,6 +128,7 @@ The judge LLM has its own biases baked in from training. It might prefer verbose
 
 - Use consistent judge models across evaluations
 - Calibrate thresholds empirically with known examples
+- Rewrite the judge prompt when it consistently disagrees with you, and check the new version against labeled cases in the [judge playground](/docs/cli/prompt-judges#the-playground)
 - Consider multiple judge models and averaging for critical decisions
 - Set temperature to 0 for more deterministic evaluations
 
@@ -146,6 +147,7 @@ Each evaluation requires an LLM API call:
 - Use cheaper models (GPT-4o-mini, Claude Haiku) for most tests
 - Reserve expensive models for critical evaluation paths
 - Combine with deterministic checks to reduce LLM calls
+- Re-run only what failed (`fasteval run --lf`) while iterating
 - Use sampling strategies for high-volume production evaluation
 
 ### Non-Determinism
@@ -234,9 +236,9 @@ Don't guess thresholds — measure them with known examples:
 Use LLM-as-Judge for semantic qualities, deterministic checks for structure:
 
 ```python
-@fe.correctness(threshold=0.8)      # Semantic: Is it right?
-@fe.json_schema(schema=my_schema)   # Deterministic: Valid JSON?
-@fe.contains(expected="disclaimer") # Deterministic: Has disclaimer?
+@fe.correctness(threshold=0.8)              # Semantic: Is it right?
+@fe.json(model=ApiResponse)                 # Deterministic: Valid JSON? (Pydantic model)
+@fe.regex(pattern=r"(?i)not legal advice")  # Deterministic: Has the disclaimer?
 def test_api_response():
     response = agent(query)
     fe.score(response, expected)
@@ -260,3 +262,17 @@ def test_with_review():
 ```
 
 The reasoning helps you understand whether the issue is with your agent, your expected output, or your evaluation criteria.
+
+The reasoning helps most when you can read it next to the inputs and the exact prompt. In the [local UI](/docs/cli/local-ui#inspecting-a-case), every case shows each metric's reasoning, and its **Judges** tab shows every call the judge made: model, prompt messages, raw response and latency. The same record is on each metric result as `details["judge_calls"]`.
+
+### 6. Own the Prompt When It Matters
+
+Built-in judge prompts are a strong default, but they don't know your domain. When a judge keeps disagreeing with your team, turn it into a [prompt judge](/docs/cli/prompt-judges): a TOML file with your own template, tested against real, labeled cases before you adopt it.
+
+```python
+@fe.prompt_judge("refund_correctness_strict")
+def test_refund_answer():
+    fe.score(agent("Can I get a refund?"), "Within 30 days", input="Can I get a refund?")
+```
+
+To compare a new judge with the built-in one on your existing evals, swap it in for a single run and compare the results: `fasteval run --judge correctness=refund_correctness_strict`.

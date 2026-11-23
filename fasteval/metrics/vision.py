@@ -12,6 +12,7 @@ from typing import Any, List, Optional
 from fasteval.metrics.llm import BaseLLMMetric, LLMEvalResponse
 from fasteval.models.evaluation import EvalInput, MetricResult
 from fasteval.providers.base import LLMClient
+from fasteval.utils.judge_trace import traced
 
 logger = logging.getLogger(__name__)
 
@@ -94,7 +95,7 @@ class BaseVisionMetric(BaseLLMMetric):
         _check_vision_available()
 
         prompt = self.get_evaluation_prompt(eval_input)
-        client = self._get_client()
+        client = traced(self._get_client())
 
         # Prepare images for multi-modal API call
         image_urls = self._prepare_images(eval_input)
