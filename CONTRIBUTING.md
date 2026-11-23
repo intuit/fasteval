@@ -4,6 +4,7 @@ Thank you for your interest in contributing to fasteval! Whether it's fixing a b
 
 - [Reporting Issues](#reporting-issues)
 - [Development Setup](#development-setup)
+- [Building the UI](#building-the-ui)
 - [Making Changes](#making-changes)
 - [Code Style](#code-style)
 - [Testing](#testing)
@@ -41,6 +42,31 @@ Thank you for your interest in contributing to fasteval! Whether it's fixing a b
    ```bash
    uv run tox
    ```
+
+4. Optionally, build the UI bundle (see [Building the UI](#building-the-ui)) if you'll use `fasteval ui`, the live view of `fasteval run`, or HTML run reports.
+
+## Building the UI
+
+The local UI (`fasteval ui`, the live view of `fasteval run`, and the self-contained HTML reports) is a React app in `ui/`. It's compiled into `fasteval/ui/static/dist/`, which ships inside the `fasteval-core` wheel.
+
+The built bundle is **not committed**: `fasteval/ui/static/dist/` (and `ui/node_modules/`) are in `.gitignore`. CI builds it and checks that the wheel contains it, and the release workflow builds it before publishing. From a source checkout, build it yourself with Node.js (CI uses Node 20):
+
+```bash
+cd ui
+npm ci
+npm run build    # typechecks, then writes ../fasteval/ui/static/dist/
+```
+
+Without the bundle, the Python side still works: `fasteval ui` and the UI server show a "build the UI" message, and `fasteval run` falls back to headless mode without writing an HTML report.
+
+For UI development with hot reload, run the API from a project and the Vite dev server side by side:
+
+```bash
+fasteval ui --port 8484 --no-open   # in a project with evals
+cd ui && npm run dev                 # proxies /api to localhost:8484
+```
+
+`npm run typecheck` runs the TypeScript checks without building.
 
 ## Making Changes
 
@@ -155,8 +181,13 @@ fasteval/
 ├── cache/          # In-memory LRU caching
 ├── collectors/     # Result collection and reporting
 │   └── reporters/  # Output reporters (JSON, HTML)
-├── utils/          # Helpers (formatting, JSON parsing, async)
-└── testing/        # pytest plugin (--fe-output, --fe-summary, --no-interactive)
+├── utils/          # Helpers (formatting, JSON parsing, async, judge call tracing)
+├── testing/        # pytest plugin (--fe-only, --fe-output, gates, datasets, xdist, events)
+├── cli/            # `fasteval` command: run, list, profiles, report, ui, init; [tool.fasteval] config
+├── ui/             # Local UI server, run history, static HTML report (bundle in ui/static/dist/)
+└── judges.py       # Prompt judges (judges/*.toml) and run-time judge swaps
+
+ui/                      # React source of the local UI (built into fasteval/ui/static/dist/)
 
 plugins/
 ├── fasteval-langfuse/   # Langfuse production trace evaluation

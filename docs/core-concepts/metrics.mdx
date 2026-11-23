@@ -72,6 +72,8 @@ LLM-based metrics construct evaluation prompts that ask the judge model to:
 3. Account for input context (if provided)
 4. Return a score (0.0-1.0) with detailed reasoning
 
+Every call to the judge is recorded on the metric result (`details["judge_calls"]`: model, prompt, raw response, latency), so you can always see what the judge was asked and what it answered, in JSON reports or on the **Judges** tab of the [local UI](/docs/cli/local-ui). When a built-in prompt doesn't fit your domain, [`@fe.prompt_judge`](/docs/cli/prompt-judges) uses one you own.
+
 ### Example
 
 ```python

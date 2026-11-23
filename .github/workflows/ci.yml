@@ -35,6 +35,41 @@ jobs:
       - name: Type checking (mypy)
         run: uv run mypy .
 
+  ui:
+    # The React UI (ui/) is bundled into the wheel as fasteval/ui/static/dist.
+    # Typecheck + build it, then prove the wheel ships the bundle and no source.
+    name: UI bundle
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+
+      - name: Install UI dependencies
+        working-directory: ui
+        run: npm ci
+
+      - name: Typecheck and build UI
+        working-directory: ui
+        run: npm run build
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Set up Python
+        run: uv python install 3.13
+
+      - name: Build wheel
+        run: uv build --wheel
+
+      - name: Check wheel contains the UI bundle (and no UI source)
+        run: uv run --no-project python scripts/check_wheel_ui.py dist/
+
   test:
     name: Test (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest

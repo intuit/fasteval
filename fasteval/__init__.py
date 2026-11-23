@@ -36,6 +36,7 @@ from fasteval.collectors import (
     get_collector,
     reset_collector,
 )
+from fasteval.core.datasets import Case, Dataset, case, dataset
 from fasteval.core.decorators import (  # LLM Metrics; Quality Metrics; RAG Metrics; Deterministic Metrics; Tool Trajectory; Conversation Metrics; Generic; Data Decorators; Human Review; Stack; Vision; Audio; Multi-Modal; Vision metrics; Audio metrics; Multi-modal metrics
     aesthetic_score,
     answer_correctness,
@@ -71,12 +72,14 @@ from fasteval.core.decorators import (  # LLM Metrics; Quality Metrics; RAG Metr
     image_understanding,
     instruction_following,
     json,
+    jsonl,
     judge,
     match_error_rate,
     metric,
     multimodal_faithfulness,
     ocr_accuracy,
     prompt_adherence,
+    prompt_judge,
     regex,
     relevance,
     rouge,
@@ -84,6 +87,7 @@ from fasteval.core.decorators import (  # LLM Metrics; Quality Metrics; RAG Metr
     speaker_diarization,
     stack,
     table_extraction,
+    tag,
     tool_args_match,
     tool_call_accuracy,
     tool_sequence,
@@ -224,7 +228,14 @@ __all__ = [
     # Human Review
     "human_review",
     # Metric Stack
+    "prompt_judge",
+    "jsonl",
     "stack",
+    "dataset",
+    "case",
+    "Dataset",
+    "Case",
+    "tag",
     # Vision Metric Decorators
     "image_understanding",
     "ocr_accuracy",

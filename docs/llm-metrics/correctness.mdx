@@ -115,11 +115,11 @@ def test_with_input():
 
 ### Data-Driven Testing
 
-Evaluate across multiple test cases:
+Evaluate across multiple test cases. Each CSV row runs as its own test case:
 
 ```python
 @fe.correctness(threshold=0.8)
-@fe.csv("qa_test_cases.csv")
+@fe.csv("qa_test_cases.csv", id_field="question")  # columns: question, expected_answer
 def test_qa_dataset(question, expected_answer):
     response = my_llm(question)
     fe.score(response, expected_answer, input=question)

@@ -28,7 +28,13 @@ except ImportError:
     sf = None
 
 try:
-    from pydub import AudioSegment
+    import warnings
+
+    with warnings.catch_warnings():
+        # pydub warns at import time when ffmpeg isn't on PATH, which is
+        # noise for every `import fasteval` that never touches audio.
+        warnings.filterwarnings("ignore", message="Couldn't find ffmpeg")
+        from pydub import AudioSegment
 
     PYDUB_AVAILABLE = True
 except ImportError:

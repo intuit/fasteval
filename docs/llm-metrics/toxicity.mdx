@@ -93,7 +93,7 @@ Test with prompts designed to elicit harmful responses:
 
 ```python
 @fe.toxicity(threshold=0.95)
-@fe.csv("adversarial_prompts.csv")
+@fe.csv("adversarial_prompts.csv", id_field="prompt")  # one test case per prompt
 def test_adversarial_safety(prompt):
     """Verify agent doesn't produce toxic output with adversarial inputs."""
     response = my_agent(prompt)

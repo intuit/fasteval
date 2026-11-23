@@ -5,8 +5,8 @@ order: 4
 sidebar:
   - title: Configuration Hierarchy
     anchor: configuration-hierarchy
-  - title: Global Configuration
-    anchor: global-configuration-pyprojecttoml
+  - title: Project Configuration
+    anchor: project-configuration-pyprojecttoml
   - title: Programmatic Configuration
     anchor: programmatic-configuration
   - title: CI/CD Recommendations
@@ -25,29 +25,44 @@ Settings resolve in this order (highest priority first):
 
 1. **Per-metric decorator parameters** — `@fe.correctness(threshold=0.9)`
 2. **Programmatic configuration** — `fe.configure(...)`
-3. **pyproject.toml settings** — `[tool.fasteval]`
+3. **pyproject.toml settings** — `[tool.fasteval]` (run settings: profiles, tags, judges; see below)
 4. **Environment variables** — `OPENAI_API_KEY`, etc.
 
-## Global Configuration (pyproject.toml)
+## Project Configuration (pyproject.toml)
 
-We recommend `pyproject.toml` for project-wide defaults. It keeps config out of your code and works the same way for every team member:
+`[tool.fasteval]` in `pyproject.toml` (or a standalone `fasteval.toml`) configures how evals are **run**: named [profiles](/docs/cli/profiles) for the `fasteval` CLI, the [tag](/docs/cli/tags) registry, and where [prompt judges](/docs/cli/prompt-judges) live. It keeps run settings out of your code and works the same way for every team member:
 
 ```toml
 [tool.fasteval]
-# LLM Provider Settings
-default_provider = "openai"
-default_model = "gpt-4o-mini"
+default_profile = "dev"
+judges_dir = "judges"                       # prompt judge files
+judge_client = "evals.judge_client:client"  # default LLM judge for evals and the UI playground
 
-# Default Thresholds
-default_threshold = 0.7
+[tool.fasteval.tags]
+smoke = "Fast sanity evals"
+slow = "Long-running or expensive evals"
 
-# Performance Settings
-max_concurrent_evals = 5
+[tool.fasteval.profiles.dev]
+paths = ["evals"]
+tags = "not slow"
 
-# Logging
-verbose = false
-log_level = "WARNING"
+[tool.fasteval.profiles.ci]
+extends = "dev"
+tags = ""
+review_prompts = false
+headless = true
+min_pass_rate = 0.9
 ```
+
+| Key | Description |
+|-----|-------------|
+| `default_profile` | Profile `fasteval run` uses without `-p` |
+| `tags` | Tag registry: `name = "description"` |
+| `profiles.<name>` | Run settings: paths, tags, workers, reports, quality gates, environment. See [Profiles](/docs/cli/profiles#profile-keys) |
+| `judges_dir` | Directory of prompt judge files. Default `judges` |
+| `judge_client` | `"module:attribute"` of the project's default LLM judge. pytest runs use it unless code calls `fe.set_default_provider()`; the UI playground uses it too |
+
+These are the only valid keys. The CLI rejects anything else with an error (and a "did you mean" suggestion). To choose the judge model project-wide, point `judge_client` at a client object; for anything else, configure the judge in code with `fe.set_default_provider()` or a metric's `model=` argument. See [LLM Setup](/docs/core-concepts/llm-setup).
 
 ## Programmatic Configuration
 
@@ -166,14 +181,17 @@ def test_mixed_config():
 In practice, we've found these CI defaults work well. Use a cheaper model, loosen the threshold a bit, and set a tight timeout so slow calls don't hang your pipeline:
 
 ```toml
-# pyproject.toml for CI
+# pyproject.toml: a CI profile for `fasteval run -p ci`
 
-[tool.fasteval]
-default_model = "gpt-4o-mini"     # Faster, cheaper
-default_threshold = 0.7           # Slightly lenient for CI
-verbose = false                   # Clean output
-timeout = 30                      # Fail fast on slow calls
+[tool.fasteval.profiles.ci]
+review_prompts = false            # Never wait for human review
+headless = true                   # No UI server; write .fasteval/report.html
+workers = "auto"                  # Parallel workers (needs pytest-xdist)
+min_pass_rate = 0.9               # Fail the run below 90% passing
+env = { OPENAI_MODEL = "gpt-4o-mini" }   # Read by your conftest.py, if you choose
 ```
+
+Pick the judge model for CI in code, for example in `conftest.py` based on `os.getenv("CI")` or `os.getenv("FASTEVAL_PROFILE")`. See [CI/CD Integration](/docs/cookbooks/ci-cd-setup) for complete pipelines.
 
 ```yaml
 # GitHub Actions environment

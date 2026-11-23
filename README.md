@@ -9,7 +9,7 @@
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Docs](https://img.shields.io/badge/docs-fasteval.io-blue)](https://fasteval.io)
 
-A **decorator-first LLM evaluation library** for testing AI agents and LLMs. Stack decorators to define evaluation criteria, run with pytest. [Read the docs](https://fasteval.io/docs).
+A **decorator-first LLM evaluation library** for testing AI agents and LLMs. Stack decorators to define evaluation criteria, run them with the `fasteval` CLI or plain pytest. [Read the docs](https://fasteval.io/docs).
 
 <p align="center">
   <img src="hero-evaluation-journey.png" alt="The Evaluation Journey -- from non-deterministic LLM outputs to reliable engineering metrics" width="800">
@@ -19,6 +19,9 @@ A **decorator-first LLM evaluation library** for testing AI agents and LLMs. Sta
 
 - **50+ built-in metrics** -- stack `@fe.correctness`, `@fe.relevance`, `@fe.hallucination`, and more
 - **pytest native** -- run evaluations with `pytest`, get familiar pass/fail output
+- **`fasteval` CLI** -- `fasteval run` runs only your evals, with named profiles, tag selection, quality gates and run history
+- **Local UI** -- watch runs live, inspect every case and judge prompt, re-run failures and compare runs; headless CI runs write a self-contained HTML report
+- **Prompt judges and playground** -- tune an LLM judge's prompt against real cases, save it as `judges/<name>.toml`, use it with `@fe.prompt_judge()` or swap it in with `fasteval run --judge`
 - **LLM-as-judge + deterministic** -- semantic LLM metrics alongside ROUGE, exact match, JSON schema, regex
 - **Custom criteria** -- `@fe.criteria("Is the response empathetic?")` for any evaluation you can describe in plain English
 - **Multi-modal** -- evaluate vision, audio, and image generation models
@@ -27,7 +30,8 @@ A **decorator-first LLM evaluation library** for testing AI agents and LLMs. Sta
 - **Tool trajectory** -- verify agent tool calls, argument matching, call sequences
 - **Reusable metric stacks** -- `@fe.stack()` to compose and reuse metric sets across tests
 - **Human-in-the-loop** -- `@fe.human_review()` for manual review alongside automated metrics
-- **Data-driven testing** -- `@fe.csv("test_data.csv")` to load test cases from CSV files
+- **Data-driven testing** -- `@fe.dataset`, `@fe.csv()` and `@fe.jsonl()` turn every row or record into its own test case
+- **Tags** -- `@fe.tag("smoke")` to label evals and select them with `fasteval run -t smoke` or `pytest -m smoke`
 - **Pluggable providers** -- OpenAI (default), Anthropic, or bring your own `LLMClient`
 
 ## How It Works
@@ -63,8 +67,48 @@ def test_qa_agent():
 Run it:
 
 ```bash
+fasteval run test_qa_agent.py
+```
+
+From a terminal, the run opens live in your browser; in CI it runs headless and writes `.fasteval/report.html`. It's plain pytest underneath, so this works too:
+
+```bash
 pytest test_qa_agent.py -v
 ```
+
+## Running Evals
+
+```bash
+fasteval                        # project status: config, profiles, last run
+fasteval list                   # every eval with its tags, metrics and data source
+fasteval run -t smoke           # select by tag; unknown flags pass through to pytest
+fasteval run -p ci              # a named profile from [tool.fasteval.profiles]
+fasteval run --lf -n auto       # re-run failures, in parallel (pytest-xdist)
+fasteval run --min-pass-rate 0.9 --min-score 0.75    # quality gates
+fasteval run --judge correctness=my_judge            # swap in a saved prompt judge
+fasteval report --html --open   # export the latest run as one HTML file
+fasteval ui                     # run history, eval catalog, judges, playground
+```
+
+Profiles keep run settings in `pyproject.toml`:
+
+```toml
+[tool.fasteval]
+default_profile = "dev"
+
+[tool.fasteval.profiles.dev]
+paths = ["evals"]
+tags = "not slow"
+
+[tool.fasteval.profiles.ci]
+extends = "dev"
+tags = ""
+review_prompts = false
+headless = true
+min_pass_rate = 0.9
+```
+
+See [The fasteval CLI](https://fasteval.io/docs/cli/overview) for details.
 
 ## Installation
 
@@ -158,6 +202,27 @@ def test_agent_tools():
     )
 ```
 
+### Data-Driven Evals
+
+```python
+@fe.dataset
+def support_questions():
+    yield {"id": "refund", "question": "How long do refunds take?", "expected": "Within 30 days"}
+    yield fe.case(id="hours", tags=["slow"], question="When is support open?", expected="9am to 6pm PT")
+
+@support_questions
+@fe.tag("rag")
+@fe.correctness(threshold=0.7)
+def test_support_answers(question, expected):
+    fe.score(agent(question), expected, input=question)
+
+# One test case per CSV row: test_faq[<question>]
+@fe.contains()
+@fe.csv("evals/data/faq.csv", id_field="question")
+def test_faq(question, expected):
+    fe.score(agent(question), expected, input=question)
+```
+
 ### Multi-Turn Conversations
 
 ```python
@@ -228,6 +293,9 @@ uv run isort .
 
 # Type checking
 uv run mypy .
+
+# Build the local UI bundle (needed for `fasteval ui` and HTML reports from a source checkout)
+cd ui && npm ci && npm run build
 ```
 
 ## Documentation
@@ -237,6 +305,7 @@ Full documentation is available at **[fasteval.io](https://fasteval.io)**.
 - [Getting Started](https://fasteval.io/docs/getting-started/quickstart) -- installation and quickstart guide
 - [Why FastEval](https://fasteval.io/docs/getting-started/introduction/why-fasteval) -- motivation and design philosophy
 - [Core Concepts](https://fasteval.io/docs/core-concepts/decorators) -- decorators, metrics, scoring, data sources
+- [CLI & UI](https://fasteval.io/docs/cli/overview) -- `fasteval run`, profiles, tags, the local UI, prompt judges
 - [Concepts](https://fasteval.io/docs/concepts/llm-as-judge) -- LLM-as-judge, scoring thresholds, evaluation strategies
 - [LLM Metrics](https://fasteval.io/docs/llm-metrics/correctness) -- correctness, relevance, hallucination, and more
 - [Deterministic Metrics](https://fasteval.io/docs/deterministic-metrics/exact-match) -- ROUGE, exact match, regex, JSON schema
@@ -248,7 +317,7 @@ Full documentation is available at **[fasteval.io](https://fasteval.io)**.
 - [Cookbooks](https://fasteval.io/docs/cookbooks/rag-pipeline) -- RAG pipelines, CI/CD setup, prompt regression, production monitoring
 - [Plugins](https://fasteval.io/docs/plugins/langfuse/overview) -- Langfuse, LangGraph, Observe
 - [Advanced](https://fasteval.io/docs/advanced/custom-metrics) -- custom metrics, providers, output collectors, traces
-- [API Reference](https://fasteval.io/docs/api-reference/decorators) -- decorators, evaluator, models, score
+- [API Reference](https://fasteval.io/docs/api-reference/decorators) -- decorators, evaluator, models, score, [CLI and pytest options](https://fasteval.io/docs/api-reference/cli)
 
 ## Contributing
 

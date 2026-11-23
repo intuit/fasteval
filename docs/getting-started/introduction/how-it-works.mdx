@@ -228,11 +228,15 @@ pytest discovers test_*.py
     └─────────────────┘
 ```
 
+### The fasteval CLI
+
+`fasteval run` sits on top of this pipeline. It turns a [profile](/docs/cli/profiles) and your flags into one plain pytest command (it prints it before running), adds `--fe-only` so only evals run, and records the run under `.fasteval/runs/`. While pytest runs, the plugin writes a live event log that the [local UI](/docs/cli/local-ui) streams to your browser; in CI, the same log becomes a static HTML report. See [The fasteval CLI](/docs/cli/overview).
+
 ### Benefits of Pytest Integration
 
-- **Familiar workflow**: `pytest test_file.py -v`
+- **Familiar workflow**: `pytest test_file.py -v` or `fasteval run test_file.py`
 - **IDE support**: Click to run tests in VS Code, PyCharm
-- **Parallel execution**: `pytest -n auto` for concurrent evaluation
+- **Parallel execution**: `pytest -n auto` for concurrent evaluation, with results merged across workers
 - **CI/CD ready**: Standard exit codes (0 = pass, 1 = fail)
 - **Rich output**: Detailed failure messages with reasoning
 
@@ -242,3 +246,4 @@ Now that you know how fasteval works:
 
 - [**Installation**](/docs/getting-started/installation) — Set up fasteval and configure your LLM provider
 - [**Quick Start**](/docs/getting-started/quickstart) — Write your first evaluation test
+- [**The fasteval CLI**](/docs/cli/overview) — Run, browse and report on evals

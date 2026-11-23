@@ -43,6 +43,7 @@ from fasteval.metrics.llm import (  # RAG Metrics; Quality Metrics
 )
 from fasteval.models.config import MetricConfig
 from fasteval.models.evaluation import EvalInput, EvalResult, MetricResult
+from fasteval.utils import judge_trace
 
 logger = logging.getLogger(__name__)
 
@@ -189,6 +190,41 @@ class Evaluator:
 
     def _create_metric(self, config: MetricConfig) -> Metric:
         """Create a metric instance from config."""
+        # Run-time judge swap: fasteval run --judge <metric>=<judge>
+        from fasteval import judges
+
+        override = judges.get_override(config.name)
+        if override is not None:
+            # A swap changes the prompt. Threshold and judge model stay the
+            # eval's own unless the judge file sets them.
+            client = None
+            if not override.model:
+                client = config.llm_client
+                if client is None and (config.llm_config or {}).get("model"):
+                    from fasteval.providers.registry import create_provider_for_model
+
+                    client = create_provider_for_model(config.llm_config["model"])  # type: ignore[index]
+            return judges.PromptJudgeMetric(
+                override,
+                name=config.name,
+                threshold=(
+                    override.threshold
+                    if override.threshold is not None
+                    else config.threshold
+                ),
+                weight=config.weight,
+                llm_client=client,
+            )
+
+        if config.metric_type == "prompt_judge":
+            return judges.PromptJudgeMetric(
+                config.config.get("judge"),
+                name=config.name,
+                threshold=config.config.get("threshold_override"),
+                weight=config.weight,
+                llm_client=config.llm_client,
+            )
+
         # Check for custom metric instance
         if config.metric_type == "custom" and "instance" in config.config:
             return config.config["instance"]
@@ -234,19 +270,23 @@ class Evaluator:
         metric: Metric,
         eval_input: EvalInput,
     ) -> MetricResult:
-        """Run a single metric evaluation."""
-        try:
-            return await metric.evaluate(eval_input)
-        except Exception as e:
-            logger.error(f"Metric {metric.name} failed: {e}")
-            return MetricResult(
-                metric_name=metric.name,
-                score=0.0,
-                passed=False,
-                threshold=metric.threshold,
-                reasoning=f"Evaluation error: {e}",
-                details={"error": str(e)},
-            )
+        """Run a single metric evaluation, recording any LLM judge calls."""
+        with judge_trace.capture() as judge_calls:
+            try:
+                result = await metric.evaluate(eval_input)
+            except Exception as e:
+                logger.error(f"Metric {metric.name} failed: {e}")
+                result = MetricResult(
+                    metric_name=metric.name,
+                    score=0.0,
+                    passed=False,
+                    threshold=metric.threshold,
+                    reasoning=f"Evaluation error: {e}",
+                    details={"error": str(e)},
+                )
+        if judge_calls:
+            result.details = {**result.details, "judge_calls": judge_calls}
+        return result
 
     async def evaluate(
         self,

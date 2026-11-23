@@ -13,9 +13,12 @@ from fasteval.core.decorators import (
     hallucination,
     human_review,
     json,
+    jsonl,
     metric,
+    prompt_judge,
     relevance,
     rouge,
+    tag,
     topic_drift,
     toxicity,
     traces,
@@ -47,6 +50,9 @@ __all__ = [
     "traces",
     # Human Review
     "human_review",
+    "jsonl",
+    "prompt_judge",
+    "tag",
     # Generic
     "metric",
 ]

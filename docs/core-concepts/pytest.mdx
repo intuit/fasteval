@@ -11,6 +11,8 @@ sidebar:
     anchor: understanding-output
   - title: Exporting Results
     anchor: exporting-results
+  - title: Plugin Options
+    anchor: plugin-options
   - title: Fixtures
     anchor: fixtures
   - title: CI/CD Integration
@@ -20,6 +22,8 @@ sidebar:
 # Pytest Integration
 
 fasteval works as a pytest plugin. You don't need to learn a new test runner—just write tests the way you already know.
+
+> **Tip:** The [`fasteval` CLI](/docs/cli/overview) is a front end for exactly this plugin. `fasteval run` runs your evals with profiles, a live UI and run history, and prints the plain `pytest` command it runs. Everything on this page keeps working with `pytest` alone.
 
 ## How It Works
 
@@ -50,7 +54,25 @@ pytest -x
 
 # Run in parallel (requires pytest-xdist)
 pytest -n auto
+
+# Run only fasteval evals, skipping plain unit tests
+pytest --fe-only
+
+# Select by tag (see Tags)
+pytest -m smoke
+pytest -m "rag and not slow"
+
+# Every eval carries a `fasteval` marker
+pytest -m fasteval
 ```
+
+The same runs with the CLI are `fasteval run`, `fasteval run -t smoke` and `fasteval run -n auto`; see [Running Evals](/docs/cli/running-evals).
+
+Under `pytest -n` (pytest-xdist), results from every worker are merged back into the main process, so `--fe-summary`, `--fe-output` reports and quality gates cover the whole run.
+
+### Parametrized and Data-Driven Cases
+
+`@pytest.mark.parametrize`, [`@fe.dataset`, `@fe.csv` and `@fe.jsonl`](/docs/core-concepts/data-sources) all produce one pytest test case per item. Result names keep the case id, so `test_faq[refund]` and `test_faq[hours]` are reported separately in the summary, in JSON and HTML reports, and in the UI.
 
 ## Understanding Output
 
@@ -93,15 +115,45 @@ pytest tests/ --fe-summary
 
 For full details on output formats, custom reporters, and programmatic access, see [Output Collectors](/docs/advanced/output-collectors).
 
+## Plugin Options
+
+The plugin adds these options to `pytest`. The CLI uses the same options under the hood (shown in parentheses):
+
+| Option | Description |
+|--------|-------------|
+| `--fe-only` | Run only fasteval evals and deselect other tests (default in `fasteval run`; `--all` turns it off) |
+| `--fe-output TYPE:PATH` | Export results as `json:path` or `html:path`. Repeatable (`--json`, profile `outputs`) |
+| `--fe-summary` | Print the summary table after the run (on by default in `fasteval run`) |
+| `--fe-min-score X` | Fail the run if the average aggregate score is below `X`, 0 to 1 (`--min-score`) |
+| `--fe-min-pass-rate X` | Fail the run if the eval pass rate is below `X`, 0 to 1 (`--min-pass-rate`) |
+| `--fe-judge METRIC=JUDGE` | Swap a metric for a saved [prompt judge](/docs/cli/prompt-judges). Repeatable (`--judge`) |
+| `--fe-inventory PATH` | Write a JSON inventory of collected evals: tags, metrics, thresholds, data source (`fasteval list`) |
+| `--fe-events DIR` | Write a live JSONL event log of the run, used by the [local UI](/docs/cli/local-ui) |
+| `--no-interactive` | Skip human-review prompts (`--ci`, profile `review_prompts = false`) |
+
+An eval is a test that uses a metric, a data source or `@fe.human_review()`. The plugin marks each one with a `fasteval` marker during collection. `@fe.tag()` alone doesn't make a test an eval: `--fe-only` deselects a test that only has tags, while `pytest -m <tag>` still selects it.
+
+Quality gates turn aggregate quality into a pass/fail signal for the whole run:
+
+```bash
+pytest --fe-min-pass-rate 0.9 --fe-min-score 0.75
+```
+
+A failed gate prints `FastEval gate failed: ...` and sets the exit status to 1, even if every test passed. If a run records no eval results, the gates aren't applied.
+
 ## Configuration
 
-### Using pyproject.toml (Recommended)
+### Using pyproject.toml
+
+`[tool.fasteval]` in `pyproject.toml` holds the tag registry and the CLI's [profiles](/docs/cli/profiles). The plugin reads the tag registry from it, so registered tags work with plain `pytest` too:
 
 ```toml
-[tool.fasteval]
-default_provider = "openai"
-default_model = "gpt-4o-mini"
+[tool.fasteval.tags]
+smoke = "Fast sanity evals"
+slow = "LLM-heavy evals for nightly runs"
 ```
+
+Judge provider and model settings are not read from `pyproject.toml`; set them in code, as below.
 
 ### Using conftest.py
 
@@ -221,7 +273,7 @@ jobs:
       - name: Run evaluations
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        run: pytest tests/ -v --tb=short --fe-output json:results.json --fe-summary
+        run: pytest tests/ -v --tb=short --fe-output json:results.json --fe-summary --fe-min-pass-rate 0.9
 
       - name: Upload results
         if: always()
@@ -231,35 +283,33 @@ jobs:
           path: results.json
 ```
 
+With the CLI, the same job is `fasteval run --ci --min-pass-rate 0.9 --json results.json`, and it also writes a self-contained HTML report to `.fasteval/report.html` that you can upload as an artifact. See [CI/CD Integration](/docs/cookbooks/ci-cd-setup).
+
 ### Separating Fast and Slow Tests
 
-Use pytest markers to split deterministic (fast) tests from LLM (slow) ones:
+Use [tags](/docs/cli/tags) to split deterministic (fast) tests from LLM (slow) ones. `@fe.tag` names are pytest markers that fasteval registers for you:
 
 ```python
-# conftest.py
-import pytest
-
-def pytest_configure(config):
-    config.addinivalue_line("markers", "slow: LLM-based tests")
-
 # test_agent.py
-@pytest.mark.slow
+@fe.tag("slow")
 @fe.correctness(threshold=0.8)
 def test_llm_evaluation():
     ...
 
-@fe.contains()  # Fast, no marker needed
+@fe.contains()  # Fast, no tag needed
 def test_contains_disclaimer():
     ...
 ```
 
 ```bash
 # Run only fast tests in CI
-pytest -m "not slow"
+pytest -m "not slow"            # or: fasteval run -t "not slow"
 
 # Run full suite nightly
 pytest
 ```
+
+A plain `@pytest.mark.slow` works too; register it in `[tool.fasteval.tags]` or with `config.addinivalue_line("markers", ...)` in `conftest.py` to avoid pytest's unknown-marker warning.
 
 ## Troubleshooting
 

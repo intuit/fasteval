@@ -84,7 +84,7 @@ def test_qa_bot():
 
 **Semantic understanding** is the big one. "Paris is the capital" and "The capital city is Paris" — fasteval knows those are equivalent. You don't have to anticipate every phrasing.
 
-It's also **scalable** — thousands of evaluations running automatically in CI/CD, not a human squinting at logs. The evaluation criteria stay **consistent** across every test, every run, every team member. And when something scores low, the LLM judge gives you its **reasoning**, so you're not guessing why a test failed.
+It's also **scalable** — thousands of evaluations running automatically in CI/CD, not a human squinting at logs. The evaluation criteria stay **consistent** across every test, every run, every team member. And when something scores low, the LLM judge gives you its **reasoning**, so you're not guessing why a test failed. Every judge prompt and raw response is recorded too, and the [local UI](/docs/cli/local-ui) lets you read them case by case and [tune the judge](/docs/cli/prompt-judges) when you disagree with it.
 
 The cost difference is stark: $0.001-$0.01 per evaluation versus $0.10-$1.00 for human review. Results come back in seconds, not days.
 

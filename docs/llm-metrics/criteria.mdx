@@ -193,6 +193,8 @@ Evaluation Results:
 
 For semantic correctness, use `@fe.correctness()` — it's optimized for that job. For detecting harmful content, `@fe.toxicity()` is trained specifically for safety. But for domain-specific needs, subjective qualities like tone or style or readability, and business requirements like disclaimers or formatting rules — that's where `@fe.criteria()` earns its keep.
 
+When you want control over the whole judge prompt, not just the criteria sentence, use a [prompt judge](/docs/cli/prompt-judges): a TOML template you can derive from any judge's real prompt in the UI playground, test against labeled cases, and use with `@fe.prompt_judge("name")`.
+
 ## Combining with Built-in Metrics
 
 ```python

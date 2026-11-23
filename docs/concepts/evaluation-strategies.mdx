@@ -252,6 +252,10 @@ def test_legal_response():
     ...
 ```
 
+### Rubrics as Prompt Judges
+
+If your rubric is really a prompt, you don't need a class for it. A [prompt judge](/docs/cli/prompt-judges) is a TOML file in `judges/` holding the rubric as a template (`{{input}}`, `{{actual_output}}`, `{{expected_output}}` and friends), used with `@fe.prompt_judge("legal_compliance")`. You can draft it from a built-in judge's prompt in the UI playground and test it on labeled cases before committing it, which shortens the calibration phase described below.
+
 ### The Tradeoffs
 
 Rubric-based evaluation gives you total control. You can tailor it to any domain, it documents your quality standards explicitly, and you can reuse metrics across your test suite. Multi-dimensional assessment? Built for it.

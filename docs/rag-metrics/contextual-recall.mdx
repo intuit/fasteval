@@ -61,7 +61,7 @@ Does your knowledge base actually contain the answers?
 
 ```python
 @fe.contextual_recall(threshold=0.85)
-@fe.csv("golden_qa_pairs.csv")
+@fe.csv("golden_qa_pairs.csv", id_field="query")  # one test case per row
 def test_kb_has_answers(query, expected_answer):
     """Verify knowledge base covers all expected information."""
     docs = knowledge_base.search(query)

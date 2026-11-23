@@ -555,6 +555,10 @@ On 1000 traces at 1.5s each: serial takes ~25 minutes, 4 workers brings it down 
 
 ## Reporting
 
+fasteval's own reports work without extra plugins: `--fe-output json:results.json` and `--fe-output html:report.html` with pytest, or the self-contained report from a headless `fasteval run` (`.fasteval/report.html`) and `fasteval report --html` for any recorded run. They include results from every pytest-xdist worker. See [Output Collectors](/docs/advanced/output-collectors) and [Local UI](/docs/cli/local-ui#static-html-reports).
+
+The examples below use third-party pytest plugins (pytest-html and a JSON report plugin) instead.
+
 ### HTML Reports
 
 ```bash

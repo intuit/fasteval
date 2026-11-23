@@ -19,7 +19,7 @@ sidebar:
 
 ## What is fasteval?
 
-**fasteval** is a decorator-first LLM evaluation framework for Python. You stack decorators on test functions, run `pytest`, and get scored results. That's it.
+**fasteval** is a decorator-first LLM evaluation framework for Python. You stack decorators on test functions, run them with `fasteval run` (or plain `pytest`), and get scored results. That's it.
 
 Most teams treat eval as an afterthought -- something you bolt on once things start breaking in production. We built fasteval so evaluation fits directly into your dev loop, right next to your other tests.
 
@@ -33,7 +33,7 @@ def test_my_agent():
     fe.score(response, "Navigate to Settings > Security > Reset Password")
 ```
 
-Run `pytest` and fasteval handles everything: calling an LLM judge to assess quality, computing semantic scores, and failing tests when thresholds aren't met.
+Run `fasteval run` and fasteval handles everything: calling an LLM judge to assess quality, computing semantic scores, and failing tests when thresholds aren't met. From a terminal, the run opens live in your browser, where you can open any case to see the judge's prompt, score and reasoning. `pytest` runs the exact same tests.
 
 ## Key Features
 
@@ -42,6 +42,10 @@ Run `pytest` and fasteval handles everything: calling an LLM judge to assess qua
 **Decorator-first API.** You define evaluation criteria directly on test functions. No config files, no boilerplate. Stack multiple decorators and you've got multi-metric evaluation out of the box.
 
 **Pytest native.** It works with the test runner you already use -- full IDE integration, parallel execution, and CI/CD ready. We didn't want to invent a new runner. Pytest's the standard, so we built on it.
+
+**A CLI and a local UI on top.** The [`fasteval` command](/docs/cli/overview) runs only your evals, saves run configurations as [profiles](/docs/cli/profiles), selects evals by [tag](/docs/cli/tags), enforces quality gates, and records every run. The [local UI](/docs/cli/local-ui) shows runs live, compares re-runs case by case, and includes a [judge playground](/docs/cli/prompt-judges) for tuning LLM judge prompts against real cases. In CI, the same command writes a self-contained HTML report.
+
+**Data-driven by default.** [`@fe.dataset`, `@fe.csv` and `@fe.jsonl`](/docs/core-concepts/data-sources) turn every row or record into its own test case, with a readable id you can re-run on its own.
 
 **LLM-as-Judge scoring.** Under the hood, fasteval uses an LLM judge for semantic evaluation. It understands *meaning*, not just string matching. In practice, this catches issues that regex-based checks miss entirely.
 

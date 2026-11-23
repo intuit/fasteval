@@ -35,7 +35,13 @@ pip install fasteval-core
 uv add fasteval-core
 ```
 
-That's it. fasteval pulls in everything it needs — pytest integration included.
+That's it. fasteval pulls in everything it needs — pytest integration and the `fasteval` command line included.
+
+For parallel runs (`fasteval run -n auto` or `pytest -n auto`), add pytest-xdist:
+
+```bash
+pip install pytest-xdist
+```
 
 ### System Requirements
 
@@ -118,8 +124,13 @@ export OLLAMA_HOST=http://localhost:11434
 ### Check Version
 
 ```bash
+fasteval --version
+
+# or, without the CLI on your PATH
 python -c "import fasteval as fe; print(f'fasteval {fe.__version__}')"
 ```
+
+Run `fasteval` with no arguments for a quick status of the current project: where configuration was found, which [profiles](/docs/cli/profiles) exist, and how the last run went.
 
 ### Run Smoke Test
 
@@ -134,7 +145,13 @@ def test_fasteval_works():
     fe.score("Hello, fasteval!", "fasteval")
 ```
 
-Run it:
+Run it with the fasteval CLI:
+
+```bash
+fasteval run test_smoke.py
+```
+
+From a terminal, this opens the run in your browser and keeps the [local UI](/docs/cli/local-ui) open until you press Ctrl+C. Add `--headless` to just run it and exit. Plain pytest works too:
 
 ```bash
 pytest test_smoke.py -v
@@ -279,6 +296,14 @@ pip list | grep fasteval
 pip install fasteval-core
 ```
 
+### fasteval: command not found
+
+The CLI is installed as a script next to your Python. If your shell can't find it, run it as a module instead; it's the same command:
+
+```bash
+python -m fasteval run
+```
+
 ### API Key Errors
 
 ```bash
@@ -314,4 +339,4 @@ fe.configure(timeout=60)
 
 ## Next Steps
 
-With fasteval installed, continue to the [Quick Start](/docs/getting-started/quickstart) guide to write your first evaluation test.
+With fasteval installed, continue to the [Quick Start](/docs/getting-started/quickstart) guide to write your first evaluation test, or read [The fasteval CLI](/docs/cli/overview) to see what `fasteval run` does.

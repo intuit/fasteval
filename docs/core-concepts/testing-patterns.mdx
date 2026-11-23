@@ -285,6 +285,21 @@ def test_parametrized_with_thresholds(query, expected, min_score):
         f"Score {result.aggregate_score:.2f} below required {min_score} for: {query}"
 ```
 
+Each parameter set is its own case, and its id stays on the result (`test_parametrized_with_thresholds[What is 2+2?-4-0.9]`), so summaries, reports and the UI list them separately. When the cases live in a file or a generator, [`@fe.dataset`, `@fe.csv` and `@fe.jsonl`](/docs/core-concepts/data-sources) do the same with less boilerplate, and give you control over the ids:
+
+```python
+@fe.dataset
+def qa_cases():
+    yield fe.case(id="arithmetic", query="What is 2+2?", expected="4", min_score=0.9)
+    yield fe.case(id="geography", query="Capital of France?", expected="Paris", min_score=0.85)
+
+@qa_cases
+@fe.correctness(threshold=0.7)
+def test_qa_with_thresholds(query, expected, min_score):
+    result = fe.score(agent(query), expected, input=query)
+    assert result.aggregate_score >= min_score
+```
+
 ### Soft Assertions (Collect All Failures)
 
 ```python

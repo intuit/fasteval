@@ -1,0 +1,208 @@
+---
+title: Prompt Judges
+description: Editable LLM judges stored as TOML, the judge playground, and run-time judge swaps
+order: 6
+sidebar:
+  - title: Judge Files
+    anchor: judge-files
+  - title: Template Variables
+    anchor: template-variables
+  - title: Using a Judge in an Eval
+    anchor: using-a-judge-in-an-eval
+  - title: Swapping a Judge at Run Time
+    anchor: swapping-a-judge-at-run-time
+  - title: Seeing Every Judge Call
+    anchor: seeing-every-judge-call
+  - title: The Playground
+    anchor: the-playground
+  - title: The Project Judge Client
+    anchor: the-project-judge-client
+---
+
+# Prompt Judges
+
+Built-in LLM metrics like `@fe.correctness()` come with a carefully written judge prompt. Sometimes you need a different one: stricter about partial answers, aware of your domain's vocabulary, or simply calibrated to agree with how your team grades. A **prompt judge** is an LLM judge whose prompt is a template you own, saved as a TOML file in your repository.
+
+You can write one by hand, or derive it from a real judge call in the [local UI](/docs/cli/local-ui): open a case, click **Tune judge**, edit the prompt, test it on real cases, and save it. Then use it in code with `@fe.prompt_judge("name")`, or swap it in for an existing metric at run time with `fasteval run --judge correctness=name`.
+
+## Judge Files
+
+Judges live in a `judges/` directory at your project root, one file per judge, named `<judge name>.toml`. Change the directory with `judges_dir` in [`[tool.fasteval]`](/docs/cli/profiles#top-level-keys).
+
+```toml
+# judges/refund_correctness_strict.toml
+name = "refund_correctness_strict"
+description = "Strict correctness for refund answers: partial answers fail"
+based_on = "correctness"
+model = "gpt-4o-mini"
+temperature = 0.0
+threshold = 0.7
+scoring = "continuous"
+prompt = '''
+You are grading a customer support answer about refunds.
+Be strict: an answer that leaves out the refund window or the
+refund method is wrong, even if the rest is correct.
+
+QUESTION: {{input}}
+EXPECTED ANSWER: {{expected_output}}
+ACTUAL ANSWER: {{actual_output}}
+
+Respond with JSON only:
+{"score": <0.0 to 1.0>, "reasoning": "<why>"}
+'''
+```
+
+| Key | Required | Description |
+|-----|----------|-------------|
+| `prompt` | Yes | The judge prompt, with `{{variable}}` placeholders |
+| `name` | No | Judge name. Defaults to the file name. Letters, digits, `_` and `-`, starting with a letter or `_`, up to 64 characters |
+| `description` | No | What the judge checks, shown in the UI |
+| `based_on` | No | The metric it was derived from, for reference (set by the playground) |
+| `model` | No | Judge model. Names starting with `gpt-`, `o1-`, `o3-` or `claude` are supported. Leave it out to use the default provider (with `@fe.prompt_judge`) or the swapped-out metric's own judge (with `--judge`) |
+| `temperature` | No | 0 to 2. Applied when `model` is set |
+| `threshold` | No | Passing score, 0 to 1. See [thresholds](#thresholds) below |
+| `scoring` | No | `"continuous"` (default) keeps the 0 to 1 score; `"binary"` rounds it to 1.0 (score ≥ 0.5) or 0.0 |
+
+Unknown keys are rejected, so a typo fails loudly instead of being ignored. The prompt should ask for JSON with a `score` and a `reasoning`; fasteval parses the response the same way it does for built-in metrics, and retries if it can't.
+
+## Template Variables
+
+Placeholders use double braces, and spaces inside are fine (`{{ input }}`). Any other braces, like the JSON example in the prompt above, are left alone. Values come from the `fe.score()` call being judged:
+
+| Variable | Filled with |
+|----------|-------------|
+| `{{input}}` | The input passed to `fe.score()` |
+| `{{actual_output}}` | The output being graded |
+| `{{expected_output}}` | The reference answer |
+| `{{context}}` | Context documents, one per line as `[1] ...`, `[2] ...` |
+| `{{retrieval_context}}` | Retrieved documents, numbered the same way |
+| `{{history}}` | Conversation history, one `role: content` line per turn |
+| `{{tool_calls}}` | Tool calls the agent made, as JSON |
+| `{{expected_tools}}` | Expected tool calls, as JSON |
+| `{{metadata}}` | The metadata dict, as JSON |
+
+A variable with no value renders as an empty string.
+
+## Using a Judge in an Eval
+
+```python
+import fasteval as fe
+
+@fe.prompt_judge("refund_correctness_strict")
+def test_refund_answer():
+    question = "Can I get a refund after two weeks?"
+    fe.score(agent(question), "Yes, within 30 days, to the original payment method", input=question)
+```
+
+`@fe.prompt_judge` is a metric decorator like any other, so it stacks with built-in metrics, tags and data sources:
+
+```python
+@fe.tag("rag")
+@fe.prompt_judge("refund_correctness_strict", threshold=0.8, weight=2.0)
+@fe.relevance(threshold=0.7)
+@fe.csv("evals/data/refund_questions.csv", id_field="question")
+def test_refund_questions(question, expected):
+    fe.score(agent(question), expected, input=question)
+```
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `judge` | required | Judge name: the file stem in the judges directory |
+| `threshold` | judge's | Overrides the judge file's threshold |
+| `weight` | `1.0` | Weight in the aggregate score |
+| `name` | judge name | Metric name in results and reports |
+
+The judge file is loaded when the eval runs; a missing judge fails that eval with an error naming the available judges.
+
+### Thresholds
+
+- With `@fe.prompt_judge`, the passing score is the decorator's `threshold`, else the judge file's `threshold`, else 0.5.
+- With a run-time swap (`--judge`), it's the judge file's `threshold`, else the swapped-out metric's own threshold. Leave `threshold` out of a judge you plan to swap into evals with different thresholds. The playground's **Save judge** dialog leaves it out by default; tick **Save threshold in the judge** to pin one.
+
+## Swapping a Judge at Run Time
+
+`--judge METRIC=JUDGE` replaces a metric with a prompt judge for one run, without changing any code:
+
+```bash
+fasteval run --judge correctness=refund_correctness_strict
+pytest --fe-judge correctness=refund_correctness_strict        # plain pytest
+```
+
+Every eval that has a metric named `correctness` is judged with the prompt judge's template instead. A swap changes the prompt; everything else stays the eval's own unless the judge file sets it:
+
+- **Threshold:** the judge file's `threshold` if it has one, otherwise the metric's own (see [Thresholds](#thresholds)).
+- **Judge model:** the judge file's `model` if it has one, otherwise the metric's own `llm_client=` or `model=`, otherwise the default provider.
+- **Name and weight** are always kept, so reports still say `correctness`; the result details record which prompt judge produced it.
+
+The match is on the metric's name, which is the metric type unless the decorator set `name=`. Repeat the flag to swap several metrics.
+
+A judge that doesn't exist stops the run before any eval starts, with the list of judges that do. A swap is the safest way to try a new judge: re-run the same evals and compare. In the UI, **Run evals with this judge** does exactly that and shows the score change for every case.
+
+## Seeing Every Judge Call
+
+Every call an LLM metric makes to its judge is recorded on the metric result, in `details["judge_calls"]`:
+
+```python
+result = fe.score(response, expected, input=question)
+
+for metric in result.metric_results:
+    for call in metric.details.get("judge_calls", []):
+        print(call["judge"])        # {"provider": "OpenAIClient", "model": "gpt-4o-mini", "temperature": 0.0}
+        print(call["latency_ms"])   # 812.4
+        print(call["messages"])     # the exact prompt messages sent
+        print(call.get("response")) # the raw response text
+        print(call.get("error"))    # set when the call raised
+```
+
+There's one entry per attempt, so retries after an unparseable response show up as separate calls. Very long text is truncated to 20,000 characters, and image or audio content is replaced by a placeholder rather than stored. This covers the built-in LLM metrics (including RAG, conversation and vision metrics), prompt judges, and the semantic comparison in `@fe.tool_args_match()`.
+
+Because the calls are part of the result, they appear in `--fe-output json:` reports, in `.fasteval/last-run.json`, and on the **Judges** tab of every case in the [UI](/docs/cli/local-ui#inspecting-a-case).
+
+## The Playground
+
+The playground is where you write, tune and test a judge against real cases. Open it from the UI's **Playground** page, from **+ New judge** or **Open in playground** on the Judges page, or, most usefully, from a case.
+
+1. **Tune judge on a case.** In a run, open a case and click **Tune judge** on an LLM-judged metric (or **Tune judge in playground** on the Judges tab).
+2. **Start from the real prompt.** The playground loads an editable template derived from the prompt the judge actually received: for built-in metrics, the metric's own prompt with `{{variables}}` where the case's values go; for prompt judges, their saved template. If neither is available, it rebuilds the template from the rendered prompt and marks it *inferred*.
+3. **Edit.** Click a variable chip to insert it at the cursor. The playground warns if the template never shows the judge `{{actual_output}}`, or doesn't ask for a `score`. Set the judge model, temperature, scoring and threshold above the editor.
+4. **Add cases from runs.** Pick any recorded run and add cases scored by the same metric; **Select failed** grabs the failures. Add a few passing cases too, so you notice if the judge gets harsher everywhere.
+5. **Label cases (optional).** Mark cases *should pass* or *should fail* to measure how often each judge agrees with you.
+6. **Test.** Every case is judged by your edited prompt. Each case card shows the original judge's score, verdict and reasoning next to the edited judge's, with the score change, the rendered prompt and the raw response. A summary compares average score and pass rate (original → edited), counts flipped verdicts, and shows agreement with your labels for both judges.
+7. **Save judge.** Name it and write it to the judges directory as `<name>.toml`. Commit the file like any other code.
+8. **Run evals with this judge.** Pick the metric to replace and either a recorded run to copy the configuration from (optionally only the cases that failed) or a new run with the default profile. The new run uses `--judge METRIC=JUDGE`; when it's based on a recorded run, it's [compared case by case](/docs/cli/local-ui#re-runs-and-comparisons) with that run. The same dialog opens from **Run evals with it** on the Judges page.
+
+Testing calls the judge model once per case, at most 100 cases per test.
+
+## The Project Judge Client
+
+`judge_client` in `[tool.fasteval]` names your project's default LLM judge, as `"module:attribute"`. Setting it once makes your evals and the playground use the same judge:
+
+```toml
+[tool.fasteval]
+judge_client = "evals.judge_client:client"
+```
+
+```python
+# evals/judge_client.py
+from fasteval import OpenAIClient
+
+client = OpenAIClient(model="gpt-4o", temperature=0)
+```
+
+**In pytest runs** (plain `pytest` or `fasteval run`), the plugin makes this client the default provider when pytest starts, unless your code has already called `fe.set_default_provider(...)`. Explicit setup always wins, including a `set_default_provider()` call in a `conftest.py`. Metrics with their own `model=` or `llm_client=`, and judge files with a `model`, still use those.
+
+**In the playground**, which runs in the `fasteval ui` process rather than in pytest, the client is chosen in this order:
+
+1. the **Judge model** field, if you fill it in (it needs that provider's API key in the environment of `fasteval ui`)
+2. otherwise `judge_client`
+3. otherwise the provider detected from `OPENAI_API_KEY` or `ANTHROPIC_API_KEY`
+
+A `conftest.py` doesn't run in the UI process, so `judge_client` is how the playground gets the same judge as your evals.
+
+How the spec is loaded:
+
+- the project root is put on the import path, so project modules like `evals.judge_client` resolve
+- the attribute can be a dotted path; if it's a class, fasteval instantiates it with no arguments
+- the result must have an `invoke(messages)` method (see [LLM Setup](/docs/core-concepts/llm-setup#custom-llm-client))
+
+A spec that can't be imported, or an object without `invoke`, stops a pytest run with a usage error naming the problem, and makes the playground's **Test** report the error.

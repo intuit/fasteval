@@ -1,0 +1,13 @@
+{
+  "title": "CLI & UI",
+  "icon": "code",
+  "order": 4,
+  "items": [
+    "overview",
+    "running-evals",
+    "profiles",
+    "tags",
+    "local-ui",
+    "prompt-judges"
+  ]
+}

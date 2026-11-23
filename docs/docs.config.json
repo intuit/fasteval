@@ -5,6 +5,7 @@
     "getting-started",
     "concepts",
     "core-concepts",
+    "cli",
     "cookbooks",
     "llm-metrics",
     "rag-metrics",
@@ -23,7 +24,7 @@
       "label": "Learn",
       "icon": "rocket",
       "color": "#3b82f6",
-      "sections": ["Getting Started", "Concepts", "Core Concepts"]
+      "sections": ["Getting Started", "Concepts", "Core Concepts", "CLI & UI"]
     },
     {
       "id": "metrics",

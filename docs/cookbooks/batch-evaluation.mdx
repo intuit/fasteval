@@ -25,6 +25,23 @@ When you've got thousands of test cases, you can't just loop through them one by
 
 ![Batch Evaluation Strategy](docs/assets/batch-evaluation-strategy.svg)
 
+### Start with pytest Before You Build a Pipeline
+
+Many "batch" jobs don't need custom code. A [data source](/docs/core-concepts/data-sources) turns every record into its own test case, and pytest-xdist spreads the cases across processes:
+
+```python
+@fe.correctness(threshold=0.8)
+@fe.jsonl("evals/data/large_golden.jsonl", id_field="id")
+def test_large_golden(question, expected):
+    fe.score(my_agent(question), expected, input=question)
+```
+
+```bash
+fasteval run evals/test_large.py -n 8 --min-pass-rate 0.9
+```
+
+Results from all workers are merged into one summary, JSON report and quality-gate check, each case can be re-run on its own (`--lf`), and the [local UI](/docs/cli/local-ui) shows progress and per-case results as they arrive. Reach for the patterns below when you need finer control: custom batching, rate limiting inside a process, or evaluation outside pytest.
+
 ## Loading Large Datasets
 
 ### From CSV

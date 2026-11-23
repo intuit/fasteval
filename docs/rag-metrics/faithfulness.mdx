@@ -94,9 +94,11 @@ def test_multi_source_rag():
 
 ### Testing at Scale with CSV
 
+Each CSV row runs as its own test case, named by `id_field` (see [Data Sources](/docs/core-concepts/data-sources#csv-files)).
+
 ```python
 @fe.faithfulness(threshold=0.8)
-@fe.csv("rag_test_cases.csv")
+@fe.csv("rag_test_cases.csv", id_field="query")  # columns: query, expected_answer
 def test_rag_faithfulness_suite(query, expected_answer):
     docs = retriever.search(query)
     response = rag_agent(query, context=docs)

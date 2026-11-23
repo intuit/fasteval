@@ -72,15 +72,17 @@ def test_vector_search():
 
 ### Comparing Different Retrievers
 
+Both tests run once per row of the same CSV, so `test_bm25_retriever[<query>]` and `test_dense_retriever[<query>]` line up case by case in reports and the UI.
+
 ```python
 @fe.contextual_precision(threshold=0.75)
-@fe.csv("retrieval_test_queries.csv")
+@fe.csv("retrieval_test_queries.csv", id_field="query")  # column: query
 def test_bm25_retriever(query):
     docs = bm25_retriever.search(query, k=5)
     fe.score(actual_output="", retrieval_context=docs, input=query)
 
 @fe.contextual_precision(threshold=0.75)
-@fe.csv("retrieval_test_queries.csv")
+@fe.csv("retrieval_test_queries.csv", id_field="query")
 def test_dense_retriever(query):
     docs = dense_retriever.search(query, k=5)
     fe.score(actual_output="", retrieval_context=docs, input=query)

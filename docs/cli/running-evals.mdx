@@ -1,0 +1,213 @@
+---
+title: Running Evals
+description: Select, run, parallelize and gate evals with fasteval run
+order: 2
+sidebar:
+  - title: Choosing What Runs
+    anchor: choosing-what-runs
+  - title: Parallel Runs and Re-runs
+    anchor: parallel-runs-and-re-runs
+  - title: Passing Flags to pytest
+    anchor: passing-flags-to-pytest
+  - title: Reports
+    anchor: reports
+  - title: Quality Gates
+    anchor: quality-gates
+  - title: Swapping Judges
+    anchor: swapping-judges
+  - title: Human Review Prompts
+    anchor: human-review-prompts
+  - title: Browsing Evals and Runs
+    anchor: browsing-evals-and-runs
+---
+
+# Running Evals
+
+`fasteval run` is the everyday command. With no arguments it runs your default [profile](/docs/cli/profiles); flags narrow or adjust that run. This page walks through the flags by task. For a compact list, see the [CLI Reference](/docs/api-reference/cli).
+
+## Choosing What Runs
+
+### Evals Only, by Default
+
+An eval is a test that uses a metric like `@fe.correctness()`, a data source like `@fe.csv()` or `@fe.dataset`, or `@fe.human_review()`. `@fe.tag()` on its own doesn't make a test an eval: a tagged test with no metric or data decorator is skipped by `fasteval run`, though `pytest -m <tag>` still runs it. `fasteval run` runs evals and deselects everything else, so your unit tests don't run (or cost anything) when you only want eval results. Add `--all` to run plain tests too.
+
+### Paths
+
+Pass files, directories or pytest node ids. Without paths, fasteval uses the profile's `paths`, and if the profile has none, pytest's own `testpaths`:
+
+```bash
+fasteval run                                   # the default profile
+fasteval run evals/test_rag.py                 # one file
+fasteval run "evals/test_rag.py::test_faq[refund]"   # one case
+```
+
+### Tags
+
+`-t` selects by [tag](/docs/cli/tags). It takes a pytest marker expression, so `and`, `or`, `not` and parentheses all work. Repeat `-t` to OR values together:
+
+```bash
+fasteval run -t smoke
+fasteval run -t "rag and not slow"
+fasteval run -t smoke -t routing      # smoke OR routing
+```
+
+`-t` narrows the profile's own `tags` rather than replacing them. With a profile that sets `tags = "not slow"`:
+
+| Command | Selection passed to pytest |
+|---------|----------------------------|
+| `fasteval run` | `-m 'not slow'` |
+| `fasteval run -t smoke` | `-m '(not slow) and (smoke)'` |
+| `fasteval run -t smoke -t rag` | `-m '(not slow) and ((smoke) or (rag))'` |
+
+To run something the profile excludes, use a different profile (`-p`) or one that sets no tags.
+
+### Names
+
+`-k` selects by test name, exactly like pytest's `-k`. If the profile sets a `keyword`, both must match:
+
+```bash
+fasteval run -k refund
+fasteval run -k "faq and not hours"
+```
+
+### Profiles
+
+`-p NAME` picks a profile instead of the default one:
+
+```bash
+fasteval run -p smoke
+fasteval run -p ci -t rag
+```
+
+## Parallel Runs and Re-runs
+
+```bash
+fasteval run -n 4         # four workers
+fasteval run -n auto      # one per CPU
+fasteval run --lf         # only what failed last time
+fasteval run -x           # stop at the first failure
+```
+
+`-n` uses pytest-xdist (`pip install pytest-xdist`). If it isn't installed, `fasteval run` stops with an install hint instead of failing halfway. Results from all workers are merged, so the summary, reports, gates and UI cover the whole run.
+
+`--lf` is pytest's last-failed mode. For evals it's a cheap way to iterate: only the cases that failed call the LLM judge again. In the UI, **Re-run failed** does the same for any recorded run.
+
+`-v` and `-q` adjust pytest's verbosity, and `--no-summary` skips the fasteval summary table.
+
+## Passing Flags to pytest
+
+Any flag `fasteval run` doesn't know goes to pytest as is, and everything after a bare `--` always does:
+
+```bash
+fasteval run --tb=short
+fasteval run -t smoke -W error::DeprecationWarning
+fasteval run -- -p no:cacheprovider
+```
+
+Profiles can also carry pytest flags in `pytest_args`. To see exactly what will run, add `--dry-run`: it prints the full pytest command and exits.
+
+## Watching a Run
+
+From a terminal, `fasteval run` opens the run in your browser and keeps the UI running after the run ends; press Ctrl+C when you're done. In CI, or with `--headless`, it runs without a server and writes a static report instead. [The fasteval CLI](/docs/cli/overview#ui-mode-and-headless-mode) explains how the mode is chosen, and [Local UI](/docs/cli/local-ui) covers what you can do in it.
+
+```bash
+fasteval run --no-open        # UI mode, but don't open a browser tab
+fasteval run --port 9000      # serve the UI on another port
+fasteval run --headless       # no server, write .fasteval/report.html
+```
+
+## Reports
+
+| Flag | Writes |
+|------|--------|
+| `--html PATH` | The self-contained HTML report (headless runs write it to `.fasteval/report.html` by default) |
+| `--json PATH` | fasteval's JSON results (the same format as `--fe-output json:`) |
+
+Headless runs always write the HTML report, to `.fasteval/report.html` unless you pass `--html PATH`. In UI mode, the report is written only when you pass `--html PATH`; otherwise use **Export HTML** on the run page, or export afterwards with `fasteval report --html`. A profile's `outputs` list adds more reports to every run, as `json:path` or `html:path` entries; the `html:` form is the classic HTML reporter from [Output Collectors](/docs/advanced/output-collectors), not the UI report. fasteval also always writes the latest results to `.fasteval/last-run.json`.
+
+## Quality Gates
+
+Gates fail a run on aggregate quality, even when every individual eval passed:
+
+```bash
+fasteval run --min-pass-rate 0.9 --min-score 0.75
+```
+
+- `--min-score` is checked against the average aggregate score of all eval results.
+- `--min-pass-rate` is checked against the fraction of eval results that passed.
+
+Both take a number between 0 and 1. A failed gate prints a line like this and turns a passing run into exit code 1:
+
+```
+FastEval gate failed: pass rate 83% < 90%
+```
+
+If a run records no eval results, the gates are skipped with a message rather than failing. Gates are usually set once in a CI profile (`min_score`, `min_pass_rate`); the flags override the profile. The UI shows each gate as passed or failed at the top of the run.
+
+## Swapping Judges
+
+`--judge METRIC=JUDGE` replaces a metric with a saved [prompt judge](/docs/cli/prompt-judges) for this run only, without touching code:
+
+```bash
+fasteval run --judge correctness=support_correctness_strict
+```
+
+Every eval whose metric is named `correctness` is judged with the prompt from `judges/support_correctness_strict.toml` instead. The eval keeps its own threshold and judge model unless the judge file sets `threshold` or `model`. Repeat `--judge` to swap several metrics. Comparing the result with a previous run is easiest from the UI, where a re-run with a swapped judge shows the score change per case.
+
+## Human Review Prompts
+
+Evals with [`@fe.human_review()`](/docs/human-review/overview) ask for a score in the terminal while they run. fasteval turns those prompts off (pytest's `--no-interactive`) when:
+
+- you pass `--ci`
+- the `CI` environment variable is set to a true value
+- the profile sets `review_prompts = false`
+
+Runs started from the UI never prompt. When there's no prompt, the human review is skipped, not failed, unless the eval sets `required=True`.
+
+## Browsing Evals and Runs
+
+### List Evals
+
+```bash
+fasteval list                # every eval in the default profile
+fasteval list -t rag -k faq  # same selection flags as run
+fasteval list --tags         # tag counts, with registered descriptions
+fasteval list --json         # machine-readable inventory, one entry per case
+```
+
+`fasteval list` collects tests without running them, so it's free: no LLM calls.
+
+### Report on a Run
+
+```bash
+fasteval report              # summary of the latest run
+fasteval report --list       # recent runs: id, status, pass rate, profile
+fasteval report 20261123-142501-a3f9
+fasteval report --html       # write .fasteval/report.html for the latest run
+fasteval report --html out/report.html --open
+```
+
+The summary shows passed and failed counts, the pass rate, the average score, a bar per metric and every failed eval with its score:
+
+```
+fasteval · last run · profile dev · 3m ago
+  11 passed  2 failed  of 13   pass rate 85%   avg score 0.842
+
+  correctness  ███████████░░░░░ 0.712  pass  75%  min 0.00 max 1.00
+  rouge        ████████████████ 1.000  pass 100%  min 1.00 max 1.00
+
+  ✗ test_support_answers[hours]  0.000
+  ✗ test_support_answers[shipping]  0.000
+
+  $ pytest evals --fe-only -m 'not slow' --fe-summary --fe-output=json:.fasteval/last-run.json
+```
+
+Parametrized and data-driven cases keep their id in result names (`test_support_answers[hours]`), so you can tell them apart in summaries and reports.
+
+### Project Status
+
+`fasteval` on its own prints the version, the project root, where configuration was loaded from, the profiles (the default one is starred) and the last run's result.
+
+## Exit Codes
+
+`fasteval run` exits with pytest's exit code: 0 when everything passed, 1 when an eval failed or a quality gate failed, 5 when nothing was selected. Invalid configuration, such as an unknown profile or a typo in `[tool.fasteval]`, exits with 2 before pytest starts.

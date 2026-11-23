@@ -1,0 +1,206 @@
+---
+title: Profiles
+description: Named run configurations in pyproject.toml or fasteval.toml
+order: 3
+sidebar:
+  - title: Where Configuration Lives
+    anchor: where-configuration-lives
+  - title: A Complete Example
+    anchor: a-complete-example
+  - title: Top-Level Keys
+    anchor: top-level-keys
+  - title: Profile Keys
+    anchor: profile-keys
+  - title: Inheritance
+    anchor: inheritance
+  - title: Checking a Profile
+    anchor: checking-a-profile
+  - title: Validation
+    anchor: validation
+---
+
+# Profiles
+
+A profile is a named set of run settings: which evals to run, how many workers, which reports to write, which quality gates to enforce. Instead of remembering a long command for CI and another for local work, you write them down once and run them by name:
+
+```bash
+fasteval run            # the default profile
+fasteval run -p ci      # the ci profile
+```
+
+## Where Configuration Lives
+
+fasteval reads its configuration from the `[tool.fasteval]` table of your `pyproject.toml`, or from a standalone `fasteval.toml` with the same keys and no `tool.fasteval` prefix.
+
+To find it, fasteval walks up from the current directory. The first directory that contains a `fasteval.toml` or a `pyproject.toml` is the project root; if both are there, `fasteval.toml` wins. Relative paths in profiles are resolved against that root, so `fasteval run` works the same from any subdirectory. With no configuration at all, fasteval uses a built-in `default` profile that runs every eval under pytest's `testpaths`.
+
+The quickest way to start is `fasteval init`. It appends a starter config with a `dev` and a `ci` profile to your `pyproject.toml`, or creates `fasteval.toml` if there's no `pyproject.toml`. If the project is already configured, it leaves it alone.
+
+## A Complete Example
+
+```toml
+[tool.fasteval]
+default_profile = "dev"
+
+# Tag registry: documents tags in `fasteval list --tags`
+# and registers them with pytest.
+[tool.fasteval.tags]
+smoke = "Fast sanity evals, run on every change"
+rag = "Retrieval quality"
+slow = "Long-running or expensive evals"
+
+[tool.fasteval.profiles.dev]
+description = "Local iteration: everything except slow evals"
+paths = ["evals"]
+tags = "not slow"
+
+[tool.fasteval.profiles.smoke]
+description = "Pre-commit sanity check"
+extends = "dev"
+tags = "smoke"
+
+[tool.fasteval.profiles.ci]
+description = "CI gate: all evals, headless, quality gates"
+extends = "dev"
+tags = ""                     # clear the inherited selection
+review_prompts = false        # never stop for human-review input
+headless = true               # no UI server; write a static report
+workers = "auto"
+outputs = ["json:.fasteval/results.json"]
+min_pass_rate = 0.9
+min_score = 0.75
+env = { OPENAI_MODEL = "gpt-4o-mini" }
+```
+
+The same configuration as a standalone `fasteval.toml`:
+
+```toml
+default_profile = "dev"
+
+[tags]
+smoke = "Fast sanity evals, run on every change"
+
+[profiles.dev]
+paths = ["evals"]
+tags = "not slow"
+```
+
+## Top-Level Keys
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `default_profile` | string | Profile used when you don't pass `-p`. Must be a defined profile, or `"default"` |
+| `tags` | table | Tag registry: `name = "description"`. See [Tags](/docs/cli/tags) |
+| `profiles` | table | One sub-table per profile: `[tool.fasteval.profiles.<name>]` |
+| `judges_dir` | string | Where [prompt judges](/docs/cli/prompt-judges) live, relative to the project root. Default `judges` |
+| `judge_client` | string | The project's default LLM judge, as `"package.module:attribute"`. Used by pytest runs unless code calls `fe.set_default_provider()`, and by the UI's judge playground. See [Prompt Judges](/docs/cli/prompt-judges#the-project-judge-client) |
+
+## Profile Keys
+
+Every key is optional.
+
+| Key | Type | Description | pytest equivalent |
+|-----|------|-------------|-------------------|
+| `description` | string | Shown by `fasteval profiles` and in the UI | |
+| `paths` | list of strings | Files, directories or node ids to run, relative to the project root | positional paths |
+| `tags` | string | Tag expression the profile selects. `-t` on the command line narrows it | `-m` |
+| `keyword` | string | Test name expression. `-k` on the command line must also match | `-k` |
+| `workers` | int or `"auto"` | Parallel workers (needs pytest-xdist). `0` turns parallelism off | `-n` |
+| `outputs` | list of strings | Extra reports, each `"json:path"` or `"html:path"` | `--fe-output` |
+| `review_prompts` | bool | `false` skips [human review](/docs/human-review/overview) prompts | `--no-interactive` |
+| `headless` | bool | `true` runs without the UI server and writes a static report. `$CI`, `--ui`, `--headless` and `--ci` take precedence | |
+| `min_score` | number, 0 to 1 | Fail the run if the average score is lower | `--fe-min-score` |
+| `min_pass_rate` | number, 0 to 1 | Fail the run if the eval pass rate is lower | `--fe-min-pass-rate` |
+| `env` | table of strings | Environment variables set for the run | |
+| `pytest_args` | list of strings | Extra pytest arguments, appended to every run | |
+| `extends` | string | Name of a profile to inherit from | |
+
+Command-line flags override the profile for that run: `-n` overrides `workers`, `--min-score` overrides `min_score`, and so on. `--json` adds to `outputs` rather than replacing it.
+
+### Environment Variables
+
+Values in `env` are set for the pytest process along with two variables fasteval always sets:
+
+| Variable | Value |
+|----------|-------|
+| `FASTEVAL_PROFILE` | Name of the profile in use |
+| `FASTEVAL_RUN_ID` | Id of the recorded run (`.fasteval/runs/<id>/`) |
+
+`FASTEVAL_PROFILE` is handy in a `conftest.py` that picks a judge model or fixture per profile:
+
+```python
+# conftest.py
+import os
+import fasteval as fe
+from fasteval import OpenAIClient
+
+if os.getenv("FASTEVAL_PROFILE") == "ci":
+    fe.set_default_provider(OpenAIClient(model="gpt-4o-mini"))
+```
+
+## Inheritance
+
+`extends` builds a profile on top of another one. The rules are simple:
+
+- Scalars and lists from the child **replace** the parent's. A child with `paths = ["evals/rag"]` runs only that path, and `tags = ""` clears an inherited tag selection.
+- `env` tables are **merged**, with the child's values winning on conflicts.
+
+Chains (`ci` extends `dev` extends `base`) are fine; a cycle is an error.
+
+```toml
+[tool.fasteval.profiles.base]
+paths = ["evals"]
+env = { AGENT_MODE = "test", LOG_LEVEL = "warning" }
+
+[tool.fasteval.profiles.nightly]
+extends = "base"
+workers = 8
+env = { LOG_LEVEL = "info" }   # AGENT_MODE is kept, LOG_LEVEL is replaced
+```
+
+### The default Profile
+
+`default` always exists. Unless you define a profile with that name, it runs every eval under pytest's `testpaths` with no extra settings. It's the profile `fasteval run` uses when `default_profile` isn't set.
+
+## Checking a Profile
+
+`fasteval profiles` lists every profile and marks the default one:
+
+```
+fasteval · profiles (pyproject.toml)
+   default  built-in: all evals under pytest testpaths
+ * dev      Local iteration: everything except slow evals
+   smoke    Pre-commit sanity check (extends dev)
+   ci       CI gate: all evals, headless, quality gates (extends dev)
+```
+
+`fasteval profiles NAME` resolves inheritance and shows exactly what a run would do, down to the pytest command:
+
+```
+$ fasteval profiles ci
+fasteval · run
+  profile  ci (pyproject.toml)
+  paths    evals
+  select   all evals
+  mode     auto workers · no review prompts
+  gates    score ≥ 0.75 · pass rate ≥ 90%
+  reports  .fasteval/results.json
+  env      OPENAI_MODEL
+  $ pytest evals --fe-only -n auto --no-interactive --fe-summary --fe-output=json:.fasteval/results.json --fe-output=json:.fasteval/last-run.json --fe-min-score=0.75 --fe-min-pass-rate=0.9
+```
+
+## Validation
+
+fasteval checks the configuration before it starts pytest, and a mistake exits with code 2 and a message that names the key. Typos get a suggestion:
+
+```
+error: pyproject.toml [tool.fasteval]: unknown key 'default_profle'. Did you mean 'default_profile'?
+error: pyproject.toml [tool.fasteval] profiles.ci: 'min_pass_rate' must be a number between 0 and 1
+error: Unknown profile 'nightley'. Did you mean 'nightly'? Available: default, dev, nightly
+```
+
+Types are checked too: `paths`, `outputs` and `pytest_args` must be lists of strings, `review_prompts` and `headless` must be `true` or `false`, `workers` must be a non-negative integer or `"auto"`, each `outputs` entry must look like `json:path` or `html:path`, and `judge_client` must contain a `:`.
+
+> **Note:** Only the keys on this page are valid in `[tool.fasteval]`. There are no `default_model` or `default_provider` keys: to pick the project's judge, point `judge_client` at a client object, or configure it in code with `fe.set_default_provider()` or a metric's `model=` argument; see [LLM Setup](/docs/core-concepts/llm-setup).
+
+Plain `pytest` reads only the tag registry from this table. If the table has an error, pytest skips the registry and runs anyway; the CLI is where you'll see the message.

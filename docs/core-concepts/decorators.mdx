@@ -125,6 +125,9 @@ These use an LLM judge to evaluate semantic qualities. Each call hits your confi
 | `@fe.bias()` | Fairness and neutrality | 0.8 - 0.9 | Sensitive topics |
 | `@fe.coherence()` | Logical consistency | 0.7 - 0.8 | Long-form generation |
 | `@fe.conciseness()` | Appropriate brevity | 0.6 - 0.8 | Summarization |
+| `@fe.prompt_judge("name")` | Whatever your own judge prompt checks | Set in the judge file | Team-specific grading, tuned judges |
+
+`@fe.prompt_judge` uses a judge prompt you own, saved in `judges/<name>.toml` and usually tuned in the UI playground. See [Prompt Judges](/docs/cli/prompt-judges).
 
 ### RAG Metrics
 
@@ -155,9 +158,29 @@ Control where test inputs come from:
 
 | Decorator | Use Case |
 |-----------|----------|
-| `@fe.csv("file.csv")` | Run test for each CSV row |
+| `@fe.dataset` | One test case per item of a generator, function or list |
+| `@fe.csv("file.csv")` | One test case per CSV row |
+| `@fe.jsonl("file.jsonl")` | One test case per JSON Lines record |
 | `@fe.conversation([...])` | Multi-turn dialogue testing |
 | `@fe.traces()` | Evaluate production data |
+
+Datasets, CSV and JSON Lines cases are separate pytest test cases with readable ids (`test_faq[refund]`). See [Data Sources](/docs/core-concepts/data-sources).
+
+### Organizing Decorators
+
+| Decorator | Use Case |
+|-----------|----------|
+| `@fe.tag("smoke", ...)` | Label evals for selection with `fasteval run -t smoke` or `pytest -m smoke`. See [Tags](/docs/cli/tags) |
+| `@fe.stack()` | Bundle metrics into a reusable decorator. See [Metric Stacks](/docs/core-concepts/metric-stacks) |
+| `@fe.human_review()` | Ask a person for a score after the automated metrics. See [Human Review](/docs/human-review/overview) |
+
+```python
+@fe.tag("smoke", "rag")
+@fe.correctness(threshold=0.8)
+@fe.csv("evals/data/faq.csv", id_field="question")
+def test_faq(question, expected):
+    fe.score(agent(question), expected, input=question)
+```
 
 ## Decorator Parameters
 

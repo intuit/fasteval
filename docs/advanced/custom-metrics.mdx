@@ -25,6 +25,8 @@ Custom metrics make sense when you've got domain-specific requirements like medi
 
 Stick with built-in metrics for general correctness (`@fe.correctness()`), safety evaluation (`@fe.toxicity()`, `@fe.bias()`), or custom criteria you can express in plain English (`@fe.criteria()`).
 
+If what you need is a different judge *prompt* rather than different logic, you may not need a class at all: a [prompt judge](/docs/cli/prompt-judges) is a TOML file with your own `{{variable}}` template, used with `@fe.prompt_judge("name")` and tunable against real cases in the UI playground.
+
 ## LLM-Based Custom Metrics
 
 When evaluation requires semantic understanding, extend `BaseLLMMetric`.

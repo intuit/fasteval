@@ -218,7 +218,7 @@ Example calibration result:
 
 If good and bad scores overlap significantly, you've got options:
 
-1. **Improve the evaluation prompt**: Add more specific criteria or examples
+1. **Improve the evaluation prompt**: Add more specific criteria or examples. The [judge playground](/docs/cli/prompt-judges#the-playground) makes this measurable: label cases *should pass* or *should fail*, edit the prompt, and see how often the original and edited judges agree with your labels
 2. **Use a more capable judge model**: GPT-4o vs GPT-4o-mini often improves separation
 3. **Add reference context**: More information helps the judge make accurate assessments
 4. **Split into multiple metrics**: Evaluate different aspects separately rather than combining
@@ -286,6 +286,17 @@ def test_qa():
 ```
 
 This lets you iterate fast locally while keeping strict quality gates in CI/CD.
+
+### Run-Level Quality Gates
+
+Per-metric thresholds decide whether each eval passes. A run-level gate adds a second check on the run as a whole: the average score, or the share of eval results that passed. Gates catch slow, broad regressions, such as every score drifting down a little while each eval still clears its own threshold:
+
+```bash
+fasteval run --min-pass-rate 0.9 --min-score 0.75
+pytest --fe-min-pass-rate 0.9 --fe-min-score 0.75     # plain pytest
+```
+
+Set them once in a CI [profile](/docs/cli/profiles) with `min_pass_rate` and `min_score`. A failed gate fails the run (exit code 1) even when every eval passed. See [Quality Gates](/docs/cli/running-evals#quality-gates).
 
 ## Common Pitfalls
 

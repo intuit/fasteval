@@ -142,6 +142,24 @@ async def invoke(self, messages: List[Dict[str, str]]) -> str:
 
 That's it. No base class, no registration. If it's got `invoke`, it works.
 
+### Setting the Judge in pyproject.toml
+
+Instead of calling `fe.set_default_provider()` in a `conftest.py`, you can name a client in `[tool.fasteval]`:
+
+```toml
+[tool.fasteval]
+judge_client = "evals.judge_client:client"   # module:attribute
+```
+
+```python
+# evals/judge_client.py
+from fasteval import OpenAIClient
+
+client = OpenAIClient(model="gpt-4o-mini", temperature=0)
+```
+
+The pytest plugin loads it as the default provider when pytest starts (with the project root on the import path; a class is instantiated with no arguments), unless your code calls `fe.set_default_provider()`, which always wins. The [judge playground](/docs/cli/prompt-judges#the-project-judge-client) in `fasteval ui` uses the same client, which a `conftest.py` can't do, since it doesn't run in the UI process. A spec that can't be loaded, or an object without an `invoke` method, stops the pytest run with a usage error.
+
 ## LangChain Integration
 
 Already using LangChain? Wrap your existing models:
@@ -244,7 +262,7 @@ When figuring out which LLM to use, fasteval checks in this order:
 
 1. **Per-metric `llm=` parameter** - Explicit client instance
 2. **Per-metric `model=` parameter** - Model name string
-3. **Global `set_default_provider()`** - Explicitly set default
+3. **Global `set_default_provider()`** - Explicitly set default (or `judge_client` in `[tool.fasteval]`, loaded by the pytest plugin when code doesn't set one)
 4. **Environment variable auto-detection** - `OPENAI_API_KEY` or `ANTHROPIC_API_KEY`
 
 ```python

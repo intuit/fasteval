@@ -59,13 +59,21 @@ Here's what's going on. The `@fe.correctness(threshold=0.7)` decorator tells fas
 
 ## Step 2: Run the Test
 
-Execute with pytest:
+Run it with the fasteval CLI:
+
+```bash
+fasteval run test_agent.py
+```
+
+fasteval prints the pytest command it's about to run, runs it, and opens the run in your browser so you can watch it live. When it finishes, the [local UI](/docs/cli/local-ui) stays open until you press Ctrl+C. In CI, or with `--headless`, it skips the browser and writes a self-contained HTML report to `.fasteval/report.html` instead.
+
+fasteval evals are ordinary pytest tests, so plain pytest works just as well:
 
 ```bash
 pytest test_agent.py -v
 ```
 
-You'll see output like:
+Either way, you'll see output like:
 
 ```
 test_agent.py::test_geography_qa PASSED
@@ -103,6 +111,10 @@ correctness: 0.45 (threshold: 0.70) ✗
 ```
 
 This is where the real value lives. The reasoning tells you *why* a score landed where it did, what specifically needs fixing, and whether your expected output is even the right target.
+
+### Inspecting a Case in the UI
+
+In the browser, click a case to see its input, expected and actual output side by side, each metric's score, threshold and reasoning, and, on the **Judges** tab, the exact prompt the LLM judge received and its raw response. If you think the judge got it wrong, **Tune judge** opens that prompt in the [judge playground](/docs/cli/prompt-judges#the-playground), where you can edit it and test it against real cases.
 
 ### Threshold Selection
 
@@ -192,16 +204,36 @@ async def test_async_agent():
 
 ### Pattern: Data-Driven Testing
 
-Test across many examples from a CSV:
+Test across many examples from a CSV. Each row becomes its own test case:
 
 ```python
 @fe.correctness(threshold=0.7)
-@fe.csv("test_cases.csv")  # Columns: input, expected_output
+@fe.csv("test_cases.csv", id_field="input")  # Columns: input, expected_output
 def test_qa_dataset(input, expected_output):
     """Evaluate across dataset."""
     response = my_agent(input)
     fe.score(response, expected_output, input=input)
 ```
+
+pytest reports `test_qa_dataset[What is 2+2?]`, `test_qa_dataset[Capital of France?]` and so on, one per row. `@fe.jsonl` and `@fe.dataset` work the same way for JSON Lines files and Python generators; see [Data Sources](/docs/core-concepts/data-sources).
+
+### Pattern: Tagging and Selecting
+
+Label evals with tags, then run just the ones you need:
+
+```python
+@fe.tag("smoke")
+@fe.contains()
+def test_includes_greeting():
+    fe.score(my_agent("Hi"), "Hello")
+```
+
+```bash
+fasteval run -t smoke          # or: pytest -m smoke
+fasteval list                  # see every eval, its tags and metrics
+```
+
+See [Tags](/docs/cli/tags) and, to save selections like this under a name, [Profiles](/docs/cli/profiles).
 
 ### Pattern: Context-Aware Evaluation
 
@@ -224,6 +256,7 @@ def test_relevant_response():
 
 You've got the fundamentals down. Here's where to go deeper:
 
+- **Run evals like a pro** — [The fasteval CLI](/docs/cli/overview), [Profiles](/docs/cli/profiles) and the [Local UI](/docs/cli/local-ui)
 - **Explore all metrics** — [Metrics Overview](/docs/core-concepts/metrics)
 - **Configure LLM providers** — [LLM Setup](/docs/core-concepts/llm-setup)
 - **Evaluate RAG pipelines** — [RAG Metrics](/docs/rag-metrics/faithfulness)

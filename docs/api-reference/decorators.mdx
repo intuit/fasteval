@@ -28,6 +28,15 @@ Evaluates against custom criteria written in plain English.
 
 **Aliases:** `@fe.geval()`, `@fe.g_eval()` (backward-compatible)
 
+### @fe.prompt_judge(judge, threshold=None, weight=1.0, name=None)
+Scores with a saved prompt judge, `judges/<judge>.toml`. `threshold` overrides the judge file's threshold (default 0.5 if neither is set); `name` sets the metric name (default: the judge name). See [Prompt Judges](/docs/cli/prompt-judges).
+
+```python
+@fe.prompt_judge("refund_correctness_strict", threshold=0.8)
+def test_refund():
+    fe.score(agent("Can I get a refund?"), "Within 30 days", input="Can I get a refund?")
+```
+
 ## Deterministic Decorators
 
 ### @fe.contains(case_sensitive)
@@ -44,14 +53,61 @@ Validates against a JSON schema.
 
 ## Data Decorators
 
-### @fe.csv(filepath)
-Loads test cases from a CSV file.
+Datasets, CSV and JSON Lines decorators expand into one pytest test case per item at collection time. A test parameter named `case` or `row` receives the whole item as a dict; otherwise item keys are matched to parameter names; an `EvalInput` item goes to `eval_input`. See [Data Sources](/docs/core-concepts/data-sources).
+
+### @fe.dataset / @fe.dataset(name=None, id_field=None) / fe.dataset(iterable, ...)
+Declares a dataset from a generator function, a function returning an iterable, or an iterable. The result decorates test functions. Items can be dicts (an `id` key sets the case id and a `tags` list sets per-case tags), `fe.case(...)` objects, or `EvalInput` objects (`reference_id` becomes the id). `name` defaults to the function name; `id_field` names the key used as the case id.
+
+```python
+@fe.dataset
+def faq():
+    yield {"id": "refund", "question": "How do refunds work?", "expected": "30 days"}
+
+@faq
+@fe.correctness(threshold=0.7)
+def test_faq(question, expected):
+    fe.score(agent(question), expected, input=question)
+```
+
+### fe.case(id=None, tags=(), **values)
+One dataset case with an explicit id and per-case tags. `values` are passed to the test.
+
+### @fe.csv(path, encoding="utf-8", id_field=None)
+Loads one test case per CSV row; columns become values (all strings). An `id` column, or the `id_field` column, names each case. Relative paths are resolved from the current working directory.
+
+### @fe.jsonl(path, encoding="utf-8", id_field=None)
+Loads one test case per line of a JSON Lines file. Blank lines are skipped; values keep their JSON types.
+
+### fasteval.Dataset
+`@fe.dataset`, `fe.csv()` and `fe.jsonl()` all return a `Dataset` (exported as `fe.Dataset`, with `fe.Case` for its cases). Besides decorating tests, it can be used directly; it's loaded once and cached:
+
+```python
+faq = fe.csv("evals/data/faq.csv", id_field="question")
+
+len(faq)              # number of cases
+for values in faq:    # each case's values as a dict (id and tags removed)
+    ...
+faq.load()            # list of fe.Case(values, id, tags), with final case ids
+faq.name              # "faq": the function name, or the file name without extension
+```
 
 ### @fe.conversation(turns)
 Defines conversation-based tests.
 
 ### @fe.traces()
 Evaluates production traces. See [Production Traces](/docs/advanced/traces).
+
+## Organizing Decorators
+
+### @fe.tag(*names)
+Tags an eval (or every test in a class) with pytest markers that fasteval registers automatically. Select with `fasteval run -t NAME` or `pytest -m NAME`. Names must be identifiers; `and`, `or`, `not`, `fasteval`, `parametrize`, `skip`, `skipif`, `xfail`, `usefixtures` and `filterwarnings` are reserved. See [Tags](/docs/cli/tags).
+
+```python
+@fe.tag("smoke", "rag")
+@fe.contains()
+def test_refund_policy():
+    fe.score(agent("Can I get a refund?"), "30 days")
+```
 
 ## Custom Metric
 

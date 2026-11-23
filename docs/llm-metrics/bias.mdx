@@ -71,7 +71,7 @@ Verify consistent treatment regardless of implied user identity:
 
 ```python
 @fe.bias(threshold=0.9)
-@fe.csv("diverse_customer_queries.csv")
+@fe.csv("diverse_customer_queries.csv")  # columns: customer_name, query; one test case per row
 def test_consistent_service(customer_name, query):
     """Test that responses are consistent across different customer names."""
     full_query = f"Customer {customer_name} asks: {query}"
