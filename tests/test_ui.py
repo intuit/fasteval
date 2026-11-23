@@ -65,24 +65,6 @@ def project(tmp_path, monkeypatch):
     return tmp_path
 
 
-@pytest.fixture
-def bundle(tmp_path, monkeypatch):
-    """A tiny stand-in for the built React bundle (CI tests don't build it)."""
-    dist = tmp_path / "_dist"
-    dist.mkdir()
-    (dist / "index.html").write_text(
-        "<!doctype html><html><head><title>fasteval</title>"
-        '<script type="module" crossorigin src="/static/dist/app.js"></script>'
-        '<link rel="stylesheet" crossorigin href="/static/dist/app.css"></head>'
-        '<body><div id="root"></div></body></html>'
-    )
-    (dist / "app.js").write_text("console.log('</script> safe')")
-    (dist / "app.css").write_text("body{}")
-    monkeypatch.setattr(export, "DIST_DIR", dist)
-    monkeypatch.setattr(server, "DIST_DIR", dist)
-    return dist
-
-
 def run_to_end(config, request=None, **kw):
     run_id, path, proc, meta = runs.launch(
         config,
