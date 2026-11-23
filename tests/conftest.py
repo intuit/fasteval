@@ -38,4 +38,3 @@ def bundle(tmp_path, monkeypatch):
     monkeypatch.setattr(export, "DIST_DIR", dist)
     monkeypatch.setattr(server, "DIST_DIR", dist)
     return dist
-
