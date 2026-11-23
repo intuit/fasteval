@@ -3,8 +3,8 @@ title: How It Works
 description: Understanding fasteval's architecture and evaluation flow
 order: 3
 sidebar:
-  - title: The Evaluation Pipeline
-    anchor: the-evaluation-pipeline
+  - title: The Pipeline
+    anchor: the-pipeline
   - title: Step-by-Step Walkthrough
     anchor: step-by-step-walkthrough
   - title: Under the Hood
@@ -175,7 +175,7 @@ In practice, these take ~100-500ms because of the API call. But they understand 
 
 ### Deterministic Metrics
 
-These are instant — no API call, pure code. **`contains`** checks for substring presence. **`exact_match`** does strict string equality. **`regex`** handles pattern matching. **`json_schema`** validates JSON structure. **`word_count`** enforces length constraints.
+These are instant — no API call, pure code. **`contains`** checks for substring presence. **`exact_match`** does strict string equality. **`regex`** handles pattern matching. **`json`** validates JSON structure against a Pydantic model. For length limits and other custom rules, a [code judge](/docs/concepts/code-as-judge) is a few lines of Python.
 
 They're either binary or threshold-based, and they're what you want for format validation. No ambiguity, no latency.
 
@@ -187,10 +187,10 @@ Stack decorators to mix both types in a single test:
 @fe.correctness(threshold=0.8)     # LLM-based
 @fe.toxicity(threshold=0.95)       # LLM-based
 @fe.contains()                     # Deterministic
-@fe.json_schema()                  # Deterministic
+@fe.json(model=MyResponse)         # Deterministic (Pydantic model)
 def test_comprehensive():
     response = my_agent(query)
-    fe.score(response, expected, schema=my_schema)
+    fe.score(response, expected)
 ```
 
 All metrics run in parallel. The test passes only if every single one meets its threshold.

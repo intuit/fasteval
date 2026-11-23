@@ -78,7 +78,7 @@ fasteval builds evaluation prompts following a few key principles. The judge get
 
 LLM-as-Judge shines when you need semantic understanding. It handles **semantic correctness** well because it gets paraphrasing, synonyms, and equivalent expressions. It's great at judging **relevance to a question** — understanding context and intent, not just keyword overlap. **Tone and style** assessments come naturally to it. And it can evaluate **safety and toxicity** since these models are trained to spot harmful content. It's also solid at **factual grounding** when you provide reference context to check against.
 
-But don't use it for everything. If you need exact string matching, use `@fe.exact_match()`. JSON schema validation? That's `@fe.json_schema()`. Keyword presence is just `@fe.contains()`. Numerical calculations and format compliance belong to deterministic checks — regex, schema validators, plain old assertions. Cheaper, faster, and more reliable for those jobs.
+But don't use it for everything. If you need exact string matching, use `@fe.exact_match()`. JSON schema validation? That's `@fe.json(model=...)`. Keyword presence is just `@fe.contains()`. Numerical calculations and format compliance belong to deterministic checks — regex, schema validators, plain old assertions. Cheaper, faster, and more reliable for those jobs.
 
 ## Strengths
 
@@ -236,9 +236,9 @@ Don't guess thresholds — measure them with known examples:
 Use LLM-as-Judge for semantic qualities, deterministic checks for structure:
 
 ```python
-@fe.correctness(threshold=0.8)      # Semantic: Is it right?
-@fe.json_schema(schema=my_schema)   # Deterministic: Valid JSON?
-@fe.contains(expected="disclaimer") # Deterministic: Has disclaimer?
+@fe.correctness(threshold=0.8)              # Semantic: Is it right?
+@fe.json(model=ApiResponse)                 # Deterministic: Valid JSON? (Pydantic model)
+@fe.regex(pattern=r"(?i)not legal advice")  # Deterministic: Has the disclaimer?
 def test_api_response():
     response = agent(query)
     fe.score(response, expected)

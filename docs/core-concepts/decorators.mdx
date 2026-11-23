@@ -14,7 +14,7 @@ sidebar:
   - title: Decorator Parameters
     anchor: decorator-parameters
   - title: The fe.score() Function
-    anchor: the-fescore-function
+    anchor: the-fe-score-function
   - title: Best Practices
     anchor: best-practices
 ---
@@ -148,7 +148,7 @@ No LLM calls. Fast. Great for format validation and CI/CD:
 |-----------|---------------|----------|
 | `@fe.contains()` | Expected string is in output | Required phrases |
 | `@fe.exact_match()` | Strings are identical | Structured outputs |
-| `@fe.json_schema()` | Output matches JSON schema | API responses |
+| `@fe.json(model=...)` | Output is JSON matching a Pydantic model | API responses |
 | `@fe.regex()` | Output matches pattern | Format validation |
 | `@fe.rouge()` | Text similarity scores | Summarization |
 

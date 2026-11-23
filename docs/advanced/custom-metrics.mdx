@@ -115,41 +115,39 @@ def test_health_advice():
 
 ## Deterministic Custom Metrics
 
-For fast, consistent checks that don't need an LLM at all, extend `BaseDeterministicMetric`. These run instantly and produce identical results every time.
+For fast, consistent checks that don't need an LLM at all, extend `fe.Metric` and implement an async `evaluate()`. These run instantly and produce identical results every time.
 
 ### Example: Word Count Limits
 
 ```python
-from fasteval import BaseDeterministicMetric, EvalInput, MetricResult
+import fasteval as fe
+from fasteval import EvalInput, MetricResult
 
-class ResponseLengthMetric(BaseDeterministicMetric):
+class ResponseLengthMetric(fe.Metric):
     """Ensure responses are within acceptable length bounds."""
 
-    name = "response_length"
-
-    def __init__(self, min_words: int = 20, max_words: int = 200, threshold: float = 1.0):
-        super().__init__(threshold=threshold)
+    def __init__(self, min_words: int = 20, max_words: int = 200, **kwargs):
+        kwargs.setdefault("name", "response_length")
+        kwargs.setdefault("threshold", 1.0)
+        super().__init__(**kwargs)
         self.min_words = min_words
         self.max_words = max_words
 
-    def evaluate(self, eval_input: EvalInput) -> MetricResult:
-        word_count = len(eval_input.actual_output.split())
-
+    async def evaluate(self, eval_input: EvalInput) -> MetricResult:
+        word_count = len((eval_input.actual_output or "").split())
         if word_count < self.min_words:
-            return MetricResult(
-                score=0.0,
-                reasoning=f"Response too short: {word_count} words (min: {self.min_words})"
-            )
+            score, reasoning = 0.0, f"Response too short: {word_count} words (min: {self.min_words})"
         elif word_count > self.max_words:
-            return MetricResult(
-                score=0.0,
-                reasoning=f"Response too long: {word_count} words (max: {self.max_words})"
-            )
+            score, reasoning = 0.0, f"Response too long: {word_count} words (max: {self.max_words})"
         else:
-            return MetricResult(
-                score=1.0,
-                reasoning=f"Response length OK: {word_count} words"
-            )
+            score, reasoning = 1.0, f"Response length OK: {word_count} words"
+        return MetricResult(
+            metric_name=self.name,
+            score=score,
+            passed=self._determine_pass(score),
+            threshold=self.threshold,
+            reasoning=reasoning,
+        )
 
 # Usage
 @fe.metric(ResponseLengthMetric(min_words=50, max_words=300))
@@ -266,3 +264,20 @@ def test_tone_metric_scoring():
     result = metric.evaluate(bad)
     assert result.score < 0.5
 ```
+
+## Registering a Metric as a Decorator
+
+To reuse a custom metric across many tests, register it once (for example in `conftest.py`) and use it like a built-in:
+
+```python
+import fasteval as fe
+
+fe.register_metric("response_length", ResponseLengthMetric, default_threshold=1.0)
+
+@fe.response_length(min_words=10, max_words=200)
+def test_answer_length():
+    fe.score(agent("Explain retries"))
+```
+
+Registered names also work in [`fe.evaluate(metrics=["response_length"])`](/docs/api-reference/evaluator#fe-evaluate-and-fe-evaluate-async).
+

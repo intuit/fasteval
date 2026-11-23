@@ -6,6 +6,12 @@ All notable changes to this project will be documented in this file.
 
 ### Features
 
+- `@fe.traces()` now runs: each yielded `EvalInput` becomes its own test case, evaluated against the stacked metrics (it was documented but never executed).
+- `fe.evaluate()` / `fe.evaluate_async()`: score an output against named metrics outside pytest; failing results are returned, not raised.
+- `fe.register_metric(name, MetricClass)`: register a custom metric and get its `@fe.<name>()` decorator.
+- `llm=` is accepted as an alias for `llm_client=` on metric decorators (documented before, but crashed with a TypeError).
+- Relative `fe.csv` / `fe.jsonl` paths are looked up next to the test file first, then in the working directory.
+
 - **`fasteval` CLI** (also `python -m fasteval`): `fasteval` (project status), `run`, `list`/`ls`, `profiles`, `report`, `ui` and `init`. `fasteval run` runs only fasteval evals by default (`--all` includes plain tests), selects with `-t` tag expressions and `-k`, supports `-n` (pytest-xdist), `--lf`, `-x`, `--dry-run`, quality gates (`--min-score`, `--min-pass-rate`), judge swaps (`--judge METRIC=JUDGE`), `--json` and `--html`, and passes unknown flags (and anything after `--`) to pytest.
 - **Live UI mode**: from a terminal, `fasteval run` opens the run in the browser and keeps the local UI open until Ctrl+C. **Headless mode** (`--headless`, `--ci`, profile `headless = true`, `$CI`, or no terminal) writes a self-contained HTML report to `.fasteval/report.html`.
 - **Run history**: every run is recorded under `.fasteval/runs/<id>/` (gitignored automatically; the 50 most recent are kept) and can be re-run, re-run for failures only, compared and exported.

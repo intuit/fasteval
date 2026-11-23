@@ -36,6 +36,7 @@ from fasteval.collectors import (
     get_collector,
     reset_collector,
 )
+from fasteval.core.api import evaluate, evaluate_async, register_metric
 from fasteval.core.datasets import Case, Dataset, case, dataset
 from fasteval.core.decorators import (  # LLM Metrics; Quality Metrics; RAG Metrics; Deterministic Metrics; Tool Trajectory; Conversation Metrics; Generic; Data Decorators; Human Review; Stack; Vision; Audio; Multi-Modal; Vision metrics; Audio metrics; Multi-modal metrics
     aesthetic_score,
@@ -232,6 +233,9 @@ __all__ = [
     "jsonl",
     "stack",
     "dataset",
+    "evaluate",
+    "evaluate_async",
+    "register_metric",
     "case",
     "Dataset",
     "Case",

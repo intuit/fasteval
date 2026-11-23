@@ -183,7 +183,7 @@ fe.score(response, expected_output="Guido van Rossum released Python version 1.0
 
 ### Know When to Reach for Something Else
 
-For open-ended creative writing, `@fe.criteria()` with custom criteria is a better fit. RAG systems benefit from combining correctness with `@fe.faithfulness()`. Safety evaluation calls for `@fe.toxicity()` and `@fe.bias()`. And if you're validating output format, `@fe.json_schema()` or `@fe.contains()` will serve you better.
+For open-ended creative writing, `@fe.criteria()` with custom criteria is a better fit. RAG systems benefit from combining correctness with `@fe.faithfulness()`. Safety evaluation calls for `@fe.toxicity()` and `@fe.bias()`. And if you're validating output format, `@fe.json(model=...)` or `@fe.contains()` will serve you better.
 
 ## Example Output
 

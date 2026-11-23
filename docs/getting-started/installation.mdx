@@ -47,8 +47,8 @@ pip install pytest-xdist
 
 | Requirement | Minimum | Recommended |
 |-------------|---------|-------------|
-| **Python** | 3.9+ | 3.11+ (10-60% faster) |
-| **pytest** | 7.0+ | Latest stable |
+| **Python** | 3.10+ | 3.12+ |
+| **pytest** | 8.0+ | Latest stable |
 | **Network** | Required for LLM metrics | Stable for production |
 
 ## LLM Provider Setup
@@ -333,8 +333,8 @@ def my_evaluation():
 ```python
 import fasteval as fe
 
-# Configure longer timeouts
-fe.configure(timeout=60)
+# Longer timeouts for the judge (extra arguments go to openai.AsyncOpenAI)
+fe.set_default_provider(fe.OpenAIClient(model="gpt-4o-mini", timeout=60))
 ```
 
 ## Next Steps

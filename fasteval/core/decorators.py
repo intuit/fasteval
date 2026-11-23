@@ -77,6 +77,12 @@ def _metric_decorator_factory(
             model: Model override
             **config: Additional metric config
         """
+        # `llm=` is accepted as an alias for `llm_client=` (older docs and
+        # examples use it; it used to crash at evaluation time).
+        if "llm" in config:
+            alias = config.pop("llm")
+            if llm_client is None:
+                llm_client = alias
         merged_config = {**default_config, **config}
         if model:
             merged_config["model"] = model
@@ -1758,11 +1764,14 @@ def csv(
             response = agent(query)
             fe.score(response, expected, input=query)
 
-    The path is resolved relative to the current working directory.
+    A relative path is looked up next to the test file first, then in the
+    current working directory.
     """
     from fasteval.core.datasets import csv_dataset
 
-    return csv_dataset(path, encoding=encoding, id_field=id_field)
+    return csv_dataset(
+        path, encoding=encoding, id_field=id_field, base_dir=_caller_dir()
+    )
 
 
 def jsonl(
@@ -1781,7 +1790,18 @@ def jsonl(
     """
     from fasteval.core.datasets import jsonl_dataset
 
-    return jsonl_dataset(path, encoding=encoding, id_field=id_field)
+    return jsonl_dataset(
+        path, encoding=encoding, id_field=id_field, base_dir=_caller_dir()
+    )
+
+
+def _caller_dir() -> Optional[Path]:
+    """Directory of the module that called the data decorator."""
+    import sys
+
+    frame = sys._getframe(2)
+    module_file = frame.f_globals.get("__file__")
+    return Path(module_file).resolve().parent if module_file else None
 
 
 def conversation(

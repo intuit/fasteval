@@ -50,3 +50,49 @@ result = await evaluator.evaluate(
 print(result.passed)  # True
 print(result.metric_results[0].score)  # 0.95
 ```
+
+## fe.evaluate() and fe.evaluate_async()
+
+Score one output against named metrics without pytest or decorators: batch jobs, notebooks, scripts. Unlike `fe.score()`, a failing result is returned, not raised.
+
+```python
+import fasteval as fe
+
+result = fe.evaluate(
+    actual_output="Paris is the capital of France.",
+    expected_output="Paris",
+    input="What is the capital of France?",
+    metrics=["correctness", "contains"],
+)
+print(result.passed, result.aggregate_score)
+for m in result.metric_results:
+    print(m.metric_name, m.score, m.reasoning)
+
+# In async code
+result = await fe.evaluate_async(actual_output=answer, expected_output=gold, metrics=["correctness"])
+```
+
+| Argument | Description |
+|----------|-------------|
+| `actual_output`, `expected_output` | The output and optional reference |
+| `metrics` | Metric names (any `@fe.<name>` metric, including ones added with `fe.register_metric`), `MetricConfig` objects or `Metric` instances |
+| `threshold` | Overrides every named metric's threshold (each otherwise keeps its decorator default) |
+| `llm_client`, `model` | Judge for LLM metrics (default: the default provider) |
+| `**fields` | Any other `EvalInput` field: `input`, `context`, `retrieval_context`, `history`, `tool_calls`, `metadata`, ... |
+
+`fe.evaluate()` is synchronous; inside a running event loop use `await fe.evaluate_async(...)`.
+
+## fe.register_metric()
+
+Register a custom `Metric` subclass and get a decorator for it:
+
+```python
+fe.register_metric("legal_compliance", LegalComplianceMetric)
+
+@fe.legal_compliance(jurisdiction="US", threshold=0.85)  # extra kwargs go to the constructor
+def test_legal_response():
+    fe.score(legal_assistant("Can I sue my landlord?"))
+```
+
+The name must be a Python identifier and can't shadow a built-in fasteval name (pass `overwrite=True` to replace a metric you registered earlier). `default_threshold=` sets the decorator's default. See [Custom Metrics](/docs/advanced/custom-metrics).
+

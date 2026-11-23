@@ -22,7 +22,7 @@ class LLMClient(Protocol):
         fe.set_default_provider(MyCustomClient())
 
         # Or per-metric
-        @fe.correctness(llm=MyCustomClient())
+        @fe.correctness(llm_client=MyCustomClient())
         async def test_something(): ...
     """
 

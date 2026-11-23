@@ -120,7 +120,7 @@ fasteval runs the test **once per row** as separate test cases: `test_from_csv[W
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `path` | required | CSV file. Relative paths are resolved from the current working directory: where you run pytest or `fasteval run`, usually the project root (runs started from the UI always use the project root) |
+| `path` | required | CSV file. Relative paths are looked up next to the test file first, then in the current working directory |
 | `encoding` | `"utf-8"` | File encoding |
 | `id_field` | none | Column whose value becomes the case id |
 

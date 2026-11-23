@@ -168,9 +168,31 @@ def test_support_quality(query, expected, history):
 
 ### Data-Driven Testing
 
+Load recorded conversations into a [dataset](/docs/core-concepts/data-sources): one case per turn, each carrying the history before it. Every turn is then its own test case, so failures point at the exact turn.
+
 ```python
+import csv
+from collections import defaultdict
+
+import fasteval as fe
+
+@fe.dataset
+def support_turns():
+    # support_conversations.csv: conversation_id,query,expected,answer
+    conversations = defaultdict(list)
+    with open("support_conversations.csv", newline="") as f:
+        for row in csv.DictReader(f):
+            conversations[row["conversation_id"]].append(row)
+    for conv_id, rows in conversations.items():
+        history = []
+        for turn, row in enumerate(rows):
+            yield {"id": f"{conv_id}-{turn}", "query": row["query"],
+                   "expected": row["expected"], "history": list(history)}
+            history += [{"role": "user", "content": row["query"]},
+                        {"role": "assistant", "content": row["answer"]}]
+
+@support_turns
 @fe.consistency(threshold=0.8)
-@fe.conversations_csv("support_conversations.csv")
 def test_bulk_consistency(query, expected, history):
     response = my_agent(query, history=history)
     fe.score(response, expected, input=query, history=history)

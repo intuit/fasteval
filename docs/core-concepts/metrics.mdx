@@ -153,10 +153,14 @@ def test_includes_disclaimer():
     response = legal_bot("What are your terms?")
     fe.score(response, "not legal advice")  # Must contain this phrase
 
-@fe.json_schema(schema={"type": "object", "required": ["id", "status"]})
+class Status(BaseModel):  # from pydantic import BaseModel
+    id: str
+    status: str
+
+@fe.json(model=Status)
 def test_api_format():
     response = my_api("get status")
-    fe.score(response, None)  # Schema validation only
+    fe.score(response)  # Schema validation only
 ```
 
 ## Conversation Metrics
@@ -226,7 +230,7 @@ Use deterministic metrics to avoid API latency:
 ```python
 @fe.contains()                         # Required content
 @fe.exact_match()                      # Specific format
-@fe.json_schema(schema=my_schema)      # Valid structure
+@fe.json(model=MyModel)                # Valid structure (Pydantic model)
 ```
 
 ### Combining Metrics for Full Evaluation
@@ -237,7 +241,7 @@ Production evaluation usually means mixing metric types:
 @fe.correctness(threshold=0.8)     # LLM: semantic accuracy
 @fe.faithfulness(threshold=0.8)    # RAG: grounded in context
 @fe.contains()                      # Fast: required phrase
-@fe.json_schema(schema=my_schema)  # Fast: valid structure
+@fe.json(model=MyModel)            # Fast: valid structure
 def test_comprehensive():
     ...
 ```

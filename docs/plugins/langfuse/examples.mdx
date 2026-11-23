@@ -8,7 +8,7 @@ sidebar:
   - title: Debug Failing Traces
     anchor: debug-failing-traces
   - title: A/B Testing
-    anchor: ab-testing
+    anchor: a-b-testing
   - title: RAG Pipeline Evaluation
     anchor: rag-pipeline-evaluation
   - title: Cross-Segment Quality
@@ -350,7 +350,7 @@ Plug in custom metrics alongside production traces:
 
 ```python
 from fasteval import LLMMetric
-from fasteval.core.models import EvalInput
+from fasteval import EvalInput
 
 class CustomerSatisfactionMetric(LLMMetric):
     """Custom metric for customer satisfaction."""
@@ -538,10 +538,10 @@ pytest test_customer_support_pipeline.py::test_pre_deploy_regression
 
 ## Parallel Execution
 
-Speed things up with pytest-xdist:
+Speed things up with pytest-xdist. xdist spreads **test functions** across workers: a single `@langfuse_traces` test evaluates all of its traces in one worker, so split large evaluations into several tests (for example by tag, time window or sampling) to use more workers.
 
 ```bash
-# Evaluate 1000 traces in parallel
+# Run the trace-evaluation tests on 4 workers
 pytest test_production.py -n 4  # 4 workers
 
 # Auto-detect worker count

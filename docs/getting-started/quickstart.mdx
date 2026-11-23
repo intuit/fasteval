@@ -176,17 +176,22 @@ AssertionError: Metric 'relevance' failed: 0.55 < 0.70
 For format validation (no LLM call needed):
 
 ```python
+from pydantic import BaseModel
 @fe.contains()
 def test_includes_disclaimer():
     """Verify response includes required text."""
     response = my_agent("What are your terms?")
     fe.score(response, "This is not legal advice")
 
-@fe.json_schema()
+class User(BaseModel):
+    id: int
+    name: str
+
+@fe.json(model=User)
 def test_valid_json():
-    """Verify response is valid JSON."""
+    """Verify response is JSON with the fields a User needs."""
     response = my_api("Get user data")
-    fe.score(response, {"type": "object", "required": ["id", "name"]})
+    fe.score(response)
 ```
 
 ### Pattern: Async Testing

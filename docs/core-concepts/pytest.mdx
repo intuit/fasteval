@@ -210,7 +210,7 @@ def test_with_evaluator(evaluator):
             expected_output="Paris",
             input="What is the capital of France?"
         ),
-        metrics=[MetricConfig(name="correctness", threshold=0.8)]
+        metrics=[MetricConfig(metric_type="correctness", name="correctness", threshold=0.8)]
     )
 
     assert result.passed

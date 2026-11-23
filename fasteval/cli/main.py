@@ -590,6 +590,8 @@ def _data_label(data: Optional[Dict[str, Any]]) -> str:
         return f"{kind} {data.get('path', '')}"
     if kind == "dataset":
         return f"dataset {data.get('name', '')}"
+    if kind == "traces":
+        return "traces (@fe.traces)"
     if kind == "conversation":
         return f"conversation {data.get('turns', '?')} turns"
     if kind == "langfuse_dataset":

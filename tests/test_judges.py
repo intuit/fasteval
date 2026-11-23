@@ -304,3 +304,128 @@ class TestJudgeTrace:
             "provider": "Gateway",
             "model": "internal-gpt",
         }
+
+
+def test_llm_alias_for_llm_client():
+    """`llm=` (used in older docs) is accepted and means llm_client=."""
+    import fasteval as fe
+
+    client = FakeJudge()
+
+    @fe.correctness(llm=client)
+    def test_fn():
+        pass
+
+    (config,) = getattr(test_fn, "_fasteval_metrics")
+    assert config.llm_client is client and "llm" not in config.config
+
+
+# ── fe.evaluate / fe.register_metric ─────────────────────────────────────────
+
+
+class TestEvaluateApi:
+    def test_named_metrics_keep_decorator_defaults(self):
+        import fasteval as fe
+
+        result = fe.evaluate(
+            "Paris is lovely", "Paris", input="q", metrics=["contains", "rouge"]
+        )
+        thresholds = {m.metric_name: m.threshold for m in result.metric_results}
+        assert thresholds == {"contains": 1.0, "rouge": 0.5}
+
+    def test_failing_result_is_returned_not_raised(self):
+        import fasteval as fe
+
+        result = fe.evaluate("nope", "Paris", metrics="exact_match")
+        assert result.passed is False and result.aggregate_score == 0.0
+
+    def test_threshold_and_judge_overrides(self):
+        import fasteval as fe
+
+        client = FakeJudge(score=0.6)
+        result = fe.evaluate(
+            "a", "b", metrics=["correctness"], threshold=0.7, llm_client=client
+        )
+        (m,) = result.metric_results
+        assert m.threshold == 0.7 and not m.passed and client.prompts
+
+    def test_async_variant(self):
+        import fasteval as fe
+
+        result = asyncio.run(fe.evaluate_async("x", "x", metrics=["exact_match"]))
+        assert result.passed
+
+    def test_accepts_metric_instances_and_configs(self):
+        import fasteval as fe
+        from fasteval.metrics.deterministic import ExactMatchMetric
+
+        result = fe.evaluate(
+            "x",
+            "x",
+            metrics=[
+                ExactMatchMetric(name="em"),
+                MetricConfig(metric_type="contains", name="c", threshold=1.0),
+            ],
+        )
+        assert [m.metric_name for m in result.metric_results] == ["em", "c"]
+
+    @pytest.mark.parametrize("metrics", [[], ["no_such_metric"], ["tag"], [42]])
+    def test_bad_metrics(self, metrics):
+        import fasteval as fe
+
+        with pytest.raises((ValueError, TypeError)):
+            fe.evaluate("x", metrics=metrics)
+
+
+class TestRegisterMetric:
+    def test_register_creates_decorator_and_name(self):
+        import fasteval as fe
+        from fasteval.metrics.base import Metric
+        from fasteval.models.evaluation import MetricResult
+
+        class Shouty(Metric):
+            def __init__(self, char="!", **kwargs):
+                super().__init__(**kwargs)
+                self.char = char
+
+            async def evaluate(self, eval_input):
+                ok = (eval_input.actual_output or "").endswith(self.char)
+                return MetricResult(
+                    metric_name=self.name,
+                    score=float(ok),
+                    passed=ok,
+                    threshold=self.threshold,
+                )
+
+        decorator = fe.register_metric(
+            "shouty_test_metric", Shouty, default_threshold=1.0
+        )
+        assert getattr(fe, "shouty_test_metric") is decorator
+
+        @decorator(char="?")
+        def test_fn():
+            return fe.score("really?")
+
+        assert test_fn().passed
+        assert not fe.evaluate("calm.", metrics=["shouty_test_metric"]).passed
+        fe.register_metric(
+            "shouty_test_metric", Shouty
+        )  # re-registering our own name is fine
+
+    @pytest.mark.parametrize("name", ["correctness", "score", "not valid", "class"])
+    def test_rejects_clashes_and_bad_names(self, name):
+        import fasteval as fe
+        from fasteval.metrics.base import Metric
+
+        class M(Metric):
+            async def evaluate(self, eval_input):  # pragma: no cover
+                raise NotImplementedError
+
+        with pytest.raises(ValueError):
+            fe.register_metric(name, M)
+
+    def test_rejects_non_metric_class(self):
+        import fasteval as fe
+
+        with pytest.raises(TypeError):
+            fe.register_metric("not_a_metric_cls", dict)  # type: ignore[arg-type]

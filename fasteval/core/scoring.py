@@ -441,3 +441,29 @@ def _run_human_review(
     )
 
     return updated_result
+
+
+def score_input(
+    eval_input: EvalInput,
+    metrics: List[MetricConfig],
+    *,
+    test_name: str,
+    human_review_config: Optional[Dict[str, Any]] = None,
+) -> EvalResult:
+    """
+    Evaluate an EvalInput against explicit metrics (no caller-frame lookup).
+
+    Same behavior as :func:`score`: the result is collected for reports,
+    and EvaluationFailedError is raised when it fails. Used by ``@fe.traces``.
+    """
+    result = run_async(_evaluator.evaluate(eval_input, metrics))
+    if human_review_config:
+        result = _run_human_review(result, eval_input, human_review_config)
+
+    from fasteval.collectors.collector import get_collector
+
+    get_collector().collect(result, test_name=test_name)
+    if not result.passed:
+        report = format_evaluation_report(test_name, [result], [eval_input])
+        raise EvaluationFailedError(report, result)
+    return result

@@ -252,3 +252,97 @@ class TestUnderPytest:
         rows = [i for i in items if i["function"] == "test_rows"]
         assert rows[0]["data"] == {"type": "dataset", "name": "rows"}
         assert rows[1]["tags"] == ["rag", "slow"]
+
+
+# ── data paths resolve from the test file ───────────────────────────────────
+
+
+def test_relative_csv_path_resolves_next_to_test_file(pytester, monkeypatch):
+    sub = pytester.mkpydir("evals")
+    (sub / "qa.csv").write_text("word,expected\nhello,he\n")
+    (sub / "test_rel.py").write_text(
+        "import fasteval as fe\n\n"
+        "@fe.csv('qa.csv')\n@fe.contains()\n"
+        "def test_rel(word, expected):\n    fe.score(word, expected, input=word)\n"
+    )
+    # Run from the project root: qa.csv is NOT in the cwd, only beside the test.
+    result = pytester.runpytest_subprocess("evals")
+    result.assert_outcomes(passed=1)
+
+
+def test_missing_data_file_lists_locations_tried(tmp_path):
+    from fasteval.core.datasets import resolve_data_path
+
+    with pytest.raises(FileNotFoundError, match="tried:"):
+        resolve_data_path("nope.csv", tmp_path)
+
+
+def test_cwd_fallback_still_works(tmp_path, monkeypatch):
+    from fasteval.core.datasets import resolve_data_path
+
+    (tmp_path / "data.csv").write_text("a\n1\n")
+    monkeypatch.chdir(tmp_path)
+    assert (
+        resolve_data_path("data.csv", tmp_path / "elsewhere") == tmp_path / "data.csv"
+    )
+
+
+# ── @fe.traces ───────────────────────────────────────────────────────────────
+
+TRACES = textwrap.dedent("""
+    import fasteval as fe
+    from fasteval import EvalInput
+
+    @fe.tag("prod")
+    @fe.contains()
+    @fe.traces()
+    def evaluate_production_traces():
+        yield EvalInput(actual_output="hello world", expected_output="hello", reference_id="t1")
+        yield EvalInput(actual_output="bye", expected_output="hello")
+    """)
+
+
+class TestTraces:
+    def test_one_case_per_yielded_input(self, pytester):
+        pytester.makepyfile(test_traces=TRACES)
+        result = pytester.runpytest_subprocess("--collect-only", "-q")
+        lines = set(result.stdout.lines)
+        assert "test_traces.py::evaluate_production_traces[t1]" in lines
+        assert "test_traces.py::evaluate_production_traces[trace-1]" in lines
+
+    def test_metrics_evaluated_and_tags_select(self, pytester):
+        pytester.makepyfile(test_traces=TRACES)
+        result = pytester.runpytest_subprocess(
+            "-m", "prod", "--fe-only", "--strict-markers"
+        )
+        result.assert_outcomes(passed=1, failed=1)
+
+    def test_results_reach_reports(self, pytester):
+        pytester.makepyfile(test_traces=TRACES)
+        out = pytester.path / "r.json"
+        pytester.runpytest_subprocess(f"--fe-output=json:{out}")
+        summary = json.loads(out.read_text())["summary"]
+        names = sorted(t["test_name"] for t in summary["test_summaries"])
+        assert names == [
+            "evaluate_production_traces[t1]",
+            "evaluate_production_traces[trace-1]",
+        ]
+
+    @pytest.mark.parametrize(
+        "body, message",
+        [
+            (
+                "@fe.traces()\ndef t():\n    yield fe.EvalInput(actual_output='x')\n",
+                "has no metrics",
+            ),
+            (
+                "@fe.contains()\n@fe.traces()\ndef t():\n    yield {'a': 1}\n",
+                "must yield*EvalInput",
+            ),
+        ],
+    )
+    def test_usage_errors(self, pytester, body, message):
+        pytester.makepyfile(test_bad="import fasteval as fe\n\n" + body)
+        result = pytester.runpytest_subprocess()
+        assert result.ret != 0
+        result.stdout.fnmatch_lines([f"*{message}*"])

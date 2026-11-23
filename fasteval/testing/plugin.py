@@ -234,6 +234,79 @@ def is_fasteval_item(item: Any) -> bool:
     return func is not None and any(hasattr(func, a) for a in _FASTEVAL_ATTRS)
 
 
+@pytest.hookimpl(tryfirst=True)
+def pytest_pycollect_makeitem(collector: Any, name: str, obj: Any) -> Any:
+    """
+    Collect ``@fe.traces()`` generators: one test case per yielded EvalInput,
+    evaluated against the metrics stacked on the generator. The function
+    doesn't need a ``test_`` name; it must live in a collected test module.
+    """
+    if not (callable(obj) and getattr(obj, "_fasteval_traces", False)):
+        return None
+    if not isinstance(collector, pytest.Module):
+        return None
+    if getattr(obj, "__module__", None) != getattr(collector.obj, "__name__", None):
+        return []  # imported from elsewhere: collect it only where it's defined
+    return _trace_items(collector, name, obj)
+
+
+def _trace_items(collector: Any, name: str, func: Any) -> List[Any]:
+    import functools
+
+    from fasteval.models.evaluation import EvalInput
+
+    metrics = list(getattr(func, "_fasteval_metrics", []) or [])
+    if not metrics:
+        raise pytest.UsageError(
+            f"@fe.traces function {name}() has no metrics; stack metric "
+            "decorators like @fe.correctness() above @fe.traces()"
+        )
+    items = []
+    seen: Dict[str, int] = {}
+    for index, eval_input in enumerate(func()):
+        if not isinstance(eval_input, EvalInput):
+            raise pytest.UsageError(
+                f"@fe.traces function {name}() yielded {type(eval_input).__name__}; "
+                "it must yield fasteval.EvalInput objects"
+            )
+        base = " ".join(str(eval_input.reference_id or f"trace-{index}").split())[:60]
+        count = seen.get(base, 0)
+        seen[base] = count + 1
+        case_id = base if count == 0 else f"{base}-{count}"
+        item_name = f"{name}[{case_id}]"
+
+        run = functools.partial(_run_trace, metrics, eval_input, item_name, func)
+        # Carry fasteval/pytest metadata so selection, tags and the UI work.
+        for attr in (
+            "_fasteval_metrics",
+            "_fasteval_traces",
+            "_fasteval_tags",
+            "_fasteval_human_review",
+            "pytestmark",
+        ):
+            if hasattr(func, attr):
+                setattr(run, attr, getattr(func, attr))
+        setattr(run, "_fasteval_data", {"type": "traces", "name": name})
+        setattr(run, "__name__", name)
+        items.append(
+            pytest.Function.from_parent(
+                collector, name=item_name, callobj=run, originalname=name
+            )
+        )
+    return items
+
+
+def _run_trace(metrics: List[Any], eval_input: Any, test_name: str, func: Any) -> None:
+    from fasteval.core.scoring import score_input
+
+    score_input(
+        eval_input,
+        metrics,
+        test_name=test_name,
+        human_review_config=getattr(func, "_fasteval_human_review", None),
+    )
+
+
 def pytest_generate_tests(metafunc: Any) -> None:
     """Expand @fe.dataset / @fe.csv / @fe.jsonl into one test case per row."""
     ds = getattr(metafunc.function, "_fasteval_dataset", None)

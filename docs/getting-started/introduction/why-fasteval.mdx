@@ -117,7 +117,7 @@ fasteval is built for **CI/CD quality gates** — blocking deployments when corr
 
 ### When to Reach for Something Else
 
-If you need **binary format validation** — like checking JSON schema compliance — use deterministic checks (`@fe.json_schema()`). For **exact string requirements**, `@fe.exact_match()` or `@fe.contains()` will do the job faster. **Subjective creative quality** is tricky; you'll probably want to combine fasteval with human review. And for **legal or compliance sign-off**, LLM evaluation can inform the decision, but a human still needs to approve it.
+If you need **binary format validation** — like checking JSON schema compliance — use deterministic checks (`@fe.json(model=...)`). For **exact string requirements**, `@fe.exact_match()` or `@fe.contains()` will do the job faster. **Subjective creative quality** is tricky; you'll probably want to combine fasteval with human review. And for **legal or compliance sign-off**, LLM evaluation can inform the decision, but a human still needs to approve it.
 
 ### The Sweet Spot
 

@@ -142,13 +142,34 @@ def dataset(
     return Dataset(source, name=name, id_field=id_field)
 
 
+def resolve_data_path(path: Union[str, Path], base_dir: Optional[Path]) -> Path:
+    """
+    Find a data file. Relative paths are tried against the test file's
+    directory first, then the current working directory.
+    """
+    p = Path(path)
+    if p.is_absolute():
+        return p
+    candidates = ([base_dir / p] if base_dir else []) + [Path.cwd() / p]
+    for candidate in candidates:
+        if candidate.is_file():
+            return candidate
+    tried = ", ".join(str(c) for c in candidates)
+    raise FileNotFoundError(f"Data file {str(path)!r} not found (tried: {tried})")
+
+
 def csv_dataset(
-    path: Union[str, Path], encoding: str = "utf-8", id_field: Optional[str] = None
+    path: Union[str, Path],
+    encoding: str = "utf-8",
+    id_field: Optional[str] = None,
+    base_dir: Optional[Path] = None,
 ) -> Dataset:
     filepath = Path(path)
 
     def rows() -> Iterable[Dict[str, Any]]:
-        with open(filepath, "r", encoding=encoding, newline="") as f:
+        with open(
+            resolve_data_path(filepath, base_dir), "r", encoding=encoding, newline=""
+        ) as f:
             yield from csv_module.DictReader(f)
 
     return Dataset(
@@ -160,12 +181,15 @@ def csv_dataset(
 
 
 def jsonl_dataset(
-    path: Union[str, Path], encoding: str = "utf-8", id_field: Optional[str] = None
+    path: Union[str, Path],
+    encoding: str = "utf-8",
+    id_field: Optional[str] = None,
+    base_dir: Optional[Path] = None,
 ) -> Dataset:
     filepath = Path(path)
 
     def rows() -> Iterable[Dict[str, Any]]:
-        with open(filepath, "r", encoding=encoding) as f:
+        with open(resolve_data_path(filepath, base_dir), "r", encoding=encoding) as f:
             for number, line in enumerate(f, start=1):
                 if line.strip():
                     try:

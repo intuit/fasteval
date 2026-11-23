@@ -48,8 +48,8 @@ Checks exact equality.
 ### @fe.rouge(threshold, rouge_type)
 Computes ROUGE scores.
 
-### @fe.json_schema(schema)
-Validates against a JSON schema.
+### @fe.json(model, threshold=1.0)
+Validates that the output is JSON matching a Pydantic model (`model=` is the model class). See [JSON Schema](/docs/deterministic-metrics/json-schema).
 
 ## Data Decorators
 
@@ -73,7 +73,7 @@ def test_faq(question, expected):
 One dataset case with an explicit id and per-case tags. `values` are passed to the test.
 
 ### @fe.csv(path, encoding="utf-8", id_field=None)
-Loads one test case per CSV row; columns become values (all strings). An `id` column, or the `id_field` column, names each case. Relative paths are resolved from the current working directory.
+Loads one test case per CSV row; columns become values (all strings). An `id` column, or the `id_field` column, names each case. Relative paths are looked up next to the test file first, then in the current working directory, so evals work the same from any directory (the error lists both places when the file isn't found).
 
 ### @fe.jsonl(path, encoding="utf-8", id_field=None)
 Loads one test case per line of a JSON Lines file. Blank lines are skipped; values keep their JSON types.
