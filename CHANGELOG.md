@@ -14,12 +14,20 @@ All notable changes to this project will be documented in this file.
 
 ## fasteval-observe (unreleased)
 
+### Dependencies
+
+- Requires fasteval-core 1.3.2 or later (the playground uses the tests' judge; async judge clients no longer fail with "Event loop is closed").
+
 ### Fixes
 
 - `shutdown()` / `shutdown_observer()` no longer lose queued observations. The worker waited out the full flush interval (5s by default, the same as the shutdown join timeout) before flushing, so shutdown, including at process exit, often returned before anything was flushed. The worker now flushes and drains as soon as shutdown is requested.
 - `shutdown()` flushes observations queued before a worker was started.
 
 ## fasteval-langfuse (unreleased)
+
+### Dependencies
+
+- Requires fasteval-core 1.3.2 or later (the playground uses the tests' judge; async judge clients no longer fail with "Event loop is closed").
 
 ### Fixes
 
@@ -33,6 +41,12 @@ All notable changes to this project will be documented in this file.
 - Dataset items missing a metadata field some other item has get `None` for it.
 - Calling a decorated function directly evaluates every trace and raises one `AssertionError` at the end listing the failures.
 - Requires `fasteval-core>=1.3.0`.
+
+## fasteval-langgraph (unreleased)
+
+### Dependencies
+
+- Requires fasteval-core 1.3.2 or later (the playground uses the tests' judge; async judge clients no longer fail with "Event loop is closed").
 
 ## Unreleased
 

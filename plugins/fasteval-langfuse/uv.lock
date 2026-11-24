@@ -251,7 +251,7 @@ wheels = [
 
 [[package]]
 name = "fasteval-core"
-version = "1.3.0"
+version = "1.3.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "openai" },
@@ -260,14 +260,14 @@ dependencies = [
     { name = "rouge-score" },
     { name = "tomli", marker = "python_full_version < '3.11'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c5/d2/c7c0582e5642c7bfd677afe865ba24e4253e01985561b4d214eb13f72378/fasteval_core-1.3.0.tar.gz", hash = "sha256:9af0f0f2d79332d67517405ad8c1b3de6d5c79183cc3fbd80d02b763dbc7d1f4", size = 208000, upload-time = "2026-11-24T05:40:09.413Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f1/a9/fa942fdf012047c5573373f5567ef25198614c868928596d8a42214e88ac/fasteval_core-1.3.2.tar.gz", hash = "sha256:7e6376395d57d10c73d3c1318028c29270f9cb000eda08a7e5d79f39800a1a4c", size = 213386, upload-time = "2026-11-24T12:39:52.2Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ec/d4/0ebb782c82adc2871db6bce234a09283739e16cf38ef6f0682d7eefc8d80/fasteval_core-1.3.0-py3-none-any.whl", hash = "sha256:672117fbc66aa79ad44b3d06276a00b69edd4b32eaa02a320ed943ea805ea0fd", size = 231392, upload-time = "2026-11-24T05:40:07.624Z" },
+    { url = "https://files.pythonhosted.org/packages/3e/46/5c50f07d2b054d7d92e09b80b642daadf2c2ba730c8864b33bcdd4ac8793/fasteval_core-1.3.2-py3-none-any.whl", hash = "sha256:c9ded7b1223e27d4f35f3498e3c9d3f9ba41c414b7728588904fa1c0ffe57428", size = 237719, upload-time = "2026-11-24T12:39:50.824Z" },
 ]
 
 [[package]]
 name = "fasteval-langfuse"
-version = "2.1.5"
+version = "2.2.0"
 source = { editable = "." }
 dependencies = [
     { name = "fasteval-core" },
@@ -287,7 +287,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "fasteval-core", specifier = ">=1.3.0" },
+    { name = "fasteval-core", specifier = ">=1.3.2" },
     { name = "langfuse", specifier = ">=2.0.0" },
     { name = "pydantic", specifier = ">=2.0.0" },
 ]
