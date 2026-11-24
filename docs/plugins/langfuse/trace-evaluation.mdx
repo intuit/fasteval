@@ -36,11 +36,17 @@ Running evaluations on a schedule also gives you a continuous feedback loop. Qua
 When you run a trace evaluation test, here's the sequence:
 
 1. **Connection** — The plugin authenticates with Langfuse
-2. **Query** — Traces matching your criteria (project, tags, time range) are fetched
+2. **Query** — When pytest collects the test, traces matching your criteria (project, tags, time range) are fetched
 3. **Sampling** — A sampling strategy selects a subset if configured
-4. **Iteration** — Your test function runs once per trace
+4. **One case per trace** — Each trace becomes its own pytest case, named by trace id: `test_support_traces[<trace_id>]`
 5. **Evaluation** — fasteval metrics assess each response via an LLM judge
-6. **Reporting** — Results go to pytest output and scores get pushed to Langfuse
+6. **Reporting** — Each case passes or fails on its own, and its scores are pushed to Langfuse right after it runs, failing traces included
+
+Because every trace is a separate case, one bad trace never stops the others. `--lf` re-runs only the traces that failed, `-k <trace_id>` picks out a single trace, and `pytest -n 4` (or `fasteval run -n 4`) spreads traces across workers. With `-n`, the first worker fetches and samples the traces and the others reuse that result, so all workers see the same traces even with random sampling or a relative `time_range`. Async test functions work without pytest-asyncio.
+
+Calling a decorated function directly, outside pytest (for example from a script), evaluates every trace in turn, pushes all scores, and raises one `AssertionError` at the end listing the traces that failed.
+
+Requires `fasteval-core` 1.3.0 or newer.
 
 ## The langfuse_traces Decorator
 

@@ -48,7 +48,7 @@ Most mature teams use both: datasets for gates and controlled testing, traces fo
 
 ## The langfuse_dataset Decorator
 
-The `@langfuse_dataset` decorator fetches items from a Langfuse dataset and runs your test function once per item.
+The `@langfuse_dataset` decorator fetches items from a Langfuse dataset and turns each item into its own pytest case (`test_qa[<item_id>]`). Every item's scores are recorded in Langfuse, failing ones included, and all items of a test session are linked to one experiment run, also when running with `pytest -n`.
 
 ### Basic Syntax
 
@@ -89,7 +89,7 @@ def test_basic(input, expected_output):
 
 ### Accessing Item Metadata
 
-Dataset items can carry custom metadata. Just declare the fields as function parameters:
+Dataset items can carry custom metadata. Just declare the fields as function parameters. An item that lacks a field some other item has gets `None` for it:
 
 ```python
 @langfuse_dataset(name="qa-golden-set")
