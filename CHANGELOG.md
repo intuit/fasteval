@@ -16,6 +16,7 @@ All notable changes to this project will be documented in this file.
 
 ### Dependencies
 
+- Requires fasteval-core 1.3.3 or later, which no longer logs "Event loop is closed" from async judge clients.
 - Requires fasteval-core 1.3.2 or later (the playground uses the tests' judge; async judge clients no longer fail with "Event loop is closed").
 
 ### Fixes
@@ -27,6 +28,7 @@ All notable changes to this project will be documented in this file.
 
 ### Dependencies
 
+- Requires fasteval-core 1.3.3 or later, which no longer logs "Event loop is closed" from async judge clients.
 - Requires fasteval-core 1.3.2 or later (the playground uses the tests' judge; async judge clients no longer fail with "Event loop is closed").
 
 ### Fixes
@@ -46,6 +48,7 @@ All notable changes to this project will be documented in this file.
 
 ### Dependencies
 
+- Requires fasteval-core 1.3.3 or later, which no longer logs "Event loop is closed" from async judge clients.
 - Requires fasteval-core 1.3.2 or later (the playground uses the tests' judge; async judge clients no longer fail with "Event loop is closed").
 
 ## Unreleased
