@@ -308,7 +308,7 @@ class JsonMetric(Metric):
 
 
 class RegexMetric(Metric):
-    """
+    r"""
     Regex pattern matching for structured outputs.
 
     Returns 1.0 if the pattern matches the actual output, 0.0 otherwise.
