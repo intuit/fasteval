@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## fasteval-observe (unreleased)
+
+### Fixes
+
+- `shutdown()` / `shutdown_observer()` no longer lose queued observations. The worker waited out the full flush interval (5s by default, the same as the shutdown join timeout) before flushing, so shutdown, including at process exit, often returned before anything was flushed. The worker now flushes and drains as soon as shutdown is requested.
+- `shutdown()` flushes observations queued before a worker was started.
+
 ## fasteval-langfuse (unreleased)
 
 ### Fixes

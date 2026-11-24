@@ -220,6 +220,12 @@ class ObservationQueue:
         deadline = time.time() + timeout
 
         while len(batch) < max_size:
+            # On shutdown, stop waiting for a full batch: the worker flushes
+            # what it has and drains the rest right away. Waiting out the
+            # flush interval (5s by default, the same as shutdown()'s join
+            # timeout) made shutdown() return before anything was flushed.
+            if self._shutdown_event.is_set():
+                break
             remaining = deadline - time.time()
             if remaining <= 0:
                 break
@@ -272,6 +278,9 @@ class ObservationQueue:
             timeout: Maximum time to wait for drain
         """
         if self._worker_thread is None:
+            # No worker ever ran: flush anything queued in this thread so it
+            # isn't lost at exit.
+            self._drain()
             return
 
         logger.info("Shutting down observation queue...")
