@@ -46,6 +46,7 @@ class UIApp:
         self.procs: Dict[str, "subprocess.Popen[bytes]"] = {}
         self.lock = threading.Lock()
         self.httpd: Optional[ThreadingHTTPServer] = None
+        self.judge_worker: Any = None  # fasteval.ui.judge_worker.JudgeWorker
 
     # ── lifecycle ──
 
@@ -106,6 +107,8 @@ class UIApp:
         threading.Thread(target=wait_then_open, daemon=True).start()
 
     def shutdown(self) -> None:
+        if self.judge_worker is not None:
+            self.judge_worker.close()
         if self.httpd is not None:
             self.httpd.shutdown()
             self.httpd.server_close()
@@ -154,26 +157,50 @@ class UIApp:
 
     # ── judges ──
 
-    def judge_client(self, model: Optional[str], temperature: Optional[float]) -> Any:
-        """Client for playground calls: explicit model > judge_client > default."""
+    def judge_client(self, model: str, temperature: Optional[float]) -> Any:
+        """Client for a playground call that names a model explicitly."""
         from fasteval.judges import JudgeSpec, client_for_spec
 
-        if model:
-            return client_for_spec(
-                JudgeSpec(
-                    name="playground", prompt="x", model=model, temperature=temperature
-                )
+        return client_for_spec(
+            JudgeSpec(
+                name="playground", prompt="x", model=model, temperature=temperature
             )
-        if self.config.judge_client:
-            from fasteval.judges import JudgeError, load_judge_client
+        )
 
-            try:
-                return load_judge_client(self.config.judge_client, self.config.root)
-            except JudgeError as e:
-                raise HTTPError(HTTPStatus.BAD_REQUEST, str(e))
-        from fasteval.providers.registry import get_default_provider
+    def judge_test_files(self, nodeids: List[str]) -> List[str]:
+        """Test files the playground cases came from (relative to the root)."""
+        files: List[str] = []
+        root = self.config.root.resolve()
+        for nodeid in nodeids:
+            rel = nodeid.split("::", 1)[0]
+            path = (root / rel).resolve()
+            if rel and rel not in files and path.is_file() and root in path.parents:
+                files.append(rel)
+        return files
 
-        return get_default_provider()
+    def judge_test_in_tests(
+        self, request: Dict[str, Any], files: List[str]
+    ) -> Dict[str, Any]:
+        """
+        Run a playground test where the tests are imported (a warm pytest
+        worker), so the judge is the one a real run uses:
+        ``fe.set_default_provider(...)`` or ``[tool.fasteval] judge_client``.
+        """
+        import os
+
+        from fasteval.ui.judge_worker import JudgeWorker, JudgeWorkerError
+
+        profile = self.config.resolve(None)
+        with self.lock:
+            if self.judge_worker is None:
+                env = {**os.environ, **profile.env, "FASTEVAL_PROFILE": profile.name}
+                self.judge_worker = JudgeWorker(self.config.root, env)
+            worker = self.judge_worker
+        try:
+            defaults = [_display(self.config, p) for p in profile.paths]
+            return worker.run(files, request, defaults)
+        except JudgeWorkerError as e:
+            raise HTTPError(HTTPStatus.BAD_GATEWAY, str(e))
 
 
 # ── request handling ─────────────────────────────────────────────────────────
@@ -513,20 +540,30 @@ class _Handler(BaseHTTPRequestHandler):
             raise HTTPError(HTTPStatus.BAD_REQUEST, "Add at least one case")
         if len(cases) > 100:
             raise HTTPError(HTTPStatus.BAD_REQUEST, "At most 100 cases per test")
-        temperature = _number(body, "temperature", 0.0, 0.0, 2.0)
-        client = self.app.judge_client(body.get("model") or None, temperature)
-        results = asyncio.run(
-            _run_judge_cases(
-                template=template,
-                client=client,
-                cases=cases,
-                scoring=body.get("scoring") or "continuous",
-                threshold=_number(body, "threshold", 0.5, 0.0, 1.0),
-                concurrency=int(_number(body, "concurrency", 4, 1, 8)),
+        request: Dict[str, Any] = {
+            "template": template,
+            "cases": cases,
+            "scoring": body.get("scoring") or "continuous",
+            "threshold": _number(body, "threshold", 0.5, 0.0, 1.0),
+            "concurrency": int(_number(body, "concurrency", 4, 1, 8)),
+        }
+        model = body.get("model") or None
+        if not model:
+            # The judge the tests configure, found by importing them.
+            nodeids = [c.get("nodeid") for c in cases if isinstance(c, dict)]
+            if isinstance(body.get("source"), str):
+                nodeids.append(body["source"])
+            files = self.app.judge_test_files(
+                [n for n in nodeids if isinstance(n, str)]
             )
-        )
+            self._json(self.app.judge_test_in_tests(request, files))
+            return
+        from fasteval.judges import run_judge_cases
         from fasteval.utils.judge_trace import describe_judge
 
+        temperature = _number(body, "temperature", 0.0, 0.0, 2.0)
+        client = self.app.judge_client(model, temperature)
+        results = asyncio.run(run_judge_cases(client=client, **request))
         self._json({"judge": describe_judge(client), "results": results})
 
     def api_save_judge(self, parts: List[str], query: Dict[str, str]) -> None:
@@ -593,56 +630,6 @@ def _read_new_events(path: Path, offsets: Dict[str, int]) -> List[Tuple[float, b
             batch.append((ts, line))
     batch.sort(key=lambda item: item[0])
     return batch
-
-
-async def _run_judge_cases(
-    *,
-    template: str,
-    client: Any,
-    cases: List[Dict[str, Any]],
-    scoring: str,
-    threshold: float,
-    concurrency: int,
-) -> List[Dict[str, Any]]:
-    from fasteval.judges import JudgeSpec, PromptJudgeMetric, render_template
-    from fasteval.models.evaluation import EvalInput
-    from fasteval.utils import judge_trace
-
-    spec = JudgeSpec(
-        name="playground",
-        prompt=template,
-        scoring="binary" if scoring == "binary" else "continuous",
-        threshold=max(0.0, min(1.0, threshold)),
-    )
-    metric = PromptJudgeMetric(spec, name="playground", llm_client=client)
-    metric.max_retries = 1
-    semaphore = asyncio.Semaphore(max(1, min(concurrency, 8)))
-
-    async def one(case: Dict[str, Any]) -> Dict[str, Any]:
-        key = case.get("key")
-        try:
-            eval_input = EvalInput.model_validate(case.get("eval_input") or {})
-        except Exception as e:
-            return {"key": key, "error": f"Invalid eval_input: {e}"}
-        async with semaphore:
-            start = time.perf_counter()
-            with judge_trace.capture() as calls:
-                result = await metric.evaluate(eval_input)
-        call = calls[-1] if calls else {}
-        return {
-            "key": key,
-            "prompt": render_template(template, eval_input),
-            "response": call.get("response"),
-            "error": call.get("error") or result.details.get("error"),
-            "score": result.score,
-            "passed": result.passed,
-            "reasoning": result.reasoning,
-            "latency_ms": call.get(
-                "latency_ms", round((time.perf_counter() - start) * 1000, 1)
-            ),
-        }
-
-    return list(await asyncio.gather(*(one(c) for c in cases)))
 
 
 def _route_key(parts: List[str]) -> Tuple[str, ...]:

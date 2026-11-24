@@ -127,6 +127,31 @@ class TestOpenAIClient:
         assert result == "Hello!"
 
 
+@pytest.mark.parametrize(
+    "cls, sdk",
+    [
+        (OpenAIClient, "openai.AsyncOpenAI"),
+        (AnthropicClient, "anthropic.AsyncAnthropic"),
+    ],
+)
+def test_sdk_client_per_event_loop(cls, sdk):
+    """Each eval may run on its own loop (asyncio.run per test); reusing an SDK
+    client from a closed loop fails with "Event loop is closed"."""
+    import asyncio
+
+    pytest.importorskip(sdk.split(".")[0])
+    with patch(sdk, side_effect=lambda **kw: MagicMock()):
+        client = cls(api_key="k")
+
+        async def get():
+            return client._get_client(), client._get_client()
+
+        first, same = asyncio.run(get())
+        second, _ = asyncio.run(get())
+    assert first is same  # one client per loop
+    assert first is not second  # a new loop gets a new client
+
+
 class TestProviderRegistryEdgeCases:
     def setup_method(self):
         clear_default_provider()

@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file.
 
 - UI: the case list is scrollable again when a run has many tags. The tag chips filled the whole panel and left the list no height, so cases couldn't be reached (reported with ~50 tags and ~7,000 cases). Tags now show the 8 most used with counts and a "+N more" toggle (expanded, they scroll within a capped area), and the list always keeps a usable height.
 - UI: the case list renders only the visible rows, so runs with thousands of cases scroll and update smoothly; grouping no longer does quadratic work on every update.
+- UI: the judge playground's **Test** uses the judge your tests set up, including `fe.set_default_provider(...)` in a test module or `conftest.py`. It used to run in the UI process, which never imports the tests, so without `[tool.fasteval] judge_client` it fell back to env keys and failed for custom clients (for example ones with auth headers). It now runs in a warm pytest process that imports the cases' test files (no datasets loaded, no tests run). The process is restarted when those files change, and every 30 minutes.
 - UI: case rows show the case id (the test name moves to the file header when a file has one test function) and truncate in the middle, so ids that differ only at the end stay distinguishable.
 
 ## fasteval-observe (unreleased)

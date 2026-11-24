@@ -113,6 +113,16 @@ def pytest_addoption(parser: Any) -> None:
         help="Swap metric METRIC for saved prompt judge JUDGE (judges/JUDGE.toml)",
     )
     parser.addoption(
+        "--fe-judge-test",
+        default=None,
+        metavar="FILE",
+        help=(
+            "Internal (fasteval ui judge playground): import the test files, "
+            "then score the request in FILE ('-': requests on stdin) with the "
+            "default judge"
+        ),
+    )
+    parser.addoption(
         "--fe-events",
         default=None,
         metavar="DIR",
@@ -241,6 +251,8 @@ def pytest_pycollect_makeitem(collector: Any, name: str, obj: Any) -> Any:
     evaluated against the metrics stacked on the generator. The function
     doesn't need a ``test_`` name; it must live in a collected test module.
     """
+    if _judge_test_file(collector.config):
+        return []  # judge playground: import the module only, build no tests
     if not (callable(obj) and getattr(obj, "_fasteval_traces", False)):
         return None
     if not isinstance(collector, pytest.Module):
@@ -378,6 +390,9 @@ def pytest_collection_modifyitems(config: Any, items: List[Any]) -> None:
 def pytest_collection_finish(session: Any) -> None:
     """Write the eval inventory and/or the ``collected`` event if requested."""
     config = session.config
+    if _judge_test_file(config):
+        _serve_judge_tests(session)
+        return
     path = config.getoption("--fe-inventory", default=None)
     events = _events(config)
     worker = _is_xdist_worker(config)
@@ -691,3 +706,86 @@ def _print_console_summary(summary: Any) -> None:
                 print(f"    x {t.test_name} (score: {t.aggregate_score:.3f}){err}")
 
     print(sep + "\n")
+
+
+# ── judge playground (fasteval ui) ───────────────────────────────────────────
+#
+# The playground's "Test" runs in a pytest process that imported the tests
+# (see fasteval.ui.judge_worker), so the judge is whatever they configure:
+# fe.set_default_provider(...) in a test module or conftest.py, else
+# [tool.fasteval] judge_client: the judge a real run uses. Modules are imported
+# but no test items are built, so datasets aren't loaded and nothing runs.
+
+JUDGE_TEST_DONE = "@@fasteval-judge-test-done@@"
+
+_JUDGE_TEST_ERRORS: "pytest.StashKey[List[str]]" = pytest.StashKey()
+
+
+def _judge_test_file(config: Any) -> Optional[str]:
+    value = config.getoption("--fe-judge-test", default=None)
+    return value if isinstance(value, str) and value else None
+
+
+def pytest_collectreport(report: Any) -> None:
+    config = _current_config
+    if config is None or not _judge_test_file(config) or not report.failed:
+        return
+    config.stash.setdefault(_JUDGE_TEST_ERRORS, []).append(
+        f"{report.nodeid or 'collection'}: {report.longreprtext}"
+    )
+
+
+def _serve_judge_tests(session: Any) -> None:
+    """
+    ``--fe-judge-test=FILE`` answers the request in FILE; ``-`` keeps serving:
+    each stdin line is a request file, acknowledged with a ``JUDGE_TEST_DONE``
+    line on stdout (run with ``-s``). Serving keeps the imported tests warm,
+    so slow setup (auth, SDK clients) is paid once.
+    """
+    import asyncio
+
+    path = _judge_test_file(session.config)
+    errors = session.config.stash.get(_JUDGE_TEST_ERRORS, [])
+    # One loop for every request: SDK clients (e.g. AsyncOpenAI) keep
+    # connections bound to the loop they were first used on.
+    loop = asyncio.new_event_loop()
+    try:
+        if path != "-":
+            _answer_judge_test(str(path), errors, loop)
+            return
+        for line in sys.stdin:
+            request_path = line.strip()
+            if request_path:
+                _answer_judge_test(request_path, errors, loop)
+                print(f"{JUDGE_TEST_DONE} {request_path}", flush=True)
+    finally:
+        loop.close()
+
+
+def _answer_judge_test(path: str, errors: List[str], loop: Any) -> None:
+    from fasteval import judges
+    from fasteval.providers.registry import get_default_provider
+    from fasteval.utils.judge_trace import describe_judge
+
+    request = json.loads(Path(path).read_text())
+    output: Dict[str, Any]
+    if errors:
+        # A failed import may have skipped fe.set_default_provider(...).
+        output = {"error": "Couldn't import the test files:\n" + "\n".join(errors)}
+    else:
+        try:
+            client = get_default_provider()
+            results = loop.run_until_complete(
+                judges.run_judge_cases(
+                    template=request["template"],
+                    client=client,
+                    cases=request["cases"],
+                    scoring=request.get("scoring") or "continuous",
+                    threshold=float(request.get("threshold", 0.5)),
+                    concurrency=int(request.get("concurrency", 4)),
+                )
+            )
+            output = {"judge": describe_judge(client), "results": results}
+        except Exception as e:  # report it in the playground, don't crash pytest
+            output = {"error": f"{type(e).__name__}: {e}"}
+    Path(request["output"]).write_text(json.dumps(output, default=str))

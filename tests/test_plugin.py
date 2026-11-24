@@ -34,6 +34,7 @@ class TestPytestAddoption:
             "--fe-inventory",
             "--fe-events",
             "--fe-judge",
+            "--fe-judge-test",
         }
 
 

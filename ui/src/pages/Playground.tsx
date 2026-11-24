@@ -69,7 +69,8 @@ export function Playground() {
     try {
       const res = await api.post<{ judge: { model?: string; provider?: string }; results: Array<PgResult & { key: string }> }>('/api/judges/test', {
         template: pg.template, model: pg.model || null, temperature: pg.temperature, scoring: pg.scoring, threshold: pg.threshold,
-        cases: pg.cases.map((c) => ({ key: c.key, eval_input: c.eval_input })),
+        cases: pg.cases.map((c) => ({ key: c.key, nodeid: c.nodeid, eval_input: c.eval_input })),
+        source: pg.source?.nodeid ?? null,
       })
       const byKey = new Map(res.results.map((r) => [r.key, r]))
       setPg((s) => ({ ...s, cases: s.cases.map((c) => ({ ...c, result: byKey.get(c.key) ?? { error: 'No result' } })) }))
@@ -86,7 +87,6 @@ export function Playground() {
   const used = usedVars(pg.template)
   const dirty = pg.template !== pg.originalTemplate
   const unsaved = !pg.savedAs || pg.savedTemplate !== pg.template
-  const defaultJudge = project?.judge_client ?? 'default provider (env keys / fe.set_default_provider)'
 
   if (loadingTpl) return <Empty title="Loading the judge's prompt…"><Spinner /></Empty>
 
@@ -131,7 +131,7 @@ export function Playground() {
             </label>
           </div>
           <div className="muted" style={{ fontSize: 12.5 }}>
-            {pg.model ? <>Calls <b>{pg.model}</b> directly (needs its API key in the server's environment).</> : <>Empty model uses <span className="mono">{defaultJudge}</span>.</>}
+            {pg.model ? <>Calls <b>{pg.model}</b> directly (needs its API key in the server's environment).</> : <>Empty model uses the judge your tests set up, as in a real run: <span className="mono">fe.set_default_provider(…)</span>{project?.judge_client ? <>, else <span className="mono">{project.judge_client}</span></> : null}, else env keys.</>}
           </div>
 
           <div className="row">
