@@ -31,8 +31,8 @@ def test_production_traces(trace_id, input, output, context, metadata):
     # Evaluate the trace
     fe.score(output, input=input)
 
-# Run with pytest - scores automatically pushed to Langfuse
-# pytest test_production.py -v
+# Run with pytest: one test case per trace, scores pushed to Langfuse after each
+# pytest test_production.py -v        (or: fasteval run test_production.py)
 ```
 
 ### Sampling Strategies

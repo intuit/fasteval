@@ -224,7 +224,7 @@ fasteval run test_production.py test_regression.py
 fasteval list                     # shows "langfuse traces <project>" or "langfuse dataset <name>" as the data source
 ```
 
-A `@langfuse_traces` or `@langfuse_dataset` test evaluates all of its traces or items inside one pytest test, so the [local UI](/docs/cli/local-ui) shows it as one case with a numbered score for each trace or item. [Tags](/docs/cli/tags) and [profiles](/docs/cli/profiles) work as usual, which makes it easy to keep production-trace evals out of fast runs: tag them `@fe.tag("langfuse")` and give your everyday profile `tags = "not langfuse"`.
+Each trace (`@langfuse_traces`) or dataset item (`@langfuse_dataset`) becomes its own pytest case, so the [local UI](/docs/cli/local-ui) shows live progress and a separate result per trace, and failures, re-runs (`--lf`) and parallel workers (`-n`) work per trace. [Tags](/docs/cli/tags) and [profiles](/docs/cli/profiles) work as usual, which makes it easy to keep production-trace evals out of fast runs: tag them `@fe.tag("langfuse")` and give your everyday profile `tags = "not langfuse"`.
 
 ## When to Use This Plugin
 

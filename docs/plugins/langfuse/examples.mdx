@@ -538,10 +538,10 @@ pytest test_customer_support_pipeline.py::test_pre_deploy_regression
 
 ## Parallel Execution
 
-Speed things up with pytest-xdist. xdist spreads **test functions** across workers: a single `@langfuse_traces` test evaluates all of its traces in one worker, so split large evaluations into several tests (for example by tag, time window or sampling) to use more workers.
+Speed things up with pytest-xdist. Each trace is its own test case, so the traces of a single `@langfuse_traces` test are spread across workers. The first worker fetches and samples the traces and the others reuse that result, so every worker evaluates the same set, even with random sampling or a relative `time_range`.
 
 ```bash
-# Run the trace-evaluation tests on 4 workers
+# Evaluate traces on 4 workers
 pytest test_production.py -n 4  # 4 workers
 
 # Auto-detect worker count

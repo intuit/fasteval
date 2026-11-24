@@ -9,6 +9,21 @@ All notable changes to this project will be documented in this file.
 - `shutdown()` / `shutdown_observer()` no longer lose queued observations. The worker waited out the full flush interval (5s by default, the same as the shutdown join timeout) before flushing, so shutdown, including at process exit, often returned before anything was flushed. The worker now flushes and drains as soon as shutdown is requested.
 - `shutdown()` flushes observations queued before a worker was started.
 
+## fasteval-langfuse (unreleased)
+
+### Fixes
+
+- `@langfuse_traces` and `@langfuse_dataset` work under pytest again; every documented use failed with `fixture 'trace_id' not found`.
+- A failing trace no longer stops the remaining traces, and its scores are now pushed to Langfuse (they were skipped, and scores could be left unflushed).
+- Async test functions push their scores; they never reached Langfuse before.
+
+### Changes
+
+- Each trace / dataset item is its own pytest case (`test_x[<trace_id>]`): per-trace pass/fail, `--lf`, `-k <id>`, and `pytest -n` across traces, with all xdist workers evaluating the same sampled traces.
+- Dataset items missing a metadata field some other item has get `None` for it.
+- Calling a decorated function directly evaluates every trace and raises one `AssertionError` at the end listing the failures.
+- Requires `fasteval-core>=1.3.0`.
+
 ## Unreleased
 
 ### Features
