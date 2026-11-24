@@ -175,7 +175,7 @@ Testing calls the judge model once per case, at most 100 cases per test.
 
 ## The Project Judge Client
 
-`judge_client` in `[tool.fasteval]` names your project's default LLM judge, as `"module:attribute"`. Setting it once makes your evals and the playground use the same judge:
+`judge_client` in `[tool.fasteval]` names your project's default LLM judge, as `"module:attribute"`. Use it when the judge isn't set up in code, for example to share one client across several test folders:
 
 ```toml
 [tool.fasteval]
@@ -191,13 +191,15 @@ client = OpenAIClient(model="gpt-4o", temperature=0)
 
 **In pytest runs** (plain `pytest` or `fasteval run`), the plugin makes this client the default provider when pytest starts, unless your code has already called `fe.set_default_provider(...)`. Explicit setup always wins, including a `set_default_provider()` call in a `conftest.py`. Metrics with their own `model=` or `llm_client=`, and judge files with a `model`, still use those.
 
-**In the playground**, which runs in the `fasteval ui` process rather than in pytest, the client is chosen in this order:
+**In the playground**, the judge is the same one a real run uses. Unless you fill in the **Judge model** field, **Test** runs in a pytest process that imported your test files and their `conftest.py` files, so the judge is chosen exactly as in a run:
 
-1. the **Judge model** field, if you fill it in (it needs that provider's API key in the environment of `fasteval ui`)
+1. `fe.set_default_provider(...)`, if a test module or `conftest.py` calls it
 2. otherwise `judge_client`
 3. otherwise the provider detected from `OPENAI_API_KEY` or `ANTHROPIC_API_KEY`
 
-A `conftest.py` doesn't run in the UI process, so `judge_client` is how the playground gets the same judge as your evals.
+It imports the test files the playground cases came from, or the default profile's paths for hand-written cases. Modules are imported, but datasets aren't loaded and no tests run. The process stays warm between tests, so slow setup (sign-in, SDK clients) is paid once. It restarts when those files, a `conftest.py` or the project config change, and every 30 minutes so credentials fetched at import time stay fresh. If the tests can't be imported, the import error is shown in the playground.
+
+A filled-in **Judge model** calls that model directly from the `fasteval ui` process, so it needs that provider's API key in that process's environment. Custom auth, such as headers on your own client, doesn't apply there.
 
 How the spec is loaded:
 

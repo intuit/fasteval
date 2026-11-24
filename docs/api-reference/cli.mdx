@@ -142,7 +142,7 @@ In `[tool.fasteval]` of `pyproject.toml`, or at the top level of `fasteval.toml`
 | `tags` | table | Tag registry, `name = "description"` |
 | `profiles.<name>` | table | A profile (keys below) |
 | `judges_dir` | string | Prompt judge directory. Default `judges` |
-| `judge_client` | string | Default LLM judge, `"module:attribute"`: set as the default provider in pytest runs (unless code sets one) and used by the UI playground |
+| `judge_client` | string | Default LLM judge, `"module:attribute"`: the default provider in pytest runs and the UI playground, unless code sets one |
 
 | Profile key | Type | `fasteval run` flag |
 |-------------|------|---------------------|

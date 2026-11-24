@@ -158,7 +158,7 @@ from fasteval import OpenAIClient
 client = OpenAIClient(model="gpt-4o-mini", temperature=0)
 ```
 
-The pytest plugin loads it as the default provider when pytest starts (with the project root on the import path; a class is instantiated with no arguments), unless your code calls `fe.set_default_provider()`, which always wins. The [judge playground](/docs/cli/prompt-judges#the-project-judge-client) in `fasteval ui` uses the same client, which a `conftest.py` can't do, since it doesn't run in the UI process. A spec that can't be loaded, or an object without an `invoke` method, stops the pytest run with a usage error.
+The pytest plugin loads it as the default provider when pytest starts (with the project root on the import path; a class is instantiated with no arguments), unless your code calls `fe.set_default_provider()`, which always wins. The [judge playground](/docs/cli/prompt-judges#the-project-judge-client) in `fasteval ui` judges in a pytest process that imported your tests, so it uses the same client as a run, whether it comes from `judge_client` or from `fe.set_default_provider()` in a test module or `conftest.py`. A spec that can't be loaded, or an object without an `invoke` method, stops the pytest run with a usage error.
 
 ## LangChain Integration
 

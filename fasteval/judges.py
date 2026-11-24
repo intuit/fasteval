@@ -391,3 +391,57 @@ def set_overrides(overrides: Dict[str, JudgeSpec]) -> None:
 
 def get_override(metric_name: str) -> Optional[JudgeSpec]:
     return _overrides.get(metric_name)
+
+
+async def run_judge_cases(
+    *,
+    template: str,
+    client: Any,
+    cases: List[Dict[str, Any]],
+    scoring: str,
+    threshold: float,
+    concurrency: int,
+) -> List[Dict[str, Any]]:
+    """Score playground cases with a template. Used by the UI server and by
+    ``pytest --fe-judge-test`` (the judge playground's subprocess)."""
+    import asyncio
+    import time
+
+    from fasteval.models.evaluation import EvalInput
+    from fasteval.utils import judge_trace
+
+    spec = JudgeSpec(
+        name="playground",
+        prompt=template,
+        scoring="binary" if scoring == "binary" else "continuous",
+        threshold=max(0.0, min(1.0, threshold)),
+    )
+    metric = PromptJudgeMetric(spec, name="playground", llm_client=client)
+    metric.max_retries = 1
+    semaphore = asyncio.Semaphore(max(1, min(concurrency, 8)))
+
+    async def one(case: Dict[str, Any]) -> Dict[str, Any]:
+        key = case.get("key")
+        try:
+            eval_input = EvalInput.model_validate(case.get("eval_input") or {})
+        except Exception as e:
+            return {"key": key, "error": f"Invalid eval_input: {e}"}
+        async with semaphore:
+            start = time.perf_counter()
+            with judge_trace.capture() as calls:
+                result = await metric.evaluate(eval_input)
+        call = calls[-1] if calls else {}
+        return {
+            "key": key,
+            "prompt": render_template(template, eval_input),
+            "response": call.get("response"),
+            "error": call.get("error") or result.details.get("error"),
+            "score": result.score,
+            "passed": result.passed,
+            "reasoning": result.reasoning,
+            "latency_ms": call.get(
+                "latency_ms", round((time.perf_counter() - start) * 1000, 1)
+            ),
+        }
+
+    return list(await asyncio.gather(*(one(c) for c in cases)))

@@ -62,7 +62,7 @@ min_pass_rate = 0.9
 | `tags` | Tag registry: `name = "description"` |
 | `profiles.<name>` | Run settings: paths, tags, workers, reports, quality gates, environment. See [Profiles](/docs/cli/profiles#profile-keys) |
 | `judges_dir` | Directory of prompt judge files. Default `judges` |
-| `judge_client` | `"module:attribute"` of the project's default LLM judge. pytest runs use it unless code calls `fe.set_default_provider()`; the UI playground uses it too |
+| `judge_client` | `"module:attribute"` of the project's default LLM judge. pytest runs and the UI playground use it unless code calls `fe.set_default_provider()` |
 
 These are the only valid keys. The CLI rejects anything else with an error (and a "did you mean" suggestion). To choose the judge model project-wide, point `judge_client` at a client object; for anything else, configure the judge in code with `fe.set_default_provider()` or a metric's `model=` argument. See [LLM Setup](/docs/core-concepts/llm-setup).
 
@@ -142,7 +142,7 @@ def test_mixed_config():
 | Setting | Where | Description |
 |---------|-------|-------------|
 | Default judge | `fe.set_default_provider(client)` | Client used by every LLM metric without its own |
-| Project judge | `[tool.fasteval] judge_client = "module:attr"` | Default judge when code hasn't set one; also used by the UI playground |
+| Project judge | `[tool.fasteval] judge_client = "module:attr"` | Default judge for runs and the UI playground when code hasn't set one |
 | Per-metric model | `@fe.correctness(model="gpt-4o")` | Creates a client for that model (OpenAI `gpt-*`/`o1-*`/`o3-*`, Anthropic `claude*`) |
 | Per-metric client | `@fe.correctness(llm_client=client)` | Any object with an async `invoke(messages)` |
 | Temperature, API key | `fe.OpenAIClient(model=..., temperature=0.0, api_key=...)` | Set on the client; the key defaults to `OPENAI_API_KEY` |

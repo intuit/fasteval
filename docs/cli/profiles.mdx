@@ -93,7 +93,7 @@ tags = "not slow"
 | `tags` | table | Tag registry: `name = "description"`. See [Tags](/docs/cli/tags) |
 | `profiles` | table | One sub-table per profile: `[tool.fasteval.profiles.<name>]` |
 | `judges_dir` | string | Where [prompt judges](/docs/cli/prompt-judges) live, relative to the project root. Default `judges` |
-| `judge_client` | string | The project's default LLM judge, as `"package.module:attribute"`. Used by pytest runs unless code calls `fe.set_default_provider()`, and by the UI's judge playground. See [Prompt Judges](/docs/cli/prompt-judges#the-project-judge-client) |
+| `judge_client` | string | The project's default LLM judge, as `"package.module:attribute"`. Used by pytest runs and the UI's judge playground unless code calls `fe.set_default_provider()`. See [Prompt Judges](/docs/cli/prompt-judges#the-project-judge-client) |
 
 ## Profile Keys
 

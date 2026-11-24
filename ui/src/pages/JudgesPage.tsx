@@ -40,7 +40,7 @@ export function JudgesPage() {
         <button className="btn" onClick={() => { seedPg({ ...emptyPg(), templateMethod: 'blank' }); navigate(href.playground()) }}>+ New judge</button>
       </div>
       {project?.judge_client ? (
-        <div className="banner" style={{ marginBottom: 12 }}>Playground calls use <span className="mono">{project.judge_client}</span> unless a judge sets a model.</div>
+        <div className="banner" style={{ marginBottom: 12 }}>Judges without a model use the judge your tests set up: <span className="mono">fe.set_default_provider(…)</span> if called, else <span className="mono">{project.judge_client}</span>.</div>
       ) : null}
       {data.judges.length === 0 ? (
         <div className="panel">
