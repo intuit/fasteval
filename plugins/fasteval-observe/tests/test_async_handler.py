@@ -179,6 +179,38 @@ class TestObservationQueue:
         # All should have been flushed
         assert queue.stats["enqueued"] == queue.stats["flushed"]
 
+    def test_shutdown_flushes_without_waiting_for_flush_interval(self):
+        """Regression: shutdown() returned before flushing when the worker was
+        waiting out the flush interval (5s default, same as the join timeout),
+        so queued observations were lost at exit. Deterministic version."""
+        configure_observe(ObserveConfig(flush_interval_seconds=30.0))
+        callback = MagicMock()
+        queue = get_observation_queue()
+        queue.set_flush_callback(callback)
+        queue.start_worker()
+        for _ in range(10):
+            queue.enqueue(self.create_observation())
+
+        started = time.monotonic()
+        queue.shutdown(timeout=2.0)
+        elapsed = time.monotonic() - started
+
+        assert queue.stats["flushed"] == queue.stats["enqueued"] == 10
+        assert elapsed < 1.0  # didn't wait out the 30s interval or the join timeout
+
+    def test_shutdown_without_worker_drains_queue(self):
+        """Observations queued before any worker started are flushed, not lost."""
+        callback = MagicMock()
+        queue = get_observation_queue()
+        queue.set_flush_callback(callback)
+        for _ in range(3):
+            queue.enqueue(self.create_observation())
+
+        queue.shutdown()
+
+        assert queue.stats["flushed"] == 3
+        callback.assert_called_once()
+
     def test_stats(self):
         """Should track statistics correctly."""
         queue = get_observation_queue()
