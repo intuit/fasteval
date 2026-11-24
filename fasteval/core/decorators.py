@@ -754,7 +754,7 @@ def regex(
     name: Optional[str] = None,
     **config: Any,
 ) -> Callable[[F], F]:
-    """
+    r"""
     Attach regex pattern matching metric.
 
     Validates that the output matches a regular expression pattern.
