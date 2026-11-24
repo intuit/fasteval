@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## fasteval-core (unreleased)
+
+### Fixes
+
+- UI: the case list is scrollable again when a run has many tags. The tag chips filled the whole panel and left the list no height, so cases couldn't be reached (reported with ~50 tags and ~7,000 cases). Tags now show the 8 most used with counts and a "+N more" toggle (expanded, they scroll within a capped area), and the list always keeps a usable height.
+- UI: the case list renders only the visible rows, so runs with thousands of cases scroll and update smoothly; grouping no longer does quadratic work on every update.
+- UI: case rows show the case id (the test name moves to the file header when a file has one test function) and truncate in the middle, so ids that differ only at the end stay distinguishable.
+
 ## fasteval-observe (unreleased)
 
 ### Fixes
