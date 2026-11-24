@@ -55,7 +55,7 @@ class TestRunAsync:
     def test_client_bound_to_first_loop_keeps_working(self):
         """Mimics an httpx/AsyncOpenAI pool: a future created on the first
         call's loop is awaited again on later calls."""
-        state = {}
+        state: dict = {}
 
         async def use_client():
             loop = asyncio.get_running_loop()
