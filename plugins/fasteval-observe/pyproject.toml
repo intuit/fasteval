@@ -1,6 +1,6 @@
 [project]
 name = "fasteval-observe"
-version = "2.1.4"
+version = "2.1.5"
 description = "Runtime monitoring plugin for fasteval with async sampling and structured logging"
 authors = [{name = "Intuit"}]
 license = {text = "Apache-2.0"}
