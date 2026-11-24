@@ -152,7 +152,7 @@ class TestCommands:
         out = capsys.readouterr().out
         assert "-m pytest evals --fe-only -m 'not slow'" in out
 
-    def test_run_writes_last_run_and_report(self, project, capsys):
+    def test_run_writes_last_run_and_report(self, project, capsys, bundle):
         assert main(["run", "-q"]) == 0
         state = project / ".fasteval"
         assert (state / ".gitignore").read_text().strip().endswith("*")
