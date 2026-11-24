@@ -1,12 +1,18 @@
 """The judge playground runs in a warm pytest worker that imported the tests,
 so it judges with whatever the tests configure (fe.set_default_provider)."""
 
+import io
+import json
 import os
+import sys
 import textwrap
 import time
+from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
+from fasteval.testing import plugin
 from fasteval.ui.judge_worker import JudgeWorker, JudgeWorkerError
 
 CONFTEST = textwrap.dedent("""
@@ -79,3 +85,89 @@ def test_import_errors_are_reported(project):
     with pytest.raises(JudgeWorkerError, match="broken setup"):
         worker.run(["test_x.py"], REQUEST, [])
     assert worker.proc is None  # retried on the next test
+
+
+# ── in-process: the plugin side (coverage can't see the worker subprocess) ──
+
+
+class FakeJudge:
+    model = "fake"
+
+    async def invoke(self, messages):
+        return '{"score": 0.8, "reasoning": "fine"}'
+
+
+class FakeConfig:
+    def __init__(self, value):
+        self.value = value
+        self.stash = {}
+
+    def getoption(self, name, default=None):
+        return self.value
+
+
+@pytest.fixture
+def fake_judge():
+    from fasteval.providers.registry import clear_default_provider, set_default_provider
+
+    set_default_provider(FakeJudge())
+    yield
+    clear_default_provider()
+
+
+def write_request(tmp_path, name="req.json", **extra):
+    path = tmp_path / name
+    path.write_text(json.dumps({**REQUEST, **extra, "output": str(path) + ".out"}))
+    return path
+
+
+def read_output(path):
+    return json.loads(Path(str(path) + ".out").read_text())
+
+
+def test_answer_scores_with_the_default_provider(tmp_path, fake_judge):
+    import asyncio
+
+    loop = asyncio.new_event_loop()
+    try:
+        path = write_request(tmp_path)
+        plugin._answer_judge_test(str(path), [], loop)
+        out = read_output(path)
+        assert out["judge"]["provider"] == "FakeJudge"
+        assert out["results"][0]["score"] == 0.8 and out["results"][0]["passed"]
+
+        plugin._answer_judge_test(str(path), ["test_x.py: boom"], loop)
+        assert "boom" in read_output(path)["error"]
+
+        bad = tmp_path / "bad.json"
+        bad.write_text(json.dumps({"output": str(bad) + ".out"}))  # no template
+        plugin._answer_judge_test(str(bad), [], loop)
+        assert read_output(bad)["error"].startswith("KeyError")
+    finally:
+        loop.close()
+
+
+def test_serve_answers_each_stdin_request(tmp_path, fake_judge, monkeypatch, capsys):
+    a, b = write_request(tmp_path, "a.json"), write_request(tmp_path, "b.json")
+    monkeypatch.setattr(sys, "stdin", io.StringIO(f"{a}\n\n{b}\n"))
+    plugin._serve_judge_tests(SimpleNamespace(config=FakeConfig("-")))
+    lines = capsys.readouterr().out.splitlines()
+    assert lines == [f"{plugin.JUDGE_TEST_DONE} {a}", f"{plugin.JUDGE_TEST_DONE} {b}"]
+    assert read_output(a)["results"] and read_output(b)["results"]
+
+    one = write_request(tmp_path, "one.json")
+    plugin._serve_judge_tests(SimpleNamespace(config=FakeConfig(str(one))))
+    assert read_output(one)["results"]
+
+
+def test_hooks_skip_items_and_record_import_errors(monkeypatch):
+    config = FakeConfig("-")
+    collector = SimpleNamespace(config=config)
+    assert plugin.pytest_pycollect_makeitem(collector, "test_x", lambda: 0) == []
+    monkeypatch.setattr(plugin, "_current_config", config)
+    plugin.pytest_collectreport(
+        SimpleNamespace(failed=True, nodeid="test_x.py", longreprtext="boom")
+    )
+    plugin.pytest_collectreport(SimpleNamespace(failed=False))
+    assert config.stash[plugin._JUDGE_TEST_ERRORS] == ["test_x.py: boom"]
+    assert plugin._judge_test_file(FakeConfig(None)) is None

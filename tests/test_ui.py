@@ -454,3 +454,51 @@ def test_explicit_default_provider_beats_judge_client(project):
     assert (
         '"model": "from-conftest"' in events and '"model": "fake-judge"' not in events
     )
+
+
+def test_judge_test_with_a_model_calls_it_in_process(live, monkeypatch):
+    """A filled-in Judge model skips the worker and calls that model directly."""
+    import fasteval.judges as judges_mod
+
+    class Direct:
+        model = "typed-model"
+
+        async def invoke(self, messages):
+            return json.dumps({"score": 0.9, "reasoning": "direct"})
+
+    seen = {}
+
+    def fake_client_for_spec(spec, fallback=None):
+        seen["model"], seen["temperature"] = spec.model, spec.temperature
+        return Direct()
+
+    monkeypatch.setattr(judges_mod, "client_for_spec", fake_client_for_spec)
+    status, res = call(
+        live,
+        "POST",
+        "/api/judges/test",
+        {
+            "template": "Out: {{actual_output}}",
+            "model": "typed-model",
+            "temperature": 0.3,
+            "cases": [{"key": "a", "eval_input": {"actual_output": "hi"}}],
+        },
+    )
+    assert status == 200 and res["judge"]["model"] == "typed-model"
+    assert res["results"][0]["score"] == 0.9
+    assert seen == {"model": "typed-model", "temperature": 0.3}
+    assert live.judge_worker is None  # no worker started
+
+
+def test_judge_test_reports_worker_errors(live, project):
+    (project / "evals" / "conftest.py").write_text("raise ImportError('no sdk here')\n")
+    status, res = call(
+        live,
+        "POST",
+        "/api/judges/test",
+        {
+            "template": "Out: {{actual_output}}",
+            "cases": [{"key": "a", "nodeid": "evals/missing.py::t", "eval_input": {}}],
+        },
+    )
+    assert status == 502 and "no sdk here" in res["error"]
